@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SmartBus Go | Vé xe buýt thông minh toàn quốc</title>
+    
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/smartbus-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="sbg-header-top d-none d-md-block">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3 text-muted">
+                <span><i class="bi bi-shield-check text-success"></i> Đặt vé thông minh 4.0</span>
+                <span>•</span>
+                <span><i class="bi bi-bus-front"></i> Hơn 3,000+ chuyến xe toàn quốc</span>
+            </div>
+            <div class="d-flex align-items-center gap-4">
+                <a href="tel:19006868" class="text-decoration-none text-dark fw-bold">
+                    <i class="bi bi-telephone-fill text-success"></i> Hotline: <span class="text-primary-teal">1900 6868</span>
+                </a>
+                <span class="text-muted"><i class="bi bi-globe2"></i> VND | VI</span>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <nav class="navbar navbar-expand-lg sbg-navbar sticky-top">
+            <div class="container">
+                <a class="sbg-brand" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-bus-front-fill text-success" style="font-size: 1.8rem;"></i>
+                    <div>
+                        <span>SmartBus<span style="color: var(--sbg-accent);">Go</span></span>
+                        <div class="sbg-badge">Vé xe buýt thông minh</div>
+                    </div>
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sbgNavbarContent">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="sbgNavbarContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                        <li class="nav-item">
+                            <a class="nav-link fw-semibold text-dark" asp-controller="Home" asp-action="Index">Trang chủ</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-semibold text-dark" asp-controller="Ticket" asp-action="Detail">Vé điện tử (Demo)</a>
+                        </li>
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <a asp-controller="Account" asp-action="Login" class="btn sbg-btn-primary d-flex align-items-center gap-2">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            <span>Đăng nhập / Đăng ký</span>
+                        </a>
+
+                        <a asp-controller="Driver" asp-action="Login" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold" title="Dành riêng cho Bác tài">
+                            <i class="bi bi-person-badge"></i> Bác tài
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container mt-3">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i> @TempData["InfoMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+    </div>
+
+    <main role="main" class="pb-5">
+        @RenderBody()
+    </main>
+
+    <footer class="bg-white border-top py-4 mt-auto">
+        <div class="container text-center text-muted small">
+            <p class="mb-1">&copy; 2026 <strong>SmartBus Go</strong> - Hệ thống quản lý và bán vé xe buýt thông minh toàn quốc.</p>
+            <p class="mb-0">Hỗ trợ khách hàng: 1900 6868 | Email: hotro@smartbusgo.vn</p>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

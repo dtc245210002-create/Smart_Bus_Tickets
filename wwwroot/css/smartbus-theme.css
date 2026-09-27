@@ -1,0 +1,373 @@
+/* SmartBus Go - Primary Theme Variables */
+:root {
+    --sbg-primary: #0A4D46;
+    --sbg-primary-hover: #073a35;
+    --sbg-primary-light: #e6f3f1;
+    --sbg-accent: #10B981;
+    --sbg-accent-hover: #059669;
+    --sbg-dark: #0f172a;
+    --sbg-gray-bg: #f8fafc;
+    --sbg-border: #e2e8f0;
+    --sbg-text-muted: #64748b;
+    --sbg-radius: 16px;
+    --sbg-shadow: 0 10px 25px -5px rgba(10, 77, 70, 0.08), 0 8px 10px -6px rgba(10, 77, 70, 0.04);
+}
+
+body {
+    background-color: var(--sbg-gray-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e293b;
+}
+
+/* Header & Top Bar */
+.sbg-header-top {
+    background: #ffffff;
+    border-bottom: 1px solid var(--sbg-border);
+    font-size: 0.875rem;
+    padding: 8px 0;
+}
+
+.sbg-navbar {
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    padding: 12px 0;
+}
+
+.sbg-brand {
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: var(--sbg-primary) !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.sbg-brand .sbg-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--sbg-accent);
+    background: #ecfdf5;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Auth Cards */
+.sbg-auth-card {
+    background: #ffffff;
+    border-radius: var(--sbg-radius);
+    border: 1px solid var(--sbg-border);
+    box-shadow: var(--sbg-shadow);
+    padding: 2.5rem;
+    max-width: 480px;
+    margin: 2.5rem auto;
+}
+
+.sbg-auth-title {
+    color: var(--sbg-primary);
+    font-weight: 700;
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.sbg-btn-primary {
+    background-color: var(--sbg-primary);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 20px;
+    border: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.sbg-btn-primary:hover {
+    background-color: var(--sbg-primary-hover);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(10, 77, 70, 0.25);
+}
+
+.sbg-btn-google {
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    width: 100%;
+}
+
+.sbg-btn-google:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+    color: #111827;
+}
+
+/* 6-Digit OTP Inputs */
+.sbg-otp-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+
+.sbg-otp-digit {
+    width: 50px;
+    height: 60px;
+    text-align: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    border: 2px solid var(--sbg-border);
+    border-radius: 12px;
+    background: #ffffff;
+    transition: all 0.2s;
+    color: var(--sbg-primary);
+}
+
+.sbg-otp-digit:focus {
+    border-color: var(--sbg-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* E-TICKET (Boarding Pass) Layout */
+.sbg-ticket-wrapper {
+    max-width: 900px;
+    margin: 2rem auto;
+}
+
+.sbg-ticket-card {
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: var(--sbg-shadow);
+    border: 1px solid var(--sbg-border);
+    overflow: hidden;
+    position: relative;
+}
+
+.sbg-ticket-header {
+    background: linear-gradient(135deg, var(--sbg-primary), #0e6b61);
+    color: #ffffff;
+    padding: 1.5rem 2rem;
+}
+
+.sbg-ticket-route-badge {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.sbg-ticket-body {
+    display: flex;
+    flex-wrap: wrap;
+    position: relative;
+}
+
+.sbg-ticket-main {
+    flex: 1 1 560px;
+    padding: 2rem;
+    border-right: 2px dashed #cbd5e1;
+    position: relative;
+}
+
+.sbg-ticket-stub {
+    flex: 0 0 320px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    position: relative;
+}
+
+@media (max-width: 860px) {
+    .sbg-ticket-main {
+        border-right: none;
+        border-bottom: 2px dashed #cbd5e1;
+    }
+    .sbg-ticket-stub {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
+
+/* Perforation Notches */
+.sbg-notch-top, .sbg-notch-bottom {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    background-color: var(--sbg-gray-bg);
+    border-radius: 50%;
+    z-index: 10;
+}
+
+.sbg-notch-top {
+    top: -14px;
+    right: 306px;
+}
+
+.sbg-notch-bottom {
+    bottom: -14px;
+    right: 306px;
+}
+
+@media (max-width: 860px) {
+    .sbg-notch-top, .sbg-notch-bottom {
+        display: none;
+    }
+}
+
+/* Station Route Nodes */
+.sbg-route-flow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 14px;
+    border: 1px solid var(--sbg-border);
+}
+
+.sbg-station-point {
+    text-align: center;
+}
+
+.sbg-station-city {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--sbg-primary);
+}
+
+.sbg-station-time {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.sbg-route-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--sbg-accent);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.sbg-route-arrow-line {
+    width: 120px;
+    height: 2px;
+    background: repeating-linear-gradient(to right, var(--sbg-accent) 0, var(--sbg-accent) 6px, transparent 6px, transparent 10px);
+    margin: 6px 0;
+}
+
+/* Info Grid */
+.sbg-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+    margin-top: 1.5rem;
+}
+
+.sbg-info-item label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--sbg-text-muted);
+    font-weight: 600;
+    margin-bottom: 2px;
+    display: block;
+}
+
+.sbg-info-item .value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* QR Code Section */
+.sbg-qr-box {
+    background: #ffffff;
+    padding: 14px;
+    border-radius: 16px;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.sbg-ticket-status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sbg-status-active {
+    background-color: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.sbg-status-used {
+    background-color: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
+
+.sbg-status-expired {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+/* Watermark */
+.sbg-ticket-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: rgba(220, 38, 38, 0.22);
+    border: 5px solid rgba(220, 38, 38, 0.25);
+    padding: 10px 30px;
+    border-radius: 14px;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    z-index: 5;
+    white-space: nowrap;
+}
+
+/* Wake Lock Banner */
+.sbg-wakelock-banner {
+    background-color: #fffbeb;
+    border: 1px solid #fef3c7;
+    color: #92400e;
+    font-size: 0.825rem;
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 1rem;
+}

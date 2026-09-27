@@ -1,0 +1,35 @@
+## Visual Studio / .NET .gitignore
+.vs/
+.vscode/
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userprefs
+
+# ASP.NET Core
+appsettings.local.json
+_ReSharper*/
+*.lock.json
+project.lock.json
+
+# Logs
+*.log

@@ -1,0 +1,167 @@
+@model WebApplication1.Models.ViewModels.TicketDetailViewModel
+@{
+    ViewData["Title"] = "Chi tiết Vé điện tử & Mã QR";
+}
+
+<div class="container sbg-ticket-wrapper">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill btn-sm">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+        <div class="d-flex gap-2">
+            <button id="btnDownloadTicket" class="btn btn-outline-success btn-sm rounded-pill fw-semibold shadow-sm">
+                <i class="bi bi-download"></i> Lưu ảnh vé vào máy (Offline)
+            </button>
+            <button id="btnPrintTicket" class="btn btn-outline-dark btn-sm rounded-pill fw-semibold shadow-sm">
+                <i class="bi bi-printer"></i> In vé
+            </button>
+        </div>
+    </div>
+
+    <div class="sbg-wakelock-banner shadow-sm mb-3">
+        <i class="bi bi-brightness-high-fill fs-5 text-warning"></i>
+        <div class="flex-grow-1">
+            <span id="wakeLockStatus" class="fw-semibold">💡 Màn hình đã tự động giữ sáng tối đa để máy quét QR nhận diện nhanh nhất.</span>
+            <span class="d-none d-md-inline text-muted small ms-1">(Màn hình sẽ không tự khóa khi bạn đang mở trang này)</span>
+        </div>
+    </div>
+
+    <div class="sbg-ticket-card" id="printableTicket">
+        <div class="sbg-notch-top"></div>
+        <div class="sbg-notch-bottom"></div>
+
+        @if (Model.Status == "USED")
+        {
+            <div class="sbg-ticket-watermark" style="color: rgba(100, 116, 139, 0.25); border-color: rgba(100, 116, 139, 0.3);">
+                ĐÃ SOÁT VÉ
+            </div>
+        }
+        else if (Model.Status == "EXPIRED")
+        {
+            <div class="sbg-ticket-watermark">
+                HẾT HẠN
+            </div>
+        }
+
+        <div class="sbg-ticket-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-bus-front-fill fs-2"></i>
+                <div>
+                    <h5 class="mb-0 fw-bold">SmartBus Go - Vé Xe Buýt Điện Tử</h5>
+                    <span class="small opacity-75">Mã đặt chỗ: <strong>@Model.BookingCode</strong></span>
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="sbg-ticket-route-badge">
+                    <i class="bi bi-geo-alt-fill text-warning"></i> Tuyến: @Model.RouteCode
+                </div>
+                <div class="small opacity-75 mt-1">Ngày đặt: @Model.BookingTime.ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+        </div>
+
+        <div class="sbg-ticket-body">
+            <div class="sbg-ticket-main">
+                <h6 class="text-muted text-uppercase fw-bold small mb-2">Hành trình chuyến đi</h6>
+                <h4 class="fw-bold text-dark mb-3">@Model.RouteName</h4>
+
+                <div class="sbg-route-flow">
+                    <div class="sbg-station-point text-start">
+                        <span class="text-muted small d-block">ĐIỂM ĐÓN</span>
+                        <div class="sbg-station-time">@Model.DepartureTime.ToString(@"hh\:mm")</div>
+                        <div class="sbg-station-city">@Model.BoardingStopName</div>
+                        <div class="text-muted small">@Model.BoardingStopAddress</div>
+                    </div>
+
+                    <div class="sbg-route-arrow px-3">
+                        <span>~@Model.EstimatedDuration phút</span>
+                        <div class="sbg-route-arrow-line"></div>
+                        <i class="bi bi-arrow-right-circle-fill fs-5"></i>
+                    </div>
+
+                    <div class="sbg-station-point text-end">
+                        <span class="text-muted small d-block">ĐIỂM TRẢ</span>
+                        <div class="sbg-station-time">@(Model.ArrivalTime.HasValue ? Model.ArrivalTime.Value.ToString(@"hh\:mm") : "--:--")</div>
+                        <div class="sbg-station-city">@Model.DropOffStopName</div>
+                        <div class="text-muted small">@Model.DropOffStopAddress</div>
+                    </div>
+                </div>
+
+                <div class="sbg-info-grid">
+                    <div class="sbg-info-item">
+                        <label>Ngày khởi hành</label>
+                        <div class="value text-success"><i class="bi bi-calendar2-check me-1"></i>@Model.TripDate.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <div class="sbg-info-item">
+                        <label>Số ghế</label>
+                        <div class="value text-primary fs-5 fw-bold"><i class="bi bi-person-workspace me-1"></i>@Model.SeatNumber</div>
+                    </div>
+                    <div class="sbg-info-item">
+                        <label>Loại xe & Biển số</label>
+                        <div class="value">@Model.BusTypeName (@Model.LicensePlate)</div>
+                    </div>
+                    <div class="sbg-info-item">
+                        <label>Giá vé</label>
+                        <div class="value text-danger">@Model.Price.ToString("N0") VNĐ <span class="badge bg-success small fw-normal ms-1">Đã thanh toán</span></div>
+                    </div>
+                    <div class="sbg-info-item">
+                        <label>Hành khách</label>
+                        <div class="value">@Model.PassengerName</div>
+                    </div>
+                    <div class="sbg-info-item">
+                        <label>Số điện thoại</label>
+                        <div class="value">@Model.PassengerPhone</div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="small text-muted d-block">Bác tài phụ trách:</span>
+                        <span class="fw-semibold text-dark">@Model.DriverName (@Model.DriverPhone)</span>
+                    </div>
+                    <a href="#" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="alert('Đang mở bản đồ GPS theo dõi vị trí xe ' + '@Model.LicensePlate' + ' trong thời gian thực...'); return false;">
+                        <i class="bi bi-geo-alt-fill text-danger me-1"></i> Xem vị trí xe trực tiếp
+                    </a>
+                </div>
+            </div>
+
+            <div class="sbg-ticket-stub">
+                <div class="mb-3">
+                    @if (Model.Status == "ACTIVE")
+                    {
+                        <span class="sbg-ticket-status-badge sbg-status-active">
+                            <i class="bi bi-check-circle-fill"></i> Vé Hợp Lệ
+                        </span>
+                    }
+                    else if (Model.Status == "USED")
+                    {
+                        <span class="sbg-ticket-status-badge sbg-status-used">
+                            <i class="bi bi-patch-check"></i> Đã Check-in
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="sbg-ticket-status-badge sbg-status-expired">
+                            <i class="bi bi-exclamation-triangle"></i> Hết hạn
+                        </span>
+                    }
+                </div>
+
+                <div class="sbg-qr-box" id="ticketQrCanvas"></div>
+
+                <div class="text-center">
+                    <span class="text-muted small d-block">Mã vé (Ticket Code):</span>
+                    <strong class="fs-6 text-dark" id="ticketCodeDisplay">@Model.TicketCode</strong>
+                    <p class="text-muted small mt-2 mb-0">Xuất trình mã này cho tài xế hoặc phụ xe khi lên xe buýt.</p>
+                </div>
+
+                <input type="hidden" id="qrPayloadData" value="@Model.QrDataPayload" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="~/js/ticket-qr.js" asp-append-version="true"></script>
+}

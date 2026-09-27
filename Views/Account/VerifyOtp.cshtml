@@ -1,0 +1,120 @@
+@model WebApplication1.Models.ViewModels.VerifyOtpViewModel
+@{
+    ViewData["Title"] = "Xác thực mã OTP";
+}
+
+<div class="container">
+    <div class="sbg-auth-card text-center" style="max-width: 480px;">
+        <div class="d-inline-flex p-3 rounded-circle mb-3" style="background-color: #ecfdf5;">
+            <i class="bi bi-envelope-check-fill text-success" style="font-size: 2.2rem;"></i>
+        </div>
+
+        <h2 class="sbg-auth-title">Xác Thực Tài Khoản</h2>
+        <p class="text-muted small">
+            Chúng tôi đã gửi mã xác thực 6 chữ số đến địa chỉ email:<br />
+            <strong class="text-dark">@Model.Email</strong>
+        </p>
+
+        <form asp-action="VerifyOtp" method="post" id="otpForm">
+            <input type="hidden" asp-for="Email" />
+            <input type="hidden" asp-for="OtpCode" id="hiddenOtpInput" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+            <div class="sbg-otp-container">
+                <input type="text" maxlength="1" class="sbg-otp-digit" autofocus data-index="0" inputmode="numeric" />
+                <input type="text" maxlength="1" class="sbg-otp-digit" data-index="1" inputmode="numeric" />
+                <input type="text" maxlength="1" class="sbg-otp-digit" data-index="2" inputmode="numeric" />
+                <input type="text" maxlength="1" class="sbg-otp-digit" data-index="3" inputmode="numeric" />
+                <input type="text" maxlength="1" class="sbg-otp-digit" data-index="4" inputmode="numeric" />
+                <input type="text" maxlength="1" class="sbg-otp-digit" data-index="5" inputmode="numeric" />
+            </div>
+
+            <span asp-validation-for="OtpCode" class="text-danger small d-block mb-3"></span>
+
+            <button type="submit" class="btn sbg-btn-primary w-100 py-2 mb-3" id="btnSubmitOtp">
+                <i class="bi bi-check-lg me-1"></i> Xác nhận & Kích hoạt tài khoản
+            </button>
+        </form>
+
+        <div class="mt-3 text-muted small">
+            <span>Không nhận được mã? </span>
+            <button id="btnResendOtp" class="btn btn-link text-success p-0 fw-semibold text-decoration-none small" disabled>
+                Gửi lại mã (<span id="otpTimer">60</span>s)
+            </button>
+        </div>
+
+        <div class="mt-4 pt-3 border-top">
+            <a asp-action="Register" class="text-muted text-decoration-none small">
+                <i class="bi bi-arrow-left"></i> Đổi địa chỉ email khác
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const digits = document.querySelectorAll(".sbg-otp-digit");
+            const hiddenInput = document.getElementById("hiddenOtpInput");
+
+            digits.forEach((digit, index) => {
+                digit.addEventListener("input", (e) => {
+                    const val = e.target.value;
+                    if (val.length === 1 && index < digits.length - 1) {
+                        digits[index + 1].focus();
+                    }
+                    syncOtp();
+                });
+
+                digit.addEventListener("keydown", (e) => {
+                    if (e.key === "Backspace" && !digit.value && index > 0) {
+                        digits[index - 1].focus();
+                    }
+                });
+
+                digit.addEventListener("paste", (e) => {
+                    e.preventDefault();
+                    const pastedData = (e.clipboardData || window.clipboardData).getData('text').trim();
+                    if (/^\d{6}$/.test(pastedData)) {
+                        pastedData.split('').forEach((char, i) => {
+                            if (digits[i]) digits[i].value = char;
+                        });
+                        digits[5].focus();
+                        syncOtp();
+                    }
+                });
+            });
+
+            function syncOtp() {
+                let code = "";
+                digits.forEach(d => code += d.value);
+                hiddenInput.value = code;
+            }
+
+            let timeLeft = 60;
+            const timerEl = document.getElementById("otpTimer");
+            const resendBtn = document.getElementById("btnResendOtp");
+
+            const interval = setInterval(() => {
+                timeLeft--;
+                if (timerEl) timerEl.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    if (resendBtn) {
+                        resendBtn.disabled = false;
+                        resendBtn.innerHTML = "Gửi lại mã ngay";
+                    }
+                }
+            }, 1000);
+
+            if (resendBtn) {
+                resendBtn.addEventListener("click", function () {
+                    alert("Đã gửi mã xác thực OTP mới đến email của bạn.");
+                    location.reload();
+                });
+            }
+        });
+    </script>
+}

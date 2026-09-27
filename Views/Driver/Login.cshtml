@@ -1,0 +1,64 @@
+@model WebApplication1.Models.ViewModels.DriverLoginViewModel
+@{
+    ViewData["Title"] = "Cổng đăng nhập Bác tài";
+}
+
+<div class="container">
+    <div class="sbg-auth-card" style="border-top: 5px solid var(--sbg-primary);">
+        <div class="text-center mb-4">
+            <div class="d-inline-flex p-3 rounded-circle mb-2" style="background-color: #f1f5f9;">
+                <i class="bi bi-person-badge-fill text-primary" style="font-size: 2.2rem; color: var(--sbg-primary) !important;"></i>
+            </div>
+            <h2 class="sbg-auth-title" style="font-size: 1.5rem;">Cổng Đăng Nhập Bác Tài</h2>
+            <span class="badge bg-secondary mb-2">Hệ thống điều hành SmartBus Go Driver</span>
+            <p class="text-muted small">Khu vực dành riêng cho Đội ngũ Tài xế và Phụ xe nhận ca chạy & soát vé</p>
+        </div>
+
+        <div class="alert alert-warning py-2 px-3 small rounded-3 d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-shield-exclamation text-warning fs-5"></i>
+            <div>Tài khoản tài xế do quản trị viên bến xe cấp. Không chia sẻ mật khẩu cho người khác.</div>
+        </div>
+
+        <form asp-action="Login" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="DriverIdentifier" class="form-label fw-semibold text-dark small"></label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-card-text text-muted"></i></span>
+                    <input asp-for="DriverIdentifier" class="form-control border-start-0 ps-0" placeholder="vd: TX-001 hoặc 0988..." />
+                </div>
+                <span asp-validation-for="DriverIdentifier" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label fw-semibold text-dark small"></label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
+                    <input asp-for="Password" type="password" class="form-control border-start-0 ps-0" placeholder="Mật khẩu được cấp" />
+                </div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3 form-check">
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label text-muted small"></label>
+            </div>
+
+            <button type="submit" class="btn sbg-btn-primary w-100 py-2 mb-3">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Vào ca làm việc
+            </button>
+        </form>
+
+        <div class="text-center mt-3 pt-3 border-top">
+            <span class="text-muted small">Bạn là Hành khách đặt vé?</span><br />
+            <a asp-controller="Account" asp-action="Login" class="text-decoration-none fw-semibold small text-success">
+                &larr; Quay về trang đăng nhập Hành khách
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
