@@ -56,5 +56,12 @@ namespace WebApplication1.Controllers
 
             return View(model);
         }
+
+        // GET: /Ticket/Payment
+        [HttpGet]
+        public IActionResult Payment()
+        {
+            return View();
+        }
     }
 }
