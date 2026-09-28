@@ -2,10 +2,8 @@
     ViewData["Title"] = "Đặt Vé Xe Buýt Thông Minh - SmartBus Go";
 }
 
-<!-- Hero Section -->
 <div class="py-5" style="background: linear-gradient(180deg, #ffffff 0%, var(--sbg-gray-bg) 100%);">
     <div class="container text-center">
-        <!-- Badge -->
         <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3" style="background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: 0.85rem; font-weight: 600;">
             <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
             <span>CÔNG NGHỆ ĐẶT CHỖ THỜI GIAN THỰC 4.0</span>
@@ -13,7 +11,6 @@
             <span><i class="bi bi-lightning-charge-fill text-warning"></i> Đội xe Limousine & Green Express</span>
         </div>
 
-        <!-- Heading -->
         <h1 class="display-5 fw-bolder mb-3" style="color: #0f172a; letter-spacing: -0.5px;">
             Đặt Vé Xe Buýt Thông Minh<br />
             <span style="color: var(--sbg-primary);">An Toàn, Đúng Giờ & Tiện Nghi</span>
@@ -22,91 +19,67 @@
             Hơn 3,000+ tuyến xe liên tỉnh & nội đô toàn quốc. Định vị GPS trực tiếp, giữ đúng số ghế cam kết 100%, bảo vệ hành trình toàn diện.
         </p>
 
-        <!-- Recent Searches Pills -->
-        <div class="d-flex flex-wrap justify-content-center gap-2 mb-4 small text-muted">
-            <span class="d-flex align-items-center gap-1"><i class="bi bi-clock-history"></i> Tìm gần đây:</span>
-            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-xs">Hà Nội &rarr; Đà Nẵng 24/10</span>
-            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-xs">TP. Hồ Chí Minh &rarr; Đà Lạt Cuối tuần</span>
-            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-xs">Hà Nội &rarr; Hải Phòng Vé ngày</span>
-        </div>
-
-        <!-- Search Card -->
         <div class="card border-0 shadow-lg mx-auto text-start p-3 p-md-4 mb-5" style="max-width: 1050px; border-radius: 20px;">
-            <!-- Tabs -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
-                <div class="nav nav-pills gap-2" role="tablist">
-                    <button class="nav-link active rounded-pill px-3 py-1 small fw-semibold" style="background-color: var(--sbg-primary);">
-                        &rarr; Một chiều
-                    </button>
-                    <button class="nav-link text-dark rounded-pill px-3 py-1 small fw-semibold">
-                        &harr; Khứ hồi
-                    </button>
-                    <button class="nav-link text-dark rounded-pill px-3 py-1 small fw-semibold">
-                        <i class="bi bi-bus-front"></i> Thuê xe hợp đồng / Bao chuyến
-                    </button>
-                </div>
-                <div class="text-muted small">
-                    <i class="bi bi-sliders"></i> Tùy chọn nâng cao (Loại xe, Tiện ích, Ghế ngồi)
-                </div>
-            </div>
-
-            <!-- Form Fields Grid -->
-            <div class="row g-3 align-items-center">
-                <!-- Điểm đi -->
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label text-muted small fw-bold mb-1">ĐIỂM ĐI</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-success"><i class="bi bi-record-circle-fill"></i></span>
-                        <input type="text" class="form-control border-start-0 fw-bold" value="Hà Nội" placeholder="Chọn điểm đi" />
+            <form method="get" asp-controller="Trip" asp-action="Search">
+                <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
+                    <div class="nav nav-pills gap-2" role="tablist">
+                        <button type="button" class="nav-link active rounded-pill px-3 py-1 small fw-semibold" style="background-color: var(--sbg-primary);">
+                            &rarr; Một chiều
+                        </button>
+                        <button type="button" class="nav-link text-dark rounded-pill px-3 py-1 small fw-semibold">
+                            &harr; Khứ hồi
+                        </button>
+                        <button type="button" class="nav-link text-dark rounded-pill px-3 py-1 small fw-semibold">
+                            <i class="bi bi-bus-front"></i> Thuê xe hợp đồng / Bao chuyến
+                        </button>
                     </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Bến Mỹ Đình / Giáp Bát / Nước Ngầm</div>
-                </div>
-
-                <!-- Điểm đến -->
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label text-muted small fw-bold mb-1 d-flex justify-content-between">
-                        <span>ĐIỂM ĐẾN</span>
-                        <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">Tuyến Hot 4.9</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-danger"><i class="bi bi-geo-alt-fill"></i></span>
-                        <input type="text" class="form-control border-start-0 fw-bold" value="Đà Nẵng" placeholder="Chọn điểm đến" />
+                    <div class="text-muted small">
+                        <i class="bi bi-sliders"></i> Tùy chọn nâng cao (Loại xe, Tiện ích, Ghế ngồi)
                     </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Bến xe Trung Tâm / Trả nội thành</div>
                 </div>
 
-                <!-- Ngày đi -->
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label text-muted small fw-bold mb-1">NGÀY & GIỜ ĐI</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar3"></i></span>
-                        <input type="text" class="form-control border-start-0 fw-bold" value="24/10/2025" />
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label text-muted small fw-bold mb-1">ĐIỂM ĐI</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-success"><i class="bi bi-record-circle-fill"></i></span>
+                            <input type="text" name="from" class="form-control border-start-0 fw-bold" value="Hà Nội" placeholder="Chọn điểm đi" required />
+                        </div>
+                        <div class="text-muted small mt-1" style="font-size: 0.75rem;">Bến Mỹ Đình / Giáp Bát / Nước Ngầm</div>
                     </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Thứ 6 (Cả ngày)</div>
-                </div>
 
-                <!-- Hành khách & Ghế -->
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label text-muted small fw-bold mb-1">HÀNH KHÁCH & GHẾ</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person-fill"></i></span>
-                        <input type="text" class="form-control border-start-0 fw-bold" value="01 Khách" />
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label text-muted small fw-bold mb-1 d-flex justify-content-between">
+                            <span>ĐIỂM ĐẾN</span>
+                            <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">Tuyến Hot 4.9</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-danger"><i class="bi bi-geo-alt-fill"></i></span>
+                            <input type="text" name="to" class="form-control border-start-0 fw-bold" value="Hải Phòng" placeholder="Chọn điểm đến" required />
+                        </div>
+                        <div class="text-muted small mt-1" style="font-size: 0.75rem;">Bến xe Trung Tâm / Trả nội thành</div>
                     </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Limousine VIP Cung Điện</div>
-                </div>
 
-                <!-- Nút Tìm Xe -->
-                <div class="col-lg-2 col-md-12">
-                    <label class="form-label d-none d-lg-block mb-1">&nbsp;</label>
-                    <a asp-controller="Ticket" asp-action="Detail" class="btn sbg-btn-primary w-100 py-2 d-flex flex-column align-items-center justify-content-center shadow-sm">
-                        <span class="fw-bold"><i class="bi bi-search"></i> TÌM XE</span>
-                        <span style="font-size: 0.7rem; opacity: 0.85;">Thời gian thực</span>
-                    </a>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label text-muted small fw-bold mb-1">NGÀY & GIỜ ĐI</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar3"></i></span>
+                            <input type="date" name="date" class="form-control border-start-0 fw-bold" value="2026-09-29" required />
+                        </div>
+                        <div class="text-muted small mt-1" style="font-size: 0.75rem;">Thứ 3 (Cả ngày)</div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label d-none d-lg-block mb-1">&nbsp;</label>
+                        <button type="submit" class="btn sbg-btn-primary w-100 py-2 d-flex flex-column align-items-center justify-content-center shadow-sm">
+                            <span class="fw-bold"><i class="bi bi-search"></i> TÌM XE NGAY</span>
+                            <span style="font-size: 0.7rem; opacity: 0.85;">Thời gian thực</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
 
-        <!-- Tuyến xe nổi bật -->
         <div class="mt-4 text-start">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-graph-up-arrow text-success"></i> Tuyến xe nổi bật & Giá tốt hôm nay</h5>
@@ -115,32 +88,40 @@
 
             <div class="row g-3">
                 <div class="col-md-3 col-sm-6">
-                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
-                        <span class="badge bg-success-subtle text-success w-auto align-self-start mb-2">Giảm 15% mùa lúa chín</span>
-                        <h6 class="fw-bold mb-1">Hà Nội &rarr; Sa Pa</h6>
-                        <span class="text-muted small">Thời gian: 5h30p • 32 chuyến/ngày</span>
-                    </div>
+                    <a asp-controller="Trip" asp-action="Search" asp-route-from="Hà Nội" asp-route-to="Sa Pa" class="text-decoration-none text-dark">
+                        <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
+                            <span class="badge bg-success-subtle text-success w-auto align-self-start mb-2">Giảm 15% mùa lúa chín</span>
+                            <h6 class="fw-bold mb-1">Hà Nội &rarr; Sa Pa</h6>
+                            <span class="text-muted small">Thời gian: 5h30p • 32 chuyến/ngày</span>
+                        </div>
+                    </a>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
-                        <span class="badge bg-primary-subtle text-primary w-auto align-self-start mb-2">Limousine VIP Cung điện</span>
-                        <h6 class="fw-bold mb-1">Sài Gòn &rarr; Đà Lạt</h6>
-                        <span class="text-muted small">Thời gian: 6h30p • Có chuyến mỗi 45p</span>
-                    </div>
+                    <a asp-controller="Trip" asp-action="Search" asp-route-from="Sài Gòn" asp-route-to="Đà Lạt" class="text-decoration-none text-dark">
+                        <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
+                            <span class="badge bg-primary-subtle text-primary w-auto align-self-start mb-2">Limousine VIP Cung điện</span>
+                            <h6 class="fw-bold mb-1">Sài Gòn &rarr; Đà Lạt</h6>
+                            <span class="text-muted small">Thời gian: 6h30p • Có chuyến mỗi 45p</span>
+                        </div>
+                    </a>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
-                        <span class="badge bg-info-subtle text-info w-auto align-self-start mb-2">Qua hầm Hải Vân siêu tốc</span>
-                        <h6 class="fw-bold mb-1">Đà Nẵng &rarr; Huế</h6>
-                        <span class="text-muted small">Thời gian: 1h45p • Xe chạy liên tục</span>
-                    </div>
+                    <a asp-controller="Trip" asp-action="Search" asp-route-from="Đà Nẵng" asp-route-to="Huế" class="text-decoration-none text-dark">
+                        <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
+                            <span class="badge bg-info-subtle text-info w-auto align-self-start mb-2">Qua hầm Hải Vân siêu tốc</span>
+                            <h6 class="fw-bold mb-1">Đà Nẵng &rarr; Huế</h6>
+                            <span class="text-muted small">Thời gian: 1h45p • Xe chạy liên tục</span>
+                        </div>
+                    </a>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
-                        <span class="badge bg-warning-subtle text-warning w-auto align-self-start mb-2">Đón & Trả tận nhà</span>
-                        <h6 class="fw-bold mb-1">Sài Gòn &rarr; Vũng Tàu</h6>
-                        <span class="text-muted small">Thời gian: 2h00p • Cao tốc Long Thành</span>
-                    </div>
+                    <a asp-controller="Trip" asp-action="Search" asp-route-from="Hà Nội" asp-route-to="Hải Phòng" class="text-decoration-none text-dark">
+                        <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
+                            <span class="badge bg-warning-subtle text-warning w-auto align-self-start mb-2">Tuyến Hot Giá Tốt</span>
+                            <h6 class="fw-bold mb-1">Hà Nội &rarr; Hải Phòng</h6>
+                            <span class="text-muted small">Thời gian: 2h00p • Cao tốc 5B</span>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>
