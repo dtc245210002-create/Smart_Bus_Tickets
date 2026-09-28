@@ -371,3 +371,188 @@ body {
     gap: 8px;
     margin-top: 1rem;
 }
+
+/* Search Header Bar */
+.sbg-search-header-bar {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--sbg-border);
+    padding: 1rem 1.5rem;
+}
+
+/* Sidebar Filter Box */
+.sbg-filter-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid var(--sbg-border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sbg-filter-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--sbg-primary);
+    margin-bottom: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sbg-radio-option {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+/* Trip Card */
+.sbg-trip-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid var(--sbg-border);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.sbg-trip-card:hover {
+    box-shadow: 0 8px 25px rgba(10, 77, 70, 0.1);
+    border-color: #cbd5e1;
+}
+
+.sbg-trip-banner-flash {
+    background: linear-gradient(90deg, #0284c7, #0ea5e9);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 6px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sbg-trip-main-info {
+    padding: 1.5rem;
+}
+
+.sbg-trip-operator-img {
+    width: 140px;
+    height: 105px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.sbg-timeline-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.sbg-timeline-line {
+    width: 2px;
+    height: 35px;
+    background-color: #cbd5e1;
+    margin-left: 5px;
+}
+
+.sbg-btn-select-seat {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 10px;
+    padding: 8px 24px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+    transition: all 0.2s ease;
+}
+
+.sbg-btn-select-seat:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(217, 119, 6, 0.4);
+}
+
+.sbg-seat-accordion {
+    background: #f8fafc;
+    border-top: 1px dashed var(--sbg-border);
+    padding: 1.5rem;
+    display: none;
+}
+
+.sbg-seat-accordion.show {
+    display: block;
+    animation: fadeInSlide 0.3s ease-in-out;
+}
+
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.sbg-seat-grid-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    max-width: 320px;
+    margin: 1rem auto;
+    background: #ffffff;
+    padding: 1.2rem;
+    border-radius: 16px;
+    border: 1px solid var(--sbg-border);
+}
+
+.sbg-seat-box {
+    width: 45px;
+    height: 48px;
+    border-radius: 8px;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #ffffff;
+    color: #334155;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.sbg-seat-box:hover:not(.booked) {
+    border-color: var(--sbg-primary);
+    transform: scale(1.05);
+}
+
+.sbg-seat-box.selected {
+    background: var(--sbg-accent);
+    color: #ffffff;
+    border-color: #059669;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.sbg-seat-box.booked {
+    background: #e2e8f0;
+    color: #94a3b8;
+    border-color: #cbd5e1;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.sbg-seat-legend {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
