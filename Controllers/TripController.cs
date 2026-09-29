@@ -30,10 +30,13 @@ namespace WebApplication1.Controllers
             // Mặc định ngày khởi hành là ngày hiện tại hôm nay
             var searchDate = date ?? DateTime.Today;
 
+            var formattedFrom = FormatToTitleCase(from);
+            var formattedTo = FormatToTitleCase(to);
+
             var model = new TripSearchViewModel
             {
-                From = from?.Trim() ?? string.Empty,
-                To = to?.Trim() ?? string.Empty,
+                From = formattedFrom,
+                To = formattedTo,
                 DepartureDate = searchDate,
                 SortBy = sort,
                 BusTypeFilter = busType,
@@ -52,7 +55,7 @@ namespace WebApplication1.Controllers
                 return View(model);
             }
 
-            // Kiểm tra điểm đi trùng điểm đến
+            // Kiểm tra điểm đi không được trùng điểm đến (bỏ qua hoa thường và khoảng trắng)
             if (string.Equals(model.From, model.To, StringComparison.OrdinalIgnoreCase))
             {
                 model.ErrorMessage = "Điểm đi và điểm đến không được trùng nhau! Vui lòng chọn lộ trình khác.";
@@ -335,6 +338,13 @@ namespace WebApplication1.Controllers
             });
 
             return trips;
+        }
+
+        private static string FormatToTitleCase(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            var textInfo = new System.Globalization.CultureInfo("vi-VN", false).TextInfo;
+            return textInfo.ToTitleCase(text.Trim().ToLower());
         }
     }
 }

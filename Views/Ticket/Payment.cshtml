@@ -1,0 +1,517 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+
+<html lang="vi" style=""><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>@@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"secondary":"#565e74","on-tertiary":"#ffffff","secondary-fixed":"#dae2fd","on-primary-fixed-variant":"#005049","on-secondary":"#ffffff","surface":"#f7f9fb","primary":"#00685f","on-primary":"#ffffff","on-surface":"#191c1e","on-surface-variant":"#3d4947","surface-variant":"#e0e3e5","secondary-fixed-dim":"#bec6e0","surface-tint":"#006a61","on-secondary-fixed":"#131b2e","inverse-on-surface":"#eff1f3","error-container":"#ffdad6","inverse-primary":"#6bd8cb","surface-container-lowest":"#ffffff","on-primary-container":"#f4fffc","on-error":"#ffffff","on-error-container":"#93000a","on-secondary-fixed-variant":"#3f465c","tertiary-fixed-dim":"#4edea3","tertiary-container":"#00855b","outline-variant":"#bcc9c6","surface-container-high":"#e6e8ea","tertiary":"#006947","primary-container":"#008378","on-tertiary-fixed-variant":"#005236","background":"#f7f9fb","on-tertiary-fixed":"#002113","surface-container-highest":"#e0e3e5","surface-container":"#eceef0","on-background":"#191c1e","primary-fixed":"#89f5e7","on-secondary-container":"#5c647a","inverse-surface":"#2d3133","primary-fixed-dim":"#6bd8cb","error":"#ba1a1a","secondary-container":"#dae2fd","outline":"#6d7a77","surface-bright":"#f7f9fb","surface-container-low":"#f2f4f6","surface-dim":"#d8dadc","on-primary-fixed":"#00201d","tertiary-fixed":"#6ffbbe","on-tertiary-container":"#f5fff6"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-sm":"0.5rem","margin-sm":"1rem","space-xl":"2.5rem","margin-lg":"3rem","gutter":"1.5rem","gutter-lg":"2rem","space-md":"1rem","gutter-sm":"1rem","space-xs":"0.25rem","margin":"1.5rem","space-lg":"1.5rem"},"fontFamily":{"numeric-data":["Inter"],"headline-md":["Plus Jakarta Sans"],"body-lg":["Inter"],"display-lg":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"body-md":["Inter"],"headline-lg-mobile":["Plus Jakarta Sans"],"label-md":["Inter"],"title-md":["Inter"],"body-sm":["Inter"],"label-lg":["Inter"]},"fontSize":{"numeric-data":["18px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"700"}],"headline-md":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"display-lg":["48px",{"lineHeight":"56px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.015em","fontWeight":"700"}],"headline-sm":["20px",{"lineHeight":"28px","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"headline-lg-mobile":["26px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"700"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"500"}],"title-md":["16px",{"lineHeight":"24px","fontWeight":"600"}],"body-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased selection:bg-primary selection:text-on-primary"><header class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+<!-- Top auxiliary announcement bar -->
+<div class="border-b border-gray-100 text-[13px] text-gray-600 bg-white">
+<div class="max-w-7xl mx-auto px-4 lg:px-8 py-1.5 flex items-center justify-between">
+<div class="flex items-center gap-2 text-gray-600">
+<span class="material-symbols-outlined text-primary text-[17px]">verified_user</span>
+<span class="">Đặt vé thông minh 4.0</span>
+<span class="text-gray-400 mx-1">•</span>
+<span class="material-symbols-outlined text-gray-500 text-[17px]">directions_bus</span>
+<span class="">Hơn 3,000+ chuyến xe toàn quốc</span>
+</div>
+<div class="flex items-center gap-6 text-gray-700">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[17px]">call</span>
+<span class="">Hotline: <strong class="text-gray-900 font-bold">1900 6868</strong></span>
+</div>
+<div class="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[17px] text-gray-500">language</span>
+<span class="">VND | VI</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main navbar row -->
+<div class="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<!-- Brand Logo -->
+<a class="flex items-center gap-3" href="/Home/Index">
+<div class="text-[#008378] flex items-center justify-center">
+<span class="material-symbols-outlined text-[38px] text-[#008378]">directions_bus</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[24px] font-bold text-[#0d3b2e] tracking-tight leading-none font-headline-sm">SmartBus<span class="text-[#008378]">Go</span></span>
+<span class="mt-1 bg-emerald-50 text-[#008378] text-[10px] font-semibold px-2 py-0.5 rounded leading-tight w-fit">Vé xe buýt thông minh</span>
+</div>
+</a>
+<!-- Nav links -->
+<nav class="flex items-center gap-6 ml-4">
+<a class="font-medium text-[15px] text-gray-800 hover:text-primary transition-colors" href="/Home/Index">Trang chủ</a>
+<a class="font-medium text-[15px] text-primary font-bold hover:text-primary transition-colors" href="/Ticket/Payment">Thanh toán vé (Demo)</a>
+<a class="font-medium text-[15px] text-gray-800 hover:text-primary transition-colors" href="/Ticket/Detail">Vé điện tử (Demo)</a>
+</nav>
+</div>
+<!-- Right actions -->
+<div class="flex items-center gap-3">
+<button class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#094c3b] hover:bg-[#073c2e] text-white font-semibold text-[14px] shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[19px]">login</span>
+<span class="">Đăng nhập / Đăng ký</span>
+</button>
+<button class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-[14px] transition-colors" type="button">
+<span class="material-symbols-outlined text-[19px] text-gray-600">badge</span>
+<span class="">Bác tài</span>
+</button>
+</div>
+</div>
+</header><main class="w-full pt-[104px] bg-[#f4f7f6] min-h-screen pb-16">
+<!-- Top Progress Stepper & Countdown Bar Section -->
+<section class="bg-white border-b border-gray-200 shadow-sm sticky top-[104px] z-40">
+<div class="max-w-7xl mx-auto px-4 lg:px-8 py-3.5">
+<!-- Steps & Timer Flex Container -->
+<div class="flex flex-col lg:flex-row items-center justify-between gap-4">
+<!-- Stepper -->
+<div class="flex items-center gap-2 sm:gap-4 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 text-sm">
+<!-- Step 1 -->
+<div class="flex items-center gap-2 text-primary font-medium whitespace-nowrap">
+<span class="w-6 h-6 rounded-full bg-emerald-100 text-primary flex items-center justify-center font-bold text-xs">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</span>
+<span>Bước 1: Chọn tuyến &amp; ghế</span>
+</div>
+<span class="w-6 h-px bg-gray-300 hidden sm:inline-block"></span>
+<!-- Step 2 -->
+<div class="flex items-center gap-2 text-primary font-medium whitespace-nowrap">
+<span class="w-6 h-6 rounded-full bg-emerald-100 text-primary flex items-center justify-center font-bold text-xs">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</span>
+<span>Bước 2: Thông tin hành khách</span>
+</div>
+<span class="w-6 h-px bg-gray-300 hidden sm:inline-block"></span>
+<!-- Step 3 (Active) -->
+<div class="flex items-center gap-2 text-gray-900 font-bold whitespace-nowrap">
+<span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs shadow-sm">3</span>
+<span class="text-primary font-semibold">Bước 3: Thanh toán &amp; Xuất vé</span>
+</div>
+</div>
+<!-- Sticky Countdown Timer Warning Badge -->
+<div class="flex items-center gap-3 bg-amber-50 border border-amber-200/80 rounded-xl px-4 py-2 w-full lg:w-auto justify-between lg:justify-end shadow-sm">
+<div class="flex items-center gap-2">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+</span>
+<span class="text-xs sm:text-sm font-semibold text-amber-900">Thời gian giữ vé:</span>
+</div>
+<div class="flex items-center gap-1.5 font-mono text-base sm:text-lg font-bold text-red-600 bg-white px-2.5 py-0.5 rounded-lg border border-red-200 shadow-inner">
+  <span class="material-symbols-outlined text-[19px] text-red-500 animate-spin" style="animation-duration: 4s;">timer</span>
+  <span id="countdown-minutes">10</span>:<span id="countdown-seconds">00</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Alert Warning Ribbon -->
+<div class="max-w-7xl mx-auto px-4 lg:px-8 mt-5">
+<div class="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border-l-4 border-amber-500 p-3.5 rounded-r-xl flex items-center justify-between gap-3 text-amber-950 text-sm">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-amber-600 text-[22px]">notification_important</span>
+<span class="font-medium">Vé của bạn đang được hệ thống tạm giữ an toàn. Vui lòng hoàn tất thanh toán trước khi hết giờ để không bị hủy chỗ!</span>
+</div>
+<span class="hidden md:inline-flex text-xs font-semibold px-2 py-0.5 rounded bg-amber-200 text-amber-900 uppercase tracking-wide">Tự động nhả vé</span>
+</div>
+</div>
+<!-- Main Grid Layout -->
+<div class="max-w-7xl mx-auto px-4 lg:px-8 mt-6">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- LEFT COLUMN: Payment Methods & QR Checkout (65% -> 8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- Payment Methods Card -->
+<div class="bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 sm:p-7">
+<div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
+<h2 class="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2.5 font-headline-sm">
+<span class="material-symbols-outlined text-primary text-[24px]">payments</span>
+              Phương thức thanh toán
+            </h2>
+<span class="text-xs text-gray-500 flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">lock</span> Bảo mật chuẩn PCI-DSS
+            </span>
+</div>
+<!-- Method Tabs / Selector -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+<!-- VietQR (Active) -->
+<button class="relative flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-primary bg-primary/5 text-primary text-center transition-all shadow-sm" type="button">
+<div class="absolute -top-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                Ưu tiên 3s
+              </div>
+<span class="material-symbols-outlined text-[28px] mb-1 text-primary">qr_code_scanner</span>
+<span class="text-xs font-bold leading-tight">VietQR / Ngân hàng</span>
+<span class="text-[10px] text-emerald-700 font-semibold mt-0.5">Tự động duyệt 3s</span>
+</button>
+<!-- Card -->
+<button class="flex flex-col items-center justify-center p-3.5 rounded-xl border border-gray-200 hover:border-gray-300 bg-white text-gray-700 text-center transition-colors" type="button">
+<span class="material-symbols-outlined text-[28px] mb-1 text-gray-500">credit_card</span>
+<span class="text-xs font-semibold leading-tight">Thẻ Quốc Tế</span>
+<span class="text-[10px] text-gray-400 mt-0.5">Visa, Master, JCB</span>
+</button>
+<!-- E-wallet -->
+<button class="flex flex-col items-center justify-center p-3.5 rounded-xl border border-gray-200 hover:border-gray-300 bg-white text-gray-700 text-center transition-colors" type="button">
+<span class="material-symbols-outlined text-[28px] mb-1 text-gray-500">account_balance_wallet</span>
+<span class="text-xs font-semibold leading-tight">Ví MoMo / ZaloPay</span>
+<span class="text-[10px] text-gray-400 mt-0.5">Ví điện tử</span>
+</button>
+<!-- ATM Domestic -->
+<button class="flex flex-col items-center justify-center p-3.5 rounded-xl border border-gray-200 hover:border-gray-300 bg-white text-gray-700 text-center transition-colors" type="button">
+<span class="material-symbols-outlined text-[28px] mb-1 text-gray-500">account_balance</span>
+<span class="text-xs font-semibold leading-tight">Thẻ ATM Napas</span>
+<span class="text-[10px] text-gray-400 mt-0.5">Internet Banking</span>
+</button>
+</div>
+<!-- Active Method Detailed Body: VietQR -->
+<div class="rounded-2xl bg-[#f8fafc] border border-slate-200/90 p-5 sm:p-7">
+<div class="text-center max-w-lg mx-auto mb-6">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-2">
+<span class="material-symbols-outlined text-[15px]">flash_on</span>
+                Giao dịch xử lý tự động 24/7
+              </span>
+<h3 class="text-xl font-bold text-gray-900">Quét mã VietQR để thanh toán nhanh</h3>
+<p class="text-xs sm:text-sm text-gray-600 mt-1">
+                Mở ứng dụng ngân hàng bất kỳ (VCB, BIDV, Techcombank, MB, VPBank...) hoặc ví điện tử để quét mã thanh toán không cần nhập tay.
+              </p>
+</div>
+<!-- Content Area: QR and Bank Details -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+<!-- QR Code Card -->
+<div class="md:col-span-5 flex flex-col items-center justify-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+<!-- Badges above QR -->
+<div class="flex items-center justify-center gap-2 mb-2 w-full">
+<span class="font-extrabold text-[13px] tracking-tight text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">VietQR</span>
+<span class="font-bold text-[11px] text-gray-700 bg-gray-100 px-2 py-0.5 rounded">Napas247</span>
+</div>
+<!-- QR Image from DataStore -->
+<div class="relative group p-1 bg-white rounded-xl">
+<img alt="Mã VietQR thanh toán" class="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-xl border border-slate-200 shadow-sm object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ4SelF7-6s33RCvzZ9aFM_5qeV54DxoPkaa4Rw6ktbXlZJ9y2vnJz6Ln5dtcB9N-txplAteAT-f5WSKCXfu3gBvI7rYucrMz4cssi8pJLyBlXzjtjc7sbydh8I6XnmEylkNWtflWZHCp1AjOCcR40iGvYyT9yhchGUHQLybT6HFiwi8tdO6XMQGw7WuRnb0nSZ7UlPzv-R08-Ms7WsnvpMYBz1bALm-BRQ06LRkuTvyhn1KfNIaSQ2g"/>
+</div>
+<div class="mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-500">
+<span class="material-symbols-outlined text-[16px] text-primary">qr_code_2</span>
+<span>Mã QR tự động cập nhật số tiền &amp; nội dung</span>
+</div>
+</div>
+<!-- Bank Transfer Detailed Breakdown with Copy Actions -->
+<div class="md:col-span-7 flex flex-col gap-3">
+<div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
+                  Hoặc chuyển khoản thủ công theo thông tin:
+                </div>
+<!-- Info Row 1: Bank -->
+<div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
+<div>
+<span class="text-[11px] text-gray-500 block">Ngân hàng thụ hưởng</span>
+<span class="font-bold text-gray-800 text-sm sm:text-base flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      Vietcombank (VCB) - CN Ba Đình
+                    </span>
+</div>
+<span class="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">Miễn phí CK</span>
+</div>
+<!-- Info Row 2: Account Name -->
+<div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
+<div class="pr-2">
+<span class="text-[11px] text-gray-500 block">Chủ tài khoản</span>
+<span class="font-bold text-gray-800 text-xs sm:text-sm uppercase tracking-wide">
+                      CONG TY CO PHAN SMARTBUS GO VIET NAM
+                    </span>
+</div>
+<span class="material-symbols-outlined text-gray-400 text-[18px]">verified</span>
+</div>
+<!-- Info Row 3: Account Number (Copy) -->
+<div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs hover:border-primary/40 transition-colors">
+<div>
+<span class="text-[11px] text-gray-500 block">Số tài khoản</span>
+<span class="font-mono font-bold text-base sm:text-lg text-gray-900 tracking-wider">1029384756</span>
+</div>
+<button onclick="navigator.clipboard.writeText('1029384756'); alert('Đã sao chép Số tài khoản: 1029384756');" class="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+<span>Sao chép</span>
+</button>
+</div>
+<!-- Info Row 4: Amount (Copy) -->
+<div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs hover:border-primary/40 transition-colors">
+<div>
+<span class="text-[11px] text-gray-500 block">Số tiền chính xác</span>
+<span class="font-mono font-bold text-lg text-primary">530,000 đ</span>
+</div>
+<button onclick="navigator.clipboard.writeText('530000'); alert('Đã sao chép Số tiền: 530,000 đ');" class="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+<span>Sao chép</span>
+</button>
+</div>
+<!-- Info Row 5: Transfer memo / code (CRITICAL) -->
+<div class="p-3 bg-amber-50/70 rounded-xl border-2 border-dashed border-amber-300 flex items-center justify-between">
+<div>
+<span class="text-[11px] font-bold text-amber-900 flex items-center gap-1">
+                      Nội dung chuyển khoản (Bắt buộc)
+                      <span class="material-symbols-outlined text-[13px] text-amber-700">info</span>
+</span>
+<span class="font-mono font-black text-lg text-red-600 tracking-wider">SBG84920</span>
+</div>
+<button onclick="navigator.clipboard.writeText('SBG84920'); alert('Đã sao chép Nội dung chuyển khoản: SBG84920');" class="inline-flex items-center gap-1 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 px-3.5 py-1.5 rounded-lg shadow-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+<span>Sao chép</span>
+</button>
+</div>
+<div class="text-[11px] text-amber-800 leading-tight">
+                  * Vui lòng giữ nguyên nội dung <strong>SBG84920</strong> để hệ thống tự động gạch nợ và gửi mã vé điện tử SMS/Email trong 3 giây.
+                </div>
+</div>
+</div>
+<!-- Real-time Status Indicator -->
+<div class="mt-6 pt-5 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200/80">
+<div class="flex items-center gap-3">
+<div class="relative flex items-center justify-center">
+<div class="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+</div>
+<div class="text-xs text-gray-700">
+<span class="font-semibold text-gray-900">Đang chờ bạn quét mã và chuyển khoản...</span>
+<span class="block text-gray-500 text-[11px]">Hệ thống sẽ tự động chuyển trang ngay khi nhận được thanh toán.</span>
+</div>
+</div>
+<span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 whitespace-nowrap">
+                ● Cổng kết nối trực tiếp
+              </span>
+</div>
+<!-- Big CTA Confirmation Button -->
+<div class="mt-5">
+<button onclick="window.location.href='/Ticket/Detail';" class="w-full py-4 px-6 rounded-xl bg-[#008378] hover:bg-[#00685f] active:scale-[0.99] text-white font-bold text-base sm:text-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 tracking-wide font-headline-sm" type="button">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+<span>XÁC NHẬN ĐÃ CHUYỂN KHOẢN • 530.000đ</span>
+</button>
+</div>
+<!-- Help Notice -->
+<div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-xs text-gray-500 text-center">
+<span>Gặp sự cố chuyển tiền hoặc chưa nhận được mã vé?</span>
+<a class="font-bold text-primary hover:underline flex items-center gap-1" href="tel:19006868">
+<span class="material-symbols-outlined text-[14px]">phone_in_talk</span> Hotline hỗ trợ trực tiếp 24/7: 1900 6868
+              </a>
+</div>
+</div>
+</div>
+<!-- Security and Partner reassurance -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div class="flex items-center gap-3 p-3.5 bg-white rounded-xl border border-gray-200 shadow-xs">
+<span class="material-symbols-outlined text-primary text-[28px]">lock_reset</span>
+<div>
+<div class="text-xs font-bold text-gray-800">Mã hóa 256-bit</div>
+<div class="text-[11px] text-gray-500">Bảo mật thông tin tối đa</div>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3.5 bg-white rounded-xl border border-gray-200 shadow-xs">
+<span class="material-symbols-outlined text-primary text-[28px]">speed</span>
+<div>
+<div class="text-xs font-bold text-gray-800">Xử lý tự động</div>
+<div class="text-[11px] text-gray-500">Vé gửi về SMS sau 3 giây</div>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3.5 bg-white rounded-xl border border-gray-200 shadow-xs">
+<span class="material-symbols-outlined text-primary text-[28px]">support_agent</span>
+<div>
+<div class="text-xs font-bold text-gray-800">Hỗ trợ 24/7</div>
+<div class="text-[11px] text-gray-500">Tổng đài 1900 6868 miễn phí</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Order Summary & Trip Details (35% -> 4 cols) -->
+<div class="lg:col-span-4 flex flex-col gap-5 sticky top-[180px]">
+<!-- Trip Details Card -->
+<div class="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden">
+<div class="p-4 bg-gradient-to-r from-emerald-900 to-[#00685f] text-white flex items-center justify-between">
+<div class="flex items-center gap-2 font-headline-sm">
+<span class="material-symbols-outlined text-[20px] text-emerald-300">confirmation_number</span>
+<span class="font-bold text-sm uppercase tracking-wide">Chi tiết chuyến xe</span>
+</div>
+<span class="text-[11px] bg-white/20 text-white font-medium px-2 py-0.5 rounded">
+              Mã vé: #SBG-84920
+            </span>
+</div>
+<div class="p-5 flex flex-col gap-4 text-sm">
+<!-- Route -->
+<div class="flex items-start justify-between pb-3 border-b border-gray-100">
+<div>
+<span class="text-xs text-gray-500 block">Tuyến xe</span>
+<span class="text-base font-bold text-gray-900">Hà Nội ➔ Đà Nẵng</span>
+</div>
+<span class="bg-teal-50 text-teal-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-teal-100">
+                Limousine VIP
+              </span>
+</div>
+<!-- Departure & Vehicle -->
+<div class="space-y-3 pb-3 border-b border-gray-100 text-xs sm:text-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-gray-400 text-[18px]">schedule</span>
+<div>
+<span class="text-gray-500 text-xs block">Thời gian khởi hành:</span>
+<span class="font-semibold text-gray-800">20:30, Thứ Sáu 24/10/2025</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-gray-400 text-[18px]">directions_bus</span>
+<div>
+<span class="text-gray-500 text-xs block">Phương tiện:</span>
+<span class="font-semibold text-gray-800">Xe Limousine VIP 34 Phòng Cung Điện</span>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-emerald-600 text-[18px] mt-0.5">trip_origin</span>
+<div>
+<span class="text-gray-500 text-xs block">Điểm đón:</span>
+<span class="font-semibold text-gray-800">Bến xe Mỹ Đình</span>
+<span class="text-red-600 font-medium block text-xs">(Có mặt trước 20:15)</span>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-red-500 text-[18px] mt-0.5">location_on</span>
+<div>
+<span class="text-gray-500 text-xs block">Điểm trả:</span>
+<span class="font-semibold text-gray-800">Bến xe Trung tâm Đà Nẵng</span>
+</div>
+</div>
+</div>
+<!-- Seat info -->
+<div class="bg-emerald-50/60 border border-emerald-100 p-3 rounded-xl flex items-center justify-between">
+<div>
+<span class="text-xs text-emerald-800 font-medium block">Vị trí ghế (2 vé):</span>
+<span class="font-bold text-gray-900 text-sm">VIP 05 &amp; VIP 06 <span class="text-xs font-normal text-gray-600">(Tầng dưới)</span></span>
+</div>
+<span class="material-symbols-outlined text-primary text-[24px]">airline_seat_recline_extra</span>
+</div>
+<!-- Passenger details -->
+<div class="text-xs bg-gray-50 p-3 rounded-xl border border-gray-100 space-y-1">
+<span class="font-semibold text-gray-700 block text-xs">Người liên hệ đặt vé:</span>
+<div class="flex justify-between text-gray-600">
+<span>Họ và tên:</span>
+<strong class="text-gray-900">Nguyễn Văn An</strong>
+</div>
+<div class="flex justify-between text-gray-600">
+<span>Số điện thoại:</span>
+<strong class="text-gray-900">0987 654 321</strong>
+</div>
+</div>
+<!-- Fare Breakdown -->
+<div class="pt-2 space-y-2 border-t border-gray-100 text-xs sm:text-sm">
+<div class="flex justify-between text-gray-600">
+<span>Giá vé gốc (2 vé):</span>
+<span class="font-medium text-gray-900">580.000 đ</span>
+</div>
+<div class="flex justify-between text-emerald-700 font-medium">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">local_offer</span>
+                  Mã KM (SMARTBUSNEW):
+                </span>
+<span>-50.000 đ</span>
+</div>
+<div class="flex justify-between text-gray-600">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-blue-500">health_and_safety</span>
+                  Bảo hiểm chuyến đi 150%:
+                </span>
+<span class="text-emerald-700 font-semibold">Miễn phí</span>
+</div>
+<!-- Grand Total -->
+<div class="pt-3 border-t border-dashed border-gray-200 flex items-baseline justify-between">
+<div>
+<span class="text-xs font-bold uppercase text-gray-700 block">Tổng thanh toán:</span>
+<span class="text-[11px] text-gray-400">Đã bao gồm VAT &amp; bảo hiểm</span>
+</div>
+<div class="text-right">
+<span class="text-2xl font-black text-[#008378] tracking-tight">530.000 đ</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Guarantee badges card -->
+<div class="bg-white rounded-2xl border border-gray-200/90 p-4 shadow-sm space-y-3 text-xs">
+<div class="font-bold text-gray-900 flex items-center gap-1.5 pb-2 border-b border-gray-100">
+<span class="material-symbols-outlined text-emerald-600 text-[18px]">verified_user</span>
+            Cam kết từ SmartBus Go
+          </div>
+<div class="flex items-start gap-2.5 text-gray-600">
+<span class="material-symbols-outlined text-primary text-[17px] shrink-0 mt-0.5">savings</span>
+<span><strong>Hoàn tiền 100%</strong> nếu nhà xe hủy chuyến hoặc không đón đúng hẹn.</span>
+</div>
+<div class="flex items-start gap-2.5 text-gray-600">
+<span class="material-symbols-outlined text-primary text-[17px] shrink-0 mt-0.5">event_seat</span>
+<span><strong>Giữ đúng số ghế 100%</strong> đã chọn, không nhồi nhét, không phụ thu.</span>
+</div>
+<div class="flex items-start gap-2.5 text-gray-600">
+<span class="material-symbols-outlined text-primary text-[17px] shrink-0 mt-0.5">published_with_changes</span>
+<span><strong>Đổi vé linh hoạt miễn phí</strong> trước 24 giờ khởi hành qua tổng đài.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.02)] mt-margin-lg"><div class="max-w-7xl mx-auto px-margin lg:px-margin-lg py-margin-lg"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter-lg pb-margin"><div class="lg:col-span-2 flex flex-col gap-space-sm"><div class="flex items-center gap-space-sm"><img alt="SmartBus Go Logo" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRgxUnj_KIPxzYuoxFYCNt7vDx8OgviaFRHD4UhoWmPn5L5yBmR2VfAbX_diVyepOmbCXBhldRrtHlA9U_sU5T_SD9dkw0xhTWQgvxap37YIcu0Jm81CBYMkFsMOEp_xulu57AIYAbPJMkqITDJ14_jbFdV2co8fuZ2xdvdKOKGqx8ZTQzkgHcYrVgLEwc3Jx0gRM7U8oKx1YsD0M7hwHc2Ef8FYrSHYpgxCzcYXm3ayNuXVrYyG3B8w"/><span class="font-headline-sm text-headline-sm text-primary font-bold">SmartBus Go</span></div><p class="font-body-md text-body-md text-on-surface-variant max-w-sm mt-space-xs">Hệ thống kết nối tuyến xe liên tỉnh và xe buýt thông minh hàng đầu Việt Nam. Tối ưu hành trình di chuyển, đặt chỗ nhanh chóng, an toàn và tin cậy.</p><div class="flex items-center gap-space-sm mt-space-sm"><span class="font-label-md text-label-md text-secondary">Tổng đài hỗ trợ 24/7:</span><span class="font-numeric-data text-numeric-data text-primary">1900 6868</span></div><p class="font-body-sm text-body-sm text-secondary">Email: support@smartbusgo.vn</p></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Nhà xe đối tác</span><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Phương Trang FUTA</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Thành Bưởi Limousine</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Hoa Mai Express</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Kumho Samco</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Đăng ký hợp tác nhà xe</a></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Chính sách &amp; Hỗ trợ</span><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Điều khoản sử dụng</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Chính sách bảo mật</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Quy định hoàn tiền &amp; đổi vé</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Hướng dẫn đặt chỗ online</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Câu hỏi thường gặp (FAQ)</a></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Tải ứng dụng</span><p class="font-body-sm text-body-sm text-on-surface-variant mb-space-xs">Trải nghiệm đặt vé và theo dõi lộ trình xe buýt thời gian thực trên di động.</p><div class="flex flex-col gap-space-xs"><div class="flex items-center gap-space-xs p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer"><span class="material-symbols-outlined text-primary text-[24px]">shop</span><div class="flex flex-col"><span class="font-label-md text-[10px] text-secondary leading-none">Tải về trên</span><span class="font-label-lg text-label-lg font-semibold text-on-surface leading-tight">Google Play</span></div></div><div class="flex items-center gap-space-xs p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer"><span class="material-symbols-outlined text-primary text-[24px]">phone_iphone</span><div class="flex flex-col"><span class="font-label-md text-[10px] text-secondary leading-none">Tải về trên</span><span class="font-label-lg text-label-lg font-semibold text-on-surface leading-tight">App Store</span></div></div></div></div></div><div class="pt-margin flex flex-col md:flex-row items-center justify-between gap-space-sm bg-surface-container-lowest"><span class="font-body-sm text-body-sm text-secondary">© 2025 SmartBus Go Vietnam Corp. Giấy phép kinh doanh dịch vụ sàn vận tải số 0318992144.</span><div class="flex items-center gap-space-md"><span class="font-label-md text-label-md text-secondary">Kết nối an toàn qua cổng</span><span class="font-numeric-data text-numeric-data text-on-surface-variant">NAPAS • VISA • VNPAY</span></div></div></div></footer>
+<script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // ==========================================
+            // 1. QUẢN LÝ ĐẾM NGƯỢC THỜI GIAN GIỮ VÉ (10 PHÚT)
+            // ==========================================
+            let totalSeconds = 10 * 60; 
+            const minutesEl = document.getElementById("countdown-minutes");
+            const secondsEl = document.getElementById("countdown-seconds");
+
+            let timerInterval = null;
+            let checkPaymentInterval = null;
+
+            if (minutesEl && secondsEl) {
+                timerInterval = setInterval(function () {
+                    if (totalSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        if (checkPaymentInterval) clearInterval(checkPaymentInterval);
+                        
+                        alert("Thời gian tạm giữ ghế đã hết! Hệ thống sẽ chuyển về trang tìm chuyến.");
+                        window.location.href = "/Home/Index";
+                        return;
+                    }
+                    totalSeconds--;
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+
+                    minutesEl.textContent = minutes < 10 ? "0" + minutes : minutes;
+                    secondsEl.textContent = seconds < 10 ? "0" + seconds : seconds;
+                }, 1000);
+            }
+
+            // ==========================================
+            // 2. TỰ ĐỘNG CHECK TRẠNG THÁI THANH TOÁN (POLLING)
+            // ==========================================
+            const orderCode = "SBG84920"; // Mã đơn hàng / Nội dung chuyển khoản
+            const checkIntervalMs = 3000;  // Kiểm tra mỗi 3 giây
+            
+            checkPaymentInterval = setInterval(async function () {
+                try {
+                    // Gọi API kiểm tra trạng thái thanh toán từ backend
+                    const response = await fetch(`/api/payment/check-status?orderCode=${orderCode}`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // data.isPaid == true nghĩa là Ngân hàng/Webhook đã xác nhận tiền về
+                        if (data.isPaid) {
+                            clearInterval(checkPaymentInterval);
+                            if (timerInterval) clearInterval(timerInterval);
+
+                            // Hiển thị thông báo hoặc chuyển trang ngay lập tức
+                            window.location.href = `/Ticket/Detail`;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi kiểm tra trạng thái thanh toán:", error);
+                }
+            }, checkIntervalMs);
+        });
+    </script>
+</body>
+</html>
