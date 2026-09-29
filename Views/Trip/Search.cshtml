@@ -39,6 +39,17 @@
         </form>
     </div>
 
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger d-flex align-items-center mb-4 shadow-sm rounded-3 border-danger" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+            <div>
+                <strong class="d-block">Dữ liệu tìm kiếm không hợp lệ:</strong>
+                <span>@Model.ErrorMessage</span>
+            </div>
+        </div>
+    }
+
     <div class="row">
         <!-- 2. BỘ LỌC VÀ SẮP XẾP BÊN TRÁI -->
         <div class="col-lg-3 col-md-4 mb-4">
