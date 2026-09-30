@@ -40,13 +40,44 @@ namespace WebApplication1.Models.ViewModels
         [Display(Name = "Mật khẩu")]
         public string Password { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu")]
         [DataType(DataType.Password)]
         [Display(Name = "Xác nhận mật khẩu")]
         [Compare("Password", ErrorMessage = "Mật khẩu xác nhận không khớp")]
         public string ConfirmPassword { get; set; } = string.Empty;
 
-        [Range(typeof(bool), "true", "true", ErrorMessage = "Bạn cần đồng ý với điều khoản dịch vụ của SmartBus Go")]
+        [MustBeTrue(ErrorMessage = "Bạn cần đồng ý với điều khoản dịch vụ của SmartBus Go")]
+        [Display(Name = "Điều khoản dịch vụ")]
         public bool AcceptTerms { get; set; }
+    }
+
+    /// <summary>
+    /// Custom validator đảm bảo checkbox bắt buộc phải được tick chọn (true)
+    /// Hỗ trợ cả kiểm tra Server-side và Client-side Unobtrusive Validation
+    /// </summary>
+    public class MustBeTrueAttribute : ValidationAttribute, Microsoft.AspNetCore.Mvc.ModelBinding.Validation.IClientModelValidator
+    {
+        public override bool IsValid(object? value)
+        {
+            return value is bool b && b;
+        }
+
+        public void AddValidation(Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ClientModelValidationContext context)
+        {
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            MergeAttribute(context.Attributes, "data-val", "true");
+            MergeAttribute(context.Attributes, "data-val-mustbetrue", FormatErrorMessage(context.ModelMetadata.GetDisplayName()));
+        }
+
+        private static bool MergeAttribute(IDictionary<string, string> attributes, string key, string value)
+        {
+            if (!attributes.ContainsKey(key))
+            {
+                attributes.Add(key, value);
+                return true;
+            }
+            return false;
+        }
     }
 
     public class VerifyOtpViewModel
