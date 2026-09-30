@@ -12,6 +12,9 @@ namespace WebApplication1
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
+            // Đăng ký dịch vụ quản lý giữ chỗ ghế (Thread-safe In-Memory Lock với TTL)
+            builder.Services.AddSingleton<WebApplication1.Services.ISeatHoldService, WebApplication1.Services.SeatHoldService>();
+
             builder.Services.AddDbContext<WebApplication1.Data.ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -43,6 +46,7 @@ namespace WebApplication1
             app.UseAuthorization();
 
             app.MapStaticAssets();
+            app.MapControllers();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")
