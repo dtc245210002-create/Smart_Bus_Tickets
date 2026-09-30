@@ -16,6 +16,10 @@ namespace WebApplication1.Controllers
 
         // GET: /Ticket/Detail/{id}
         [HttpGet]
+        public IActionResult Payment()
+        {
+            return View();
+        }
         public IActionResult Detail(string? id, string? status = null)
         {
             var ticketCode = string.IsNullOrEmpty(id) ? "SBG-HN-DN-20251024-008" : id;
