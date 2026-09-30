@@ -12,10 +12,12 @@ namespace WebApplication1.Controllers
     public class TripController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly WebApplication1.Services.BusLayout.IBusLayoutService _busLayoutService;
 
-        public TripController(ApplicationDbContext context)
+        public TripController(ApplicationDbContext context, WebApplication1.Services.BusLayout.IBusLayoutService busLayoutService)
         {
             _context = context;
+            _busLayoutService = busLayoutService;
         }
 
         [HttpGet]
@@ -157,14 +159,26 @@ namespace WebApplication1.Controllers
                 var price = validTickets.FirstOrDefault()?.Price ?? 150000m;
                 var originalPrice = price * 1.15m;
 
+                var busTypeName = trip.Bus?.BusType?.TypeName ?? "Xe 29 chỗ";
+                var floorLayouts = _busLayoutService.GenerateFloorLayouts(busTypeName, totalCapacity, bookedSeatNumbers, price);
+                var flatSeats = floorLayouts.SelectMany(f => f.Seats)
+                    .Where(s => s.IsBookable)
+                    .Select(s => new SeatItemViewModel
+                    {
+                        SeatCode = s.SeatCode,
+                        Floor = s.Floor,
+                        Price = s.Price,
+                        Status = s.Status
+                    }).ToList();
+
                 tripViewModels.Add(new TripItemViewModel
                 {
                     TripId = trip.TripId,
                     OperatorName = trip.Route.RouteName.Contains("VIP") ? "SmartBus VIP Express" : "SmartBus Travel",
                     Rating = 4.8,
                     ReviewCount = 1250,
-                    BusTypeName = trip.Bus?.BusType?.TypeName ?? "Xe Limousine Cao Cấp",
-                    BusImage = GetBusImage(trip.Bus?.BusType?.TypeName),
+                    BusTypeName = busTypeName,
+                    BusImage = GetBusImage(busTypeName),
                     LicensePlate = trip.Bus?.LicensePlate ?? "29B-888.88",
                     DepartureTime = departureTimeSpan,
                     DeparturePoint = boardingStops.FirstOrDefault() ?? trip.Route.StartPoint,
@@ -180,7 +194,9 @@ namespace WebApplication1.Controllers
                     NoticeText = $"Chuyến khởi hành ngày {trip.TripDate:dd/MM/yyyy} từ {trip.Route.StartPoint} đi {trip.Route.EndPoint}",
                     BoardingPoints = boardingStops,
                     DropOffPoints = dropOffStops,
-                    Seats = GenerateSeats(totalCapacity, bookedSeatNumbers, price)
+                    BusTypeCode = _busLayoutService.GetLayoutConfig(busTypeName, totalCapacity).BusTypeCode,
+                    FloorLayouts = floorLayouts,
+                    Seats = flatSeats
                 });
             }
 
@@ -260,81 +276,126 @@ namespace WebApplication1.Controllers
         {
             var trips = new List<TripItemViewModel>();
 
+            // 1. Xe ghế ngồi 29 chỗ
+            var trip101Type = "Xe ghế ngồi 29 chỗ";
+            var trip101Floors = _busLayoutService.GenerateFloorLayouts(trip101Type, 29, new[] { "A02", "A05", "A12" }, 140000m);
             trips.Add(new TripItemViewModel
             {
                 TripId = 101,
                 OperatorName = "Anh Huy Travel",
                 Rating = 4.8,
                 ReviewCount = 1398,
-                BusTypeName = "Limousine VIP 16 Chỗ",
-                BusImage = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80",
+                BusTypeName = trip101Type,
+                BusImage = GetBusImage(trip101Type),
                 LicensePlate = "29B-888.68",
                 DepartureTime = new TimeSpan(9, 0, 0),
                 DeparturePoint = "Văn phòng 61 Trần Nhân Tông, Hà Nội",
                 ArrivalTime = new TimeSpan(11, 10, 0),
                 ArrivalPoint = "Văn phòng 18 Lạch Tray, Hải Phòng",
                 DurationText = "2h 10m",
-                Price = 150000m,
-                OriginalPrice = 175000m,
-                AvailableSeats = 14,
-                TotalCapacity = 16,
+                Price = 140000m,
+                OriginalPrice = 160000m,
+                AvailableSeats = 26,
+                TotalCapacity = 29,
                 IsFlashSale = true,
                 FlashSaleText = "FLASH SALE 50%",
                 NoticeText = $"Chuyến khởi hành {tripDate:dd/MM/yyyy} tuyến Hà Nội - Hải Phòng",
                 BoardingPoints = new List<string> { "VP 61 Trần Nhân Tông (09:00)", "Bến xe Nước Ngầm (09:20)", "Đại học Bách Khoa (09:35)" },
                 DropOffPoints = new List<string> { "VP 18 Lạch Tray, Hải Phòng (11:10)", "Cầu Rào 2 (11:25)", "Bến xe Cầu Rào (11:35)" },
-                Seats = GenerateSeats(16, new[] { "A02", "B04" })
+                BusTypeCode = "SEAT_29",
+                FloorLayouts = trip101Floors,
+                Seats = trip101Floors.SelectMany(f => f.Seats).Where(s => s.IsBookable).Select(s => new SeatItemViewModel { SeatCode = s.SeatCode, Floor = s.Floor, Price = s.Price, Status = s.Status }).ToList()
             });
 
+            // 2. Xe ghế ngồi 45 chỗ
+            var trip102Type = "Xe ghế ngồi 45 chỗ Hyundai Universe";
+            var trip102Floors = _busLayoutService.GenerateFloorLayouts(trip102Type, 45, new[] { "A01", "A02", "B01", "B02", "C05", "D05" }, 120000m);
             trips.Add(new TripItemViewModel
             {
                 TripId = 102,
-                OperatorName = "Hải Phòng Travel (Đất Cảng)",
-                Rating = 4.9,
-                ReviewCount = 2150,
-                BusTypeName = "Limousine VIP 22 Phòng Cung Điện",
-                BusImage = "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400&q=80",
-                LicensePlate = "15B-668.99",
-                DepartureTime = new TimeSpan(13, 30, 0),
-                DeparturePoint = "Bến xe Mỹ Đình (Cột số 5)",
-                ArrivalTime = new TimeSpan(15, 30, 0),
+                OperatorName = "Hoàng Long Express",
+                Rating = 4.6,
+                ReviewCount = 980,
+                BusTypeName = trip102Type,
+                BusImage = GetBusImage(trip102Type),
+                LicensePlate = "15B-123.45",
+                DepartureTime = new TimeSpan(11, 30, 0),
+                DeparturePoint = "Bến xe Giáp Bát (Quầy vé 14)",
+                ArrivalTime = new TimeSpan(13, 45, 0),
                 ArrivalPoint = "Bến xe Niệm Nghĩa, Hải Phòng",
-                DurationText = "2h 00m",
-                Price = 180000m,
-                OriginalPrice = 200000m,
-                AvailableSeats = 8,
-                TotalCapacity = 22,
+                DurationText = "2h 15m",
+                Price = 120000m,
+                OriginalPrice = 140000m,
+                AvailableSeats = 39,
+                TotalCapacity = 45,
                 IsFlashSale = false,
-                NoticeText = "Chạy cao tốc Hà Nội - Hải Phòng 5B êm ái",
-                BoardingPoints = new List<string> { "Bến xe Mỹ Đình (13:30)", "Nhà Hát Lớn Hà Nội (13:50)", "Cổ Linh - Long Biên (14:10)" },
-                DropOffPoints = new List<string> { "Trạm thu phí Bạch Đằng (15:15)", "Bến xe Niệm Nghĩa (15:30)" },
-                Seats = GenerateSeats(22, new[] { "A01", "A03", "B01", "B02", "B05" })
+                NoticeText = "Xe 45 chỗ đời mới, khoang hành lý rộng rãi, đón trả đúng giờ",
+                BoardingPoints = new List<string> { "Bến xe Giáp Bát (11:30)", "Bến xe Nước Ngầm (11:50)" },
+                DropOffPoints = new List<string> { "Quán Toan (13:20)", "Bến xe Niệm Nghĩa (13:45)" },
+                BusTypeCode = "SEAT_45",
+                FloorLayouts = trip102Floors,
+                Seats = trip102Floors.SelectMany(f => f.Seats).Where(s => s.IsBookable).Select(s => new SeatItemViewModel { SeatCode = s.SeatCode, Floor = s.Floor, Price = s.Price, Status = s.Status }).ToList()
             });
 
+            // 3. Xe giường nằm 2 tầng 34 chỗ
+            var trip103Type = "Xe giường nằm 2 tầng 34 chỗ";
+            var trip103Floors = _busLayoutService.GenerateFloorLayouts(trip103Type, 34, new[] { "A01", "A02", "B02", "C03", "A08", "B10" }, 160000m);
             trips.Add(new TripItemViewModel
             {
                 TripId = 103,
                 OperatorName = "Green Express Bus 4.0",
-                Rating = 4.7,
-                ReviewCount = 890,
-                BusTypeName = "Xe Giường Nằm Cao Cấp 34 Chỗ",
-                BusImage = "https://images.unsplash.com/photo-1494515843206-f3117d3f51b7?w=400&q=80",
+                Rating = 4.9,
+                ReviewCount = 2150,
+                BusTypeName = trip103Type,
+                BusImage = GetBusImage(trip103Type),
                 LicensePlate = "29B-999.11",
-                DepartureTime = new TimeSpan(18, 0, 0),
-                DeparturePoint = "Bến xe Giáp Bát (Cửa số 3)",
-                ArrivalTime = new TimeSpan(20, 15, 0),
+                DepartureTime = new TimeSpan(14, 0, 0),
+                DeparturePoint = "Bến xe Mỹ Đình (Cột số 5)",
+                ArrivalTime = new TimeSpan(16, 15, 0),
                 ArrivalPoint = "Bến xe Vĩnh Niệm, Hải Phòng",
                 DurationText = "2h 15m",
-                Price = 130000m,
-                OriginalPrice = 150000m,
-                AvailableSeats = 20,
+                Price = 160000m,
+                OriginalPrice = 180000m,
+                AvailableSeats = 28,
                 TotalCapacity = 34,
                 IsFlashSale = true,
                 FlashSaleText = "GIẢM 20K HÔM NAY",
-                NoticeText = "Miễn phí nước khoáng, khăn lạnh và cổng sạc Type-C tại từng ghế",
-                BoardingPoints = new List<string> { "Bến xe Giáp Bát (18:00)", "Bến xe Nước Ngầm (18:20)" },
-                DropOffPoints = new List<string> { "Ngã tư Quán Toan (19:50)", "Bến xe Vĩnh Niệm (20:15)" },
-                Seats = GenerateSeats(34, new[] { "A01", "A02", "A05", "B03" })
+                NoticeText = "Giường nằm 2 tầng cao cấp, chăn gối thơm tho, màn rèm che riêng tư từng giường",
+                BoardingPoints = new List<string> { "Bến xe Mỹ Đình (14:00)", "Nhà Hát Lớn (14:20)", "Cổ Linh - Long Biên (14:40)" },
+                DropOffPoints = new List<string> { "Trạm thu phí Bạch Đằng (15:55)", "Bến xe Vĩnh Niệm (16:15)" },
+                BusTypeCode = "SLEEPER_34",
+                FloorLayouts = trip103Floors,
+                Seats = trip103Floors.SelectMany(f => f.Seats).Where(s => s.IsBookable).Select(s => new SeatItemViewModel { SeatCode = s.SeatCode, Floor = s.Floor, Price = s.Price, Status = s.Status }).ToList()
+            });
+
+            // 4. Limousine VIP 22 Phòng Cung Điện
+            var trip104Type = "Limousine VIP 22 Phòng Cung Điện";
+            var trip104Floors = _busLayoutService.GenerateFloorLayouts(trip104Type, 22, new[] { "VIP-T1-01", "VIP-T1-03", "VIP-T2-02" }, 220000m);
+            trips.Add(new TripItemViewModel
+            {
+                TripId = 104,
+                OperatorName = "Hải Phòng Travel (Đất Cảng)",
+                Rating = 4.9,
+                ReviewCount = 3120,
+                BusTypeName = trip104Type,
+                BusImage = GetBusImage(trip104Type),
+                LicensePlate = "15B-668.99",
+                DepartureTime = new TimeSpan(18, 30, 0),
+                DeparturePoint = "Bến xe Nước Ngầm (Khu VIP)",
+                ArrivalTime = new TimeSpan(20, 30, 0),
+                ArrivalPoint = "Văn phòng Đất Cảng, Hải Phòng",
+                DurationText = "2h 00m",
+                Price = 220000m,
+                OriginalPrice = 250000m,
+                AvailableSeats = 19,
+                TotalCapacity = 22,
+                IsFlashSale = false,
+                NoticeText = "Khoang cung điện VIP 2 tầng, tivi giải trí, massage, sạc type-C",
+                BoardingPoints = new List<string> { "Bến xe Nước Ngầm (18:30)", "Văn phòng Cầu Giấy (18:50)" },
+                DropOffPoints = new List<string> { "Cầu Rào 1 (20:15)", "VP Đất Cảng (20:30)" },
+                BusTypeCode = "LIMOUSINE_22",
+                FloorLayouts = trip104Floors,
+                Seats = trip104Floors.SelectMany(f => f.Seats).Where(s => s.IsBookable).Select(s => new SeatItemViewModel { SeatCode = s.SeatCode, Floor = s.Floor, Price = s.Price, Status = s.Status }).ToList()
             });
 
             return trips;

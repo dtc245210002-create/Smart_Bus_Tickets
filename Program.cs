@@ -15,6 +15,12 @@ namespace WebApplication1
             builder.Services.AddDbContext<WebApplication1.Data.ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+            // Đăng ký dịch vụ Quản lý cấu hình loại xe & sơ đồ ghế (29 chỗ, 45 chỗ, giường nằm 2 tầng)
+            builder.Services.AddSingleton<WebApplication1.Services.BusLayout.IBusLayoutService, WebApplication1.Services.BusLayout.BusLayoutService>();
+
+            // Đăng ký dịch vụ Soát vé & Xác thực mã QR cho Ứng dụng Nhân viên / Tài xế
+            builder.Services.AddScoped<WebApplication1.Services.TicketValidation.ITicketValidationService, WebApplication1.Services.TicketValidation.TicketValidationService>();
+
             // Cấu hình Cookie Authentication cho Đăng nhập / Đăng ký
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>
@@ -43,6 +49,7 @@ namespace WebApplication1
             app.UseAuthorization();
 
             app.MapStaticAssets();
+            app.MapControllers();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")

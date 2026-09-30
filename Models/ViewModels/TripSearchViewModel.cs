@@ -47,6 +47,11 @@ namespace WebApplication1.Models.ViewModels
         public List<string> BoardingPoints { get; set; } = new();
         public List<string> DropOffPoints { get; set; } = new();
         public List<SeatItemViewModel> Seats { get; set; } = new();
+
+        // Cấu hình sơ đồ xe theo tầng (29 chỗ, 45 chỗ, giường nằm 2 tầng)
+        public string BusTypeCode { get; set; } = "SEAT_29";
+        public List<WebApplication1.Models.BusLayout.BusFloorLayout> FloorLayouts { get; set; } = new();
+        public int TotalFloors => FloorLayouts.Count > 0 ? FloorLayouts.Count : 1;
     }
 
     public class SeatItemViewModel

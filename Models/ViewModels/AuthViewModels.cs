@@ -92,21 +92,6 @@ namespace WebApplication1.Models.ViewModels
         public string OtpCode { get; set; } = string.Empty;
     }
 
-    public class DriverLoginViewModel
-    {
-        [Required(ErrorMessage = "Vui lòng nhập Mã tài xế hoặc Số điện thoại")]
-        [Display(Name = "Mã tài xế / Số điện thoại")]
-        public string DriverIdentifier { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Vui lòng nhập mật khẩu")]
-        [DataType(DataType.Password)]
-        [Display(Name = "Mật khẩu nội bộ")]
-        public string Password { get; set; } = string.Empty;
-
-        [Display(Name = "Ghi nhớ phiên làm việc")]
-        public bool RememberMe { get; set; }
-    }
-
     public class TicketDetailViewModel
     {
         // Thông tin vé (Ticket)
