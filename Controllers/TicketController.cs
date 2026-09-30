@@ -102,20 +102,14 @@ namespace WebApplication1.Controllers
             }
 
             // Fallback hiển thị mẫu nếu mã vé không tìm thấy trong DB
+            var ticketStatus = status?.ToUpper() ?? "ACTIVE";
             var fallbackModel = new TicketDetailViewModel
             {
                 TicketId = 1024,
                 TicketCode = ticketCode,
-
-                SeatNumber = "VIP-05",
-                Price = 450000m,
-                Status = status?.ToUpper() ?? "ACTIVE",
-
                 SeatNumber = TempData["NewSeatNumber"]?.ToString() ?? "VIP-05",
                 Price = TempData["NewTicketPrice"] != null ? Convert.ToDecimal(TempData["NewTicketPrice"]) : 450000m,
                 Status = ticketStatus,
-
-
                 BookingId = 5082,
                 BookingCode = "BK-988214",
                 BookingTime = DateTime.Parse("2026-09-28 14:35:00"),
@@ -129,31 +123,16 @@ namespace WebApplication1.Controllers
                 EndPoint = "Bến xe Trung Tâm Đà Nẵng",
                 Distance = 760m,
                 EstimatedDuration = 750,
-
-                BoardingStopName = "Bến xe Nước Ngầm (Cổng A2)",
-                BoardingStopAddress = "Km 8 Giải Phóng, P. Hoàng Liệt, Q. Hoàng Mai, Hà Nội",
-                DepartureTime = new TimeSpan(19, 30, 0),
-                DropOffStopName = "Bến xe Trung Tâm Đà Nẵng (Cột 04)",
-
-
                 BoardingStopName = TempData["NewBoardingStop"]?.ToString() ?? "Bến xe Nước Ngầm (Cổng A2)",
                 BoardingStopAddress = "Km 8 Giải Phóng, P. Hoàng Liệt, Q. Hoàng Mai, Hà Nội",
                 DepartureTime = TempData["NewDepartureTime"] != null ? TimeSpan.Parse(TempData["NewDepartureTime"]!.ToString()!) : new TimeSpan(19, 30, 0),
-
                 DropOffStopName = TempData["NewDropOffStop"]?.ToString() ?? "Bến xe Trung Tâm Đà Nẵng (Cột 04)",
-
                 DropOffStopAddress = "Đường Nam Trân, P. Hòa Minh, Q. Liên Chiểu, Đà Nẵng",
                 ArrivalTime = new TimeSpan(8, 0, 0),
                 TripId = 302,
-
-                TripDate = DateTime.Today,
-                LicensePlate = "29B-888.68",
-                BusTypeName = "Limousine VIP 22 Phòng Đơn Cung Điện",
-
                 TripDate = TempData["NewTripDate"] != null ? DateTime.Parse(TempData["NewTripDate"]!.ToString()!) : DateTime.Parse("2025-10-24"),
                 LicensePlate = TempData["NewLicensePlate"]?.ToString() ?? "29B-888.68",
                 BusTypeName = TempData["NewBusTypeName"]?.ToString() ?? "Limousine VIP 22 Phòng Đơn Cung Điện",
-
                 DriverName = "Trần Đình Trọng (Bằng FC)",
                 DriverPhone = "0988 777 999",
                 QrDataPayload = $"SMARTBUS|TICKET:{ticketCode}|BOOKING:BK-988214|SEAT:VIP-05|DATE:{DateTime.Today:yyyy-MM-dd}|HASH:mock"
