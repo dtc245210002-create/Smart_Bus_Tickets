@@ -13,6 +13,7 @@ namespace WebApplication1.Models.ViewModels
         public string? BusTypeFilter { get; set; }
         public string? TimeOfDayFilter { get; set; }
 
+        public string? ErrorMessage { get; set; }
         public List<TripItemViewModel> Trips { get; set; } = new();
         public int TotalTrips => Trips.Count;
     }

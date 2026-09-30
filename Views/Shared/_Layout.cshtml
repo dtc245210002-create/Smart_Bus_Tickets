@@ -56,10 +56,42 @@
                     </ul>
 
                     <div class="d-flex align-items-center gap-2">
-                        <a asp-controller="Account" asp-action="Login" class="btn sbg-btn-primary d-flex align-items-center gap-2">
-                            <i class="bi bi-box-arrow-in-right"></i>
-                            <span>Đăng nhập / Đăng ký</span>
-                        </a>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <div class="dropdown">
+                                <button class="btn btn-outline-success dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-2 fw-semibold shadow-xs" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle fs-5"></i>
+                                    <span>@User.Identity.Name</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
+                                    <li class="px-3 py-1">
+                                        <div class="text-muted small">Tài khoản hành khách</div>
+                                        <div class="fw-bold small text-dark text-truncate" style="max-width: 200px;">@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</div>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Ticket" asp-action="Detail">
+                                            <i class="bi bi-ticket-perforated me-2 text-success"></i> Vé của tôi
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item py-2 text-danger fw-semibold">
+                                                <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn sbg-btn-primary d-flex align-items-center gap-2">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                <span>Đăng nhập / Đăng ký</span>
+                            </a>
+                        }
 
                         <a asp-controller="Driver" asp-action="Login" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold" title="Dành riêng cho Bác tài">
                             <i class="bi bi-person-badge"></i> Bác tài
