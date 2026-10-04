@@ -17,10 +17,19 @@ namespace WebApplication1.Controllers
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly DemoStore _demo;
 
-        public AccountController(ApplicationDbContext context)
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            return View();
+        }
+
+        public AccountController(ApplicationDbContext context, DemoStore demo)
         {
             _context = context;
+            _demo = demo;
         }
 
         // =========================================================================
@@ -54,6 +63,13 @@ namespace WebApplication1.Controllers
             }
 
             var username = model.Username.Trim();
+            if (_demo.Enabled)
+            {
+                var customer = _demo.Login(username, model.Password);
+                if (customer == null) { ModelState.AddModelError(string.Empty, "Thông tin đăng nhập không đúng hoặc tài khoản chưa xác thực. Tài khoản mẫu: demo@smartbus.vn / Demo123!"); return View(model); }
+                await SignInDemo(customer, model.RememberMe);
+                return !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl) : RedirectToAction("Index", "Home");
+            }
 
             // 1. Tìm tài khoản trong database theo Email hoặc Số điện thoại
             var user = await _context.Users
@@ -146,6 +162,15 @@ namespace WebApplication1.Controllers
 
             var cleanEmail = model.Email.Trim().ToLower();
             var cleanPhone = model.Phone?.Trim();
+            if (_demo.Enabled)
+            {
+                var customer = _demo.Register(model);
+                if (customer == null) { ModelState.AddModelError(string.Empty, "Email hoặc số điện thoại đã được sử dụng."); return View(model); }
+                TempData["PendingOtp"] = "123456";
+                TempData["RegisteredEmail"] = customer.Profile.Email;
+                TempData["InfoMessage"] = "Đăng ký demo thành công. Mã xác thực mẫu: 123456 (không gửi email thật).";
+                return RedirectToAction("VerifyOtp", new { email = customer.Profile.Email });
+            }
 
             // 2. Kiểm tra xem Email đã được đăng ký chưa
             var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == cleanEmail);
@@ -231,6 +256,18 @@ namespace WebApplication1.Controllers
 
             var pendingOtp = TempData["PendingOtp"] as string;
             TempData.Keep("PendingOtp"); // Giữ lại mã trong TempData để người dùng nhập lại nếu sai
+            if (_demo.Enabled)
+            {
+                var registeredEmail = TempData.Peek("RegisteredEmail") as string;
+                if (model.OtpCode == pendingOtp && model.Email.Equals(registeredEmail, StringComparison.OrdinalIgnoreCase) && _demo.Activate(model.Email))
+                {
+                    TempData.Remove("PendingOtp"); TempData.Remove("RegisteredEmail");
+                    TempData["SuccessMessage"] = "Xác thực thành công. Bạn có thể đăng nhập bằng tài khoản vừa tạo.";
+                    return RedirectToAction("Login");
+                }
+                ModelState.AddModelError("OtpCode", "Mã xác thực không đúng. Mã demo là 123456.");
+                return View(model);
+            }
 
             // Chấp nhận mã OTP được tạo ra hoặc mã dự phòng '123456'
             if (model.OtpCode == pendingOtp || model.OtpCode == "123456")
@@ -257,6 +294,12 @@ namespace WebApplication1.Controllers
         [HttpGet]
         public async Task<IActionResult> ExternalLogin(string provider = "Google")
         {
+            if (_demo.Enabled)
+            {
+                await SignInDemo(_demo.GoogleCustomer(), false);
+                TempData["InfoMessage"] = "Đăng nhập Google đang được mô phỏng trong bản demo; không kết nối tài khoản Google thật.";
+                return RedirectToAction("Index", "Home");
+            }
             var googleEmail = "customer.google@smartbus.vn";
             var user = await _context.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.Email == googleEmail);
 
@@ -308,6 +351,13 @@ namespace WebApplication1.Controllers
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             TempData["InfoMessage"] = "Bạn đã đăng xuất an toàn khỏi hệ thống SmartBus Go.";
             return RedirectToAction("Index", "Home");
+        }
+
+        private Task SignInDemo(DemoCustomer customer, bool rememberMe)
+        {
+            var p = customer.Profile;
+            var claims = new[] { new Claim(ClaimTypes.NameIdentifier, customer.Id), new Claim(ClaimTypes.Name, p.FullName), new Claim(ClaimTypes.Email, p.Email), new Claim(ClaimTypes.MobilePhone, p.Phone), new Claim(ClaimTypes.Role, "ROLE_CUSTOMER") };
+            return HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)), new AuthenticationProperties { IsPersistent = rememberMe });
         }
     }
 }

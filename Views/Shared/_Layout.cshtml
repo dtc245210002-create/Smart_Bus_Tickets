@@ -53,6 +53,16 @@
                         <li class="nav-item">
                             <a class="nav-link fw-semibold text-dark" asp-controller="Ticket" asp-action="Detail">Vé điện tử (Demo)</a>
                         </li>
+                        <li class="nav-item dropdown">
+                            <button class="nav-link dropdown-toggle fw-semibold text-dark border-0 bg-transparent" id="myTicketsMenu" data-bs-toggle="dropdown" aria-expanded="false">Vé của tôi</button>
+                            <ul class="dropdown-menu sbg-customer-menu shadow-sm" aria-labelledby="myTicketsMenu">
+                                <li><a class="dropdown-item" asp-controller="Ticket" asp-action="MyTickets"><i class="bi bi-ticket-perforated"></i><span>Vé của tôi<small>Vé sắp đi và lịch sử hành trình</small></span></a></li>
+                                <li><a class="dropdown-item" asp-controller="Ticket" asp-action="Manage" asp-route-mode="change"><i class="bi bi-arrow-repeat"></i><span>Đổi vé<small>Chọn chuyến khác cho vé đã đặt</small></span></a></li>
+                                <li><a class="dropdown-item" asp-controller="Ticket" asp-action="Manage" asp-route-mode="cancel"><i class="bi bi-x-circle"></i><span>Hủy vé<small>Hủy vé và xem hoàn tiền</small></span></a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="Customer" asp-action="Profile"><i class="bi bi-person-circle"></i><span>Hồ sơ khách hàng<small>Thông tin cá nhân và ưu đãi</small></span></a></li>
+                            </ul>
+                        </li>
                     </ul>
 
                     <div class="d-flex align-items-center gap-2">
@@ -65,15 +75,17 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
                                     <li class="px-3 py-1">
-                                        <div class="text-muted small">Tài khoản hành khách</div>
+                                        <div class="text-muted small">@(User.IsInRole("ROLE_DRIVER") ? "Tài khoản bác tài" : "Tài khoản hành khách")</div>
                                         <div class="fw-bold small text-dark text-truncate" style="max-width: 200px;">@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</div>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <a class="dropdown-item py-2" asp-controller="Ticket" asp-action="Detail">
+                                        <a class="dropdown-item py-2" asp-controller="Ticket" asp-action="MyTickets">
                                             <i class="bi bi-ticket-perforated me-2 text-success"></i> Vé của tôi
                                         </a>
                                     </li>
+                                    <li><a class="dropdown-item py-2" asp-controller="Customer" asp-action="Profile"><i class="bi bi-person-circle me-2 text-success"></i> Hồ sơ khách hàng</a></li>
+                                    @if (User.IsInRole("ROLE_DRIVER")) { <li><a class="dropdown-item py-2" asp-controller="Driver" asp-action="Dashboard">Bảng điều khiển bác tài</a></li> }
                                     <li>
                                         <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
@@ -103,6 +115,10 @@
     </header>
 
     <div class="container mt-3">
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button></div>
+        }
         @if (TempData["SuccessMessage"] != null)
         {
             <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">

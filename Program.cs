@@ -11,6 +11,8 @@ namespace WebApplication1
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            var demoEnabled = builder.Environment.IsDevelopment() && builder.Configuration.GetValue("Demo:Enabled", false);
+            builder.Services.AddSingleton(new WebApplication1.Services.DemoStore(demoEnabled));
 
             builder.Services.AddDbContext<WebApplication1.Data.ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -21,7 +23,7 @@ namespace WebApplication1
                 {
                     options.LoginPath = "/Account/Login";
                     options.LogoutPath = "/Account/Logout";
-                    options.AccessDeniedPath = "/Account/Login";
+                    options.AccessDeniedPath = "/Account/AccessDenied";
                     options.ExpireTimeSpan = TimeSpan.FromDays(7);
                     options.SlidingExpiration = true;
                     options.Cookie.Name = "SmartBusGo_Auth";
@@ -36,7 +38,7 @@ namespace WebApplication1
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+            if (!demoEnabled) app.UseHttpsRedirection();
             app.UseRouting();
 
             app.UseAuthentication();

@@ -12,10 +12,12 @@ namespace WebApplication1.Controllers
     public class TripController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly WebApplication1.Services.DemoStore _demo;
 
-        public TripController(ApplicationDbContext context)
+        public TripController(ApplicationDbContext context, WebApplication1.Services.DemoStore demo)
         {
             _context = context;
+            _demo = demo;
         }
 
         [HttpGet]
@@ -28,7 +30,7 @@ namespace WebApplication1.Controllers
             string? timeOfDay = null)
         {
             // Mặc định ngày khởi hành là ngày hiện tại hôm nay
-            var searchDate = date ?? DateTime.Today;
+            var searchDate = date ?? WebApplication1.Services.DemoStore.Today;
 
             var formattedFrom = FormatToTitleCase(from);
             var formattedTo = FormatToTitleCase(to);
@@ -64,7 +66,7 @@ namespace WebApplication1.Controllers
             }
 
             // Kiểm tra ngày chọn không nhỏ hơn ngày hiện tại
-            if (searchDate.Date < DateTime.Today)
+            if (searchDate.Date < WebApplication1.Services.DemoStore.Today)
             {
                 model.ErrorMessage = $"Ngày khởi hành ({searchDate:dd/MM/yyyy}) không thể là ngày trong quá khứ! Vui lòng chọn ngày từ hôm nay ({DateTime.Today:dd/MM/yyyy}) trở đi.";
                 ModelState.AddModelError(string.Empty, model.ErrorMessage);
@@ -75,6 +77,18 @@ namespace WebApplication1.Controllers
             // 2. TRUY VẤN DATABASE: LỌC CÁC CHUYẾN XE KHỚP ĐIỀU KIỆN & CÒN GHẾ TRỐNG
             // =========================================================================
             var tripDateOnly = DateOnly.FromDateTime(searchDate.Date);
+            if (_demo.Enabled)
+            {
+                var results = _demo.Trips(model.From, model.To, searchDate);
+                if (!string.IsNullOrEmpty(busType)) results = results.Where(t => t.BusTypeName.Contains(busType, StringComparison.OrdinalIgnoreCase)).ToList();
+                results = timeOfDay switch {
+                    "morning" => results.Where(t => t.DepartureTime.Hours >= 6 && t.DepartureTime.Hours < 12).ToList(),
+                    "afternoon" => results.Where(t => t.DepartureTime.Hours >= 12 && t.DepartureTime.Hours < 18).ToList(),
+                    "evening" => results.Where(t => t.DepartureTime.Hours >= 18 || t.DepartureTime.Hours < 6).ToList(),
+                    _ => results };
+                model.Trips = sort switch { "price_asc" => results.OrderBy(t=>t.Price).ToList(), "price_desc" => results.OrderByDescending(t=>t.Price).ToList(), "time_earliest" => results.OrderBy(t=>t.DepartureTime).ToList(), "time_latest" => results.OrderByDescending(t=>t.DepartureTime).ToList(), _ => results };
+                return View(model);
+            }
 
             // Truy vấn database bằng EF Core bao gồm các bảng: Route, Bus, BusType, Driver, Booking, Ticket
             var tripsFromDb = _context.Trips

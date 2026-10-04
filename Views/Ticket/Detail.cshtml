@@ -5,7 +5,7 @@
 
 <div class="container sbg-ticket-wrapper">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill btn-sm">
+        <a asp-controller="Ticket" asp-action="MyTickets" class="btn btn-outline-secondary rounded-pill btn-sm">
             <i class="bi bi-arrow-left"></i> Quay lại
         </a>
         <div class="d-flex gap-2">
@@ -21,8 +21,8 @@
     <div class="sbg-wakelock-banner shadow-sm mb-3">
         <i class="bi bi-brightness-high-fill fs-5 text-warning"></i>
         <div class="flex-grow-1">
-            <span id="wakeLockStatus" class="fw-semibold">💡 Màn hình đã tự động giữ sáng tối đa để máy quét QR nhận diện nhanh nhất.</span>
-            <span class="d-none d-md-inline text-muted small ms-1">(Màn hình sẽ không tự khóa khi bạn đang mở trang này)</span>
+            <span id="wakeLockStatus" class="fw-semibold">Xuất trình mã QR này khi lên xe.</span>
+            <span class="d-none d-md-inline text-muted small ms-1">Giữ màn hình mở để bác tài quét vé.</span>
         </div>
     </div>
 
@@ -101,7 +101,7 @@
                     </div>
                     <div class="sbg-info-item">
                         <label>Giá vé</label>
-                        <div class="value text-danger">@Model.Price.ToString("N0") VNĐ <span class="badge bg-success small fw-normal ms-1">Đã thanh toán</span></div>
+                        <div class="value text-danger">@Model.Price.ToString("N0") VNĐ <span class="badge bg-success small fw-normal ms-1">@(Model.Status == "CANCELLED" ? "Đã hoàn tiền (demo)" : "Đã thanh toán")</span></div>
                     </div>
                     <div class="sbg-info-item">
                         <label>Hành khách</label>
@@ -118,7 +118,7 @@
                         <span class="small text-muted d-block">Bác tài phụ trách:</span>
                         <span class="fw-semibold text-dark">@Model.DriverName (@Model.DriverPhone)</span>
                     </div>
-                    <a href="#" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="alert('Đang mở bản đồ GPS theo dõi vị trí xe ' + '@Model.LicensePlate' + ' trong thời gian thực...'); return false;">
+                    <a href="#" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="alert('Demo chưa kết nối thiết bị GPS. Xe: ' + '@Model.LicensePlate' + '. Liên hệ bác tài: ' + '@Model.DriverPhone'); return false;">
                         <i class="bi bi-geo-alt-fill text-danger me-1"></i> Xem vị trí xe trực tiếp
                     </a>
                 </div>
@@ -137,6 +137,10 @@
                         <span class="sbg-ticket-status-badge sbg-status-used">
                             <i class="bi bi-patch-check"></i> Đã Check-in
                         </span>
+                    }
+                    else if (Model.Status == "CANCELLED")
+                    {
+                        <span class="sbg-ticket-status-badge sbg-status-expired"><i class="bi bi-x-circle-fill"></i> Đã hủy vé</span>
                     }
                     else
                     {

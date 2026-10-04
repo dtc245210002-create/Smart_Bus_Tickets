@@ -64,9 +64,9 @@
                         <label class="form-label text-muted small fw-bold mb-1">NGÀY & GIỜ ĐI</label>
                         <div class="input-group">
                             <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar3"></i></span>
-                            <input type="date" name="date" class="form-control border-start-0 fw-bold" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <input type="date" name="date" class="form-control border-start-0 fw-bold" value="@WebApplication1.Services.DemoStore.Today.ToString("yyyy-MM-dd")" required />
                         </div>
-                        <div class="text-muted small mt-1" style="font-size: 0.75rem;">Hôm nay: @DateTime.Today.ToString("dd/MM/yyyy")</div>
+                        <div class="text-muted small mt-1" style="font-size: 0.75rem;">Hôm nay: @WebApplication1.Services.DemoStore.Today.ToString("dd/MM/yyyy")</div>
                     </div>
 
                     <div class="col-lg-3 col-md-6">

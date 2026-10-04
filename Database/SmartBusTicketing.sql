@@ -715,19 +715,19 @@ GO
 
 -- Data for [Trip] (24 rows)
 SET IDENTITY_INSERT [Trip] ON;
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (1, 1, 1, 1, 1, '2026-10-01', '07:00:00', '09:00:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (2, 2, 4, 2, NULL, '2026-10-01', '19:30:00', '08:00:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (3, 3, 5, 3, NULL, '2026-10-01', '08:00:00', '09:30:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (4, 4, 6, 4, NULL, '2026-10-01', '07:00:00', '12:00:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (5, 5, 5, 1, NULL, '2026-10-01', '08:30:00', '10:45:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (6, 6, 9, 2, NULL, '2026-10-01', '09:00:00', '10:50:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (7, 7, 7, 3, NULL, '2026-10-01', '23:00:00', '05:00:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (8, 8, 8, 4, NULL, '2026-10-01', '07:30:00', '09:30:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (9, 9, 10, 1, NULL, '2026-10-01', '06:30:00', '09:30:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (10, 10, 7, 3, NULL, '2026-10-01', '13:30:00', '16:30:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (12, 12, 12, 6, 1, '2026-10-01', '08:00:00', '09:45:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (13, 13, 13, 7, 1, '2026-10-01', '07:30:00', '11:45:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (14, 14, 14, 8, 1, '2026-10-01', '20:30:00', '04:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (1, 1, 1, 1, 1, '2026-10-03', '07:00:00', '09:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (2, 2, 4, 2, NULL, '2026-10-03', '19:30:00', '08:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (3, 3, 5, 3, NULL, '2026-10-03', '08:00:00', '09:30:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (4, 4, 6, 4, NULL, '2026-10-03', '07:00:00', '12:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (5, 5, 5, 1, NULL, '2026-10-03', '08:30:00', '10:45:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (6, 6, 9, 2, NULL, '2026-10-03', '09:00:00', '10:50:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (7, 7, 7, 3, NULL, '2026-10-03', '23:00:00', '05:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (8, 8, 8, 4, NULL, '2026-10-03', '07:30:00', '09:30:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (9, 9, 10, 1, NULL, '2026-10-03', '06:30:00', '09:30:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (10, 10, 7, 3, NULL, '2026-10-03', '13:30:00', '16:30:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (12, 12, 12, 6, 1, '2026-10-03', '08:00:00', '09:45:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (13, 13, 13, 7, 1, '2026-10-04', '07:30:00', '11:45:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (14, 14, 14, 8, 1, '2026-10-04', '20:30:00', '04:00:00', N'Scheduled');
 INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (16, 16, 16, 6, 1, '2026-10-01', '22:30:00', '06:30:00', N'Scheduled');
 INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (17, 17, 17, 7, 1, '2026-10-01', '18:00:00', '06:30:00', N'Scheduled');
 INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (18, 18, 18, 8, 1, '2026-10-01', '22:00:00', '05:30:00', N'Scheduled');
@@ -990,16 +990,16 @@ GO
 
 -- Data for [Trip] (72 rows)
 SET IDENTITY_INSERT [Trip] ON;
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (1, 1, 1, 1, 1, '2026-10-01', '07:00:00', '09:00:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (2, 2, 4, 2, NULL, '2026-10-01', '19:30:00', '08:00:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (3, 3, 5, 3, NULL, '2026-10-01', '08:00:00', '09:30:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (4, 4, 6, 4, NULL, '2026-10-01', '07:00:00', '12:00:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (5, 5, 5, 1, NULL, '2026-10-01', '08:30:00', '10:45:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (6, 6, 9, 2, NULL, '2026-10-01', '09:00:00', '10:50:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (7, 7, 7, 3, NULL, '2026-10-01', '23:00:00', '05:00:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (8, 8, 8, 4, NULL, '2026-10-01', '07:30:00', '09:30:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (9, 9, 10, 1, NULL, '2026-10-01', '06:30:00', '09:30:00', N'Scheduled');
-INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (10, 10, 7, 3, NULL, '2026-10-01', '13:30:00', '16:30:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (1, 1, 1, 1, 1, '2026-10-03', '07:00:00', '09:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (2, 2, 4, 2, NULL, '2026-10-03', '19:30:00', '08:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (3, 3, 5, 3, NULL, '2026-10-03', '08:00:00', '09:30:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (4, 4, 6, 4, NULL, '2026-10-03', '07:00:00', '12:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (5, 5, 5, 1, NULL, '2026-10-03 ', '08:30:00', '10:45:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (6, 6, 9, 2, NULL, '2026-10-03', '09:00:00', '10:50:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (7, 7, 7, 3, NULL, '2026-10-03', '23:00:00', '05:00:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (8, 8, 8, 4, NULL, '2026-10-03', '07:30:00', '09:30:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (9, 9, 10, 1, NULL, '2026-10-03', '06:30:00', '09:30:00', N'Scheduled');
+INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (10, 10, 7, 3, NULL, '2026-10-03', '13:30:00', '16:30:00', N'Scheduled');
 INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (12, 12, 12, 6, 1, '2026-10-01', '08:00:00', '09:45:00', N'Scheduled');
 INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (13, 13, 13, 7, 1, '2026-10-01', '07:30:00', '11:45:00', N'Scheduled');
 INSERT INTO [Trip] ([TripId], [RouteId], [BusId], [DriverId], [ScheduleId], [TripDate], [DepartureTime], [ArrivalTime], [Status]) VALUES (14, 14, 14, 8, 1, '2026-10-01', '20:30:00', '04:00:00', N'Scheduled');

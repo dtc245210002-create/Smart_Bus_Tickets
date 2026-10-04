@@ -5,19 +5,27 @@ using WebApplication1.Models.ViewModels;
 
 namespace WebApplication1.Controllers
 {
-    public class TicketController : Controller
+    public partial class TicketController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly WebApplication1.Services.DemoStore _demo;
 
-        public TicketController(ApplicationDbContext context)
+        public TicketController(ApplicationDbContext context, WebApplication1.Services.DemoStore demo)
         {
             _context = context;
+            _demo = demo;
         }
 
         // GET: /Ticket/Detail/{id}
         [HttpGet]
         public IActionResult Detail(string? id, string? status = null)
         {
+            if (_demo.Enabled)
+            {
+                if (User.Identity?.IsAuthenticated != true) return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Detail", new { id }) });
+                var demoTicket = _demo.Ticket(id, CustomerId);
+                return demoTicket == null ? NotFound("Không tìm thấy vé của bạn.") : View(demoTicket);
+            }
             var ticketCode = string.IsNullOrEmpty(id) ? "SBG-HN-DN-20251024-008" : id;
 
             // Truy vấn dữ liệu vé thật từ Database SQL Server
@@ -136,8 +144,16 @@ namespace WebApplication1.Controllers
 
         // GET: /Ticket/Payment
         [HttpGet]
-        public IActionResult Payment()
+        public IActionResult Payment(string? code)
         {
+            if (_demo.Enabled)
+            {
+                if (User.Identity?.IsAuthenticated != true) return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Payment", new { code }) });
+                if (string.IsNullOrEmpty(code)) return RedirectToAction("Search", "Trip", new { date = WebApplication1.Services.DemoStore.Today.AddDays(1).ToString("yyyy-MM-dd") });
+                var booking = _demo.Booking(code, CustomerId);
+                if (booking == null) return NotFound();
+                return View("DemoPayment", booking);
+            }
             return View();
         }
     }

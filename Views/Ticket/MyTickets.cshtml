@@ -1,0 +1,17 @@
+@model List<WebApplication1.Models.ViewModels.DemoPaymentViewModel>
+@{ ViewData["Title"] = "Vé của tôi"; string filter=ViewBag.Filter ?? "upcoming"; string mode=ViewBag.ManageMode ?? ""; }
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><h2 class="fw-bold text-primary-teal">@(mode=="cancel"?"Chọn vé cần hủy":mode=="change"?"Chọn vé cần đổi":"Vé của tôi")</h2><p class="text-muted mb-0">Quản lý hành trình, xem vé điện tử và yêu cầu đổi / hủy vé.</p></div><a asp-controller="Trip" asp-action="Search" asp-route-date="@WebApplication1.Services.DemoStore.Today.AddDays(1).ToString("yyyy-MM-dd")" class="btn sbg-btn-primary"><i class="bi bi-plus-circle me-2"></i>Đặt vé mới</a></div>
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        @foreach(var option in new[]{("upcoming","Sắp đi"),("history","Đã đi"),("cancelled","Đã hủy"),("pending","Đang giữ chỗ")})
+        { <a asp-action="MyTickets" asp-route-filter="@option.Item1" class="btn rounded-pill @(filter==option.Item1?"sbg-btn-primary":"btn-outline-secondary")">@option.Item2</a> }
+    </div>
+    @if(Model.Count==0){<div class="card p-5 rounded-4 text-center"><i class="bi bi-ticket-perforated fs-1 text-success"></i><h5 class="mt-3">Chưa có vé trong mục này</h5><p class="text-muted">Vé mới sẽ xuất hiện sau khi bạn hoàn tất thanh toán demo.</p></div>}
+    @foreach(var booking in Model)
+    {
+        <div class="card sbg-booking-card mb-3"><div class="row g-4 align-items-center"><div class="col-lg-8"><div class="d-flex gap-2 flex-wrap mb-2"><span class="badge text-bg-light border">@booking.BookingCode</span><span class="badge @(booking.Status=="CANCELLED"?"text-bg-secondary":booking.Status=="HOLD"?"text-bg-warning":"text-bg-success")">@(booking.Status=="PAID"?"Đã thanh toán":booking.Status=="CANCELLED"?"Đã hủy • Hoàn tiền demo":booking.Status=="HOLD"?"Đang giữ chỗ":"Hết hạn")</span></div><h5 class="fw-bold">@booking.Trip.DeparturePoint.Split(" (")[0] <i class="bi bi-arrow-right text-success mx-2"></i> @booking.Trip.ArrivalPoint.Split(" (")[0]</h5><p class="text-muted mb-1"><i class="bi bi-calendar3 me-2"></i>@booking.TravelDate.ToString("dd/MM/yyyy") • @booking.Trip.DepartureTime.ToString(@"hh\:mm") • @booking.Trip.BusTypeName</p><p class="mb-0 small">Ghế: <strong>@string.Join(", ",booking.Seats)</strong> • @booking.PassengerName • <strong class="text-success">@booking.Total.ToString("N0") đ</strong></p></div><div class="col-lg-4 d-flex flex-wrap gap-2 justify-content-lg-end">
+            @if(booking.Status=="PAID"){ @foreach(var ticket in booking.TicketCodes){<a asp-action="Detail" asp-route-id="@ticket" class="btn btn-outline-success btn-sm">QR @ticket.Split('-').Last()</a>} <a asp-action="Manage" asp-route-code="@booking.BookingCode" asp-route-mode="change" class="btn sbg-btn-primary btn-sm">Đổi vé</a><a asp-action="Manage" asp-route-code="@booking.BookingCode" asp-route-mode="cancel" class="btn btn-outline-danger btn-sm">Hủy vé</a> }
+            @if(booking.Status=="HOLD"){<a asp-action="Payment" asp-route-code="@booking.BookingCode" class="btn sbg-btn-primary">Tiếp tục thanh toán</a>}
+        </div></div></div>
+    }
+</div>
