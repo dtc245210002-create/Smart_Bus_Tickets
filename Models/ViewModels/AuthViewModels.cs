@@ -148,4 +148,31 @@ namespace WebApplication1.Models.ViewModels
         // Dữ liệu mã hóa QR (chứa token hoặc chuỗi xác thực)
         public string QrDataPayload { get; set; } = string.Empty;
     }
+
+    public class PaymentResultViewModel
+    {
+        public string BookingCode { get; set; } = string.Empty;
+        public string TicketCode { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string PaymentMethod { get; set; } = "VietQR";
+        public string TransactionCode { get; set; } = string.Empty;
+        public DateTime PaymentTime { get; set; } = DateTime.Now;
+        public string Status { get; set; } = "SUCCESS"; // SUCCESS, PENDING, FAILED
+        public string? FailureReason { get; set; }
+        public bool SimulatePolling { get; set; } = true;
+
+        // Chi tiết chuyến xe & Hành khách
+        public string PassengerName { get; set; } = string.Empty;
+        public string PassengerPhone { get; set; } = string.Empty;
+        public string RouteName { get; set; } = string.Empty;
+        public string StartPoint { get; set; } = string.Empty;
+        public string EndPoint { get; set; } = string.Empty;
+        public string BoardingStop { get; set; } = string.Empty;
+        public string DropOffStop { get; set; } = string.Empty;
+        public string SeatNumber { get; set; } = string.Empty;
+        public string BusTypeName { get; set; } = string.Empty;
+        public string LicensePlate { get; set; } = string.Empty;
+        public DateTime DepartureTime { get; set; }
+        public string QrDataPayload { get; set; } = string.Empty;
+    }
 }

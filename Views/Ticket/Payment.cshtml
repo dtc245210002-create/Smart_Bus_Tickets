@@ -503,8 +503,8 @@
                             clearInterval(checkPaymentInterval);
                             if (timerInterval) clearInterval(timerInterval);
 
-                            // Hiển thị thông báo hoặc chuyển trang ngay lập tức
-                            window.location.href = `/Ticket/Detail`;
+                            // Chuyển hướng sang trang kết quả thanh toán Callback (/payment-result)
+                            window.location.href = `/payment-result?ticketCode=SBG-84920&bookingCode=BK-84920&status=success`;
                         }
                     }
                 } catch (error) {
