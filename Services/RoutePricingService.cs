@@ -365,19 +365,35 @@ namespace WebApplication1.Services
                 // Nhận diện vùng đồi núi phía Bắc / Tây Nguyên
                 bool isMountain = IsMountainProvince(pFrom) || IsMountainProvince(pTo);
                 
-                // Hệ số uốn khúc đường bộ Việt Nam (Detour Factor)
-                double detour = isMountain ? 1.42 : 1.28;
+                // Hệ số uốn khúc đường bộ Việt Nam (Detour Factor) bao quát toàn bộ 331.212 km² lãnh thổ
+                // Do hình dáng chữ S uốn lượn ven biển, các tuyến đường bộ dài Bắc - Nam có hệ số uốn khúc cao hơn
+                double detour;
+                if (straightDistance > 850)
+                {
+                    detour = 1.52; // Tuyến dài Bắc - Nam ôm theo bờ biển hình chữ S
+                }
+                else if (straightDistance > 350)
+                {
+                    detour = isMountain ? 1.45 : 1.36;
+                }
+                else
+                {
+                    detour = isMountain ? 1.42 : 1.28;
+                }
+
                 decimal roadDistance = Math.Max(25m, Math.Round((decimal)(straightDistance * detour), 0));
                 
                 result.Distance = roadDistance;
                 result.IsMountainous = isMountain;
 
-                // Tính thời gian di chuyển (vận tốc trung bình thực tế xe khách)
-                double avgSpeed = isMountain ? 42.0 : (roadDistance > 120 ? 62.0 : 50.0);
+                // Tính thời gian di chuyển thực tế (vận tốc trung bình của xe khách kèm dừng nghỉ)
+                double avgSpeed = isMountain ? 42.0 : (roadDistance > 800 ? 54.0 : (roadDistance > 120 ? 62.0 : 50.0));
                 int minutes = (int)Math.Round((double)roadDistance / avgSpeed * 60.0);
 
-                // Cộng thêm thời gian dừng đón trả / trạm dừng nghỉ
-                if (roadDistance > 250) minutes += 45;
+                // Thời gian dừng đón trả khách và các bữa ăn/nghỉ trạm theo cự ly
+                if (roadDistance > 1200) minutes += 240; // Nghỉ 4 tiếng (3-4 bữa ăn, đổi 3-4 tài xế chạy luân phiên)
+                else if (roadDistance > 600) minutes += 120; // Nghỉ 2 tiếng ăn trưa/tối
+                else if (roadDistance > 250) minutes += 45;
                 else if (roadDistance > 80) minutes += 20;
                 else minutes += 10;
 
@@ -421,23 +437,29 @@ namespace WebApplication1.Services
 
         /// <summary>
         /// Tính giá vé cơ bản (Base price) theo khoảng cách km dựa trên dữ liệu giá thị trường xe khách Việt Nam
+        /// Bao quát toàn bộ 331.212 km² từ cự ly siêu ngắn đến cự ly cực đại xuyên Việt (2.400 km)
         /// </summary>
         public static decimal GetMarketBasePrice(decimal distance)
         {
             if (distance <= 35) return 50000m;
-            if (distance <= 65) return 65000m;   // Ví dụ Thái Bình - Ninh Bình 55km: ~65.000đ
-            if (distance <= 95) return 80000m;   // Ví dụ Thái Bình - Hải Phòng 70km, Hà Nội - Thái Nguyên 80km
-            if (distance <= 125) return 105000m; // Ví dụ Hà Nội - Hải Phòng 105km, TP.HCM - Vũng Tàu 100km
-            if (distance <= 170) return 135000m; // Ví dụ Thái Nguyên - Cao Bằng 135km, Hà Nội - Hạ Long 160km
-            if (distance <= 230) return 175000m; // Ví dụ Hà Nội - Mộc Châu 205km, TP.HCM - Phan Thiết 200km
-            if (distance <= 320) return 240000m; // Ví dụ Hà Nội - Cao Bằng 280km, Hà Nội - Sa Pa 320km, TP.HCM - Đà Lạt 305km
-            if (distance <= 450) return 320000m; // Ví dụ TP.HCM - Nha Trang 430km, TP.HCM - Buôn Ma Thuột 350km
-            if (distance <= 650) return 420000m; // Ví dụ Hà Nội - Quảng Bình 500km, TP.HCM - Quy Nhơn 650km
-            if (distance <= 850) return 500000m; // Ví dụ Hà Nội - Huế 680km, Hà Nội - Đà Nẵng 760km
+            if (distance <= 65) return 65000m;   // Tuyến ngắn: Thái Bình - Ninh Bình 55km: ~65.000đ
+            if (distance <= 95) return 80000m;   // Tuyến Thái Bình - Hải Phòng 70km, Hà Nội - Thái Nguyên 80km
+            if (distance <= 125) return 105000m; // Tuyến Hà Nội - Hải Phòng 105km, TP.HCM - Vũng Tàu 100km
+            if (distance <= 170) return 135000m; // Tuyến Thái Nguyên - Cao Bằng 135km, Hà Nội - Hạ Long 160km
+            if (distance <= 230) return 175000m; // Tuyến Hà Nội - Mộc Châu 205km, TP.HCM - Phan Thiết 200km
+            if (distance <= 320) return 240000m; // Tuyến Hà Nội - Cao Bằng 280km, Hà Nội - Sa Pa 320km, TP.HCM - Đà Lạt 305km
+            if (distance <= 450) return 320000m; // Tuyến TP.HCM - Nha Trang 430km, TP.HCM - Buôn Ma Thuột 350km
+            if (distance <= 650) return 420000m; // Tuyến Hà Nội - Quảng Bình 500km, TP.HCM - Quy Nhơn 650km
+            if (distance <= 850) return 500000m; // Tuyến Hà Nội - Huế 680km, Hà Nội - Đà Nẵng 760km
+            if (distance <= 1150) return 640000m; // Tuyến Hà Nội - Quy Nhơn (~1050km)
+            if (distance <= 1450) return 780000m; // Tuyến Hà Nội - Nha Trang / Buôn Ma Thuột (~1300km)
+            if (distance <= 1800) return 920000m; // Tuyến Hà Nội - TP.HCM (~1720km)
+            if (distance <= 2150) return 1050000m; // Tuyến Hà Nội - Cần Thơ / An Giang (~1950 - 2100km)
             
-            // Cự ly > 850km (Tuyến liên miền Bắc - Nam)
-            var extraKm = distance - 850m;
-            return 520000m + Math.Round(extraKm * 300m, -3);
+            // Cự ly cực đại xuyên Việt (Hà Giang / Cao Bằng / Móng Cái -> Cà Mau / Kiên Giang 2150 - 2450km)
+            var extraKm = distance - 2150m;
+            var extraAmount = Math.Round((extraKm * 220m) / 5000m, MidpointRounding.AwayFromZero) * 5000m;
+            return 1050000m + extraAmount;
         }
 
         /// <summary>
@@ -517,7 +539,7 @@ namespace WebApplication1.Services
         {
             if (distance <= 80)
             {
-                // TUYẾN NGẮN (Ví dụ: Thái Bình - Ninh Bình 55km, Hà Nội - Bắc Ninh 35km, Nam Định - Thái Bình 25km)
+                // 1. TUYẾN NGẮN (<= 80km như Thái Bình - Ninh Bình 55km, Hà Nội - Bắc Ninh 35km, Nam Định - Thái Bình 25km)
                 // Tuyệt đối không dùng xe giường nằm 2 tầng cồng kềnh, sử dụng xe ghế ngồi và Limousine đưa đón
                 return new List<DynamicTripConfig>
                 {
@@ -553,7 +575,7 @@ namespace WebApplication1.Services
                         SlotIndex = 2,
                         DepartureTime = new TimeSpan(14, 0, 0),
                         BusTypeName = "Xe Limousine 16 chỗ Transit VIP",
-                        Capacity = 29, // Sử dụng layout 29 ghế rộng
+                        Capacity = 29,
                         BusTypeCode = "SEAT_29",
                         OperatorName = "Phúc Xuyên Limousine",
                         ReviewCount = 2150,
@@ -578,62 +600,125 @@ namespace WebApplication1.Services
                 };
             }
 
-            // TUYẾN TRUNG BÌNH & XA (Ví dụ: Thái Nguyên - Cao Bằng 135km, Hà Nội - Hải Phòng 105km, Hà Nội - Đà Nẵng 760km...)
+            if (distance <= 650)
+            {
+                // 2. TUYẾN TRUNG BÌNH (80 - 650km, ví dụ Thái Nguyên - Cao Bằng 135km, Hà Nội - Hải Phòng 105km, Hà Nội - Quảng Bình 500km...)
+                return new List<DynamicTripConfig>
+                {
+                    new DynamicTripConfig
+                    {
+                        SlotIndex = 0,
+                        DepartureTime = new TimeSpan(8, 0, 0),
+                        BusTypeName = "Xe ghế ngồi 29 chỗ Eco Express",
+                        Capacity = 29,
+                        BusTypeCode = "SEAT_29",
+                        OperatorName = "SmartBus Eco Line",
+                        ReviewCount = 1398,
+                        Rating = 4.8,
+                        IsFlashSale = true,
+                        FlashSaleText = "ƯU ĐÃI ĐẶT SỚM",
+                        NoticeText = "Ghế ngồi ngả êm ái, khởi hành buổi sáng mát mẻ, đón trả linh hoạt"
+                    },
+                    new DynamicTripConfig
+                    {
+                        SlotIndex = 1,
+                        DepartureTime = new TimeSpan(11, 30, 0),
+                        BusTypeName = "Xe ghế ngồi 45 chỗ Hyundai Universe",
+                        Capacity = 45,
+                        BusTypeCode = "SEAT_45",
+                        OperatorName = "Hoàng Long Express",
+                        ReviewCount = 980,
+                        Rating = 4.7,
+                        IsFlashSale = false,
+                        NoticeText = "Xe 45 chỗ khoang hành lý cực rộng, tài xế kinh nghiệm đường dài an toàn"
+                    },
+                    new DynamicTripConfig
+                    {
+                        SlotIndex = 2,
+                        DepartureTime = new TimeSpan(14, 30, 0),
+                        BusTypeName = "Xe giường nằm 2 tầng 34 chỗ Green Express",
+                        Capacity = 34,
+                        BusTypeCode = "SLEEPER_34",
+                        OperatorName = "Green Express Bus 4.0",
+                        ReviewCount = 2150,
+                        Rating = 4.9,
+                        IsFlashSale = true,
+                        FlashSaleText = "TIẾT KIỆM 20K",
+                        NoticeText = "Giường nằm 2 tầng cao cấp, chăn gối thơm tho, rèm che riêng tư từng phòng"
+                    },
+                    new DynamicTripConfig
+                    {
+                        SlotIndex = 3,
+                        DepartureTime = new TimeSpan(19, 0, 0),
+                        BusTypeName = "Limousine VIP 22 Phòng Cung Điện",
+                        Capacity = 22,
+                        BusTypeCode = "LIMOUSINE_22",
+                        OperatorName = "SmartBus Royal VIP Travel",
+                        ReviewCount = 3120,
+                        Rating = 5.0,
+                        IsFlashSale = false,
+                        NoticeText = "Khoang cung điện VIP 2 tầng, tivi giải trí, massage, sạc type-C cao cấp"
+                    }
+                };
+            }
+
+            // 3. TUYẾN ĐƯỜNG DÀI XUYÊN VIỆT BẮC - TRUNG - NAM (> 650km đến 2.450km trên toàn bộ 331.212 km² lãnh thổ)
+            // Tuyệt đối không dùng xe ghế ngồi, 100% là dòng xe giường nằm cao cấp và Limousine Cabin chuyên tuyến Bắc Nam
             return new List<DynamicTripConfig>
             {
                 new DynamicTripConfig
                 {
                     SlotIndex = 0,
-                    DepartureTime = new TimeSpan(8, 0, 0),
-                    BusTypeName = "Xe ghế ngồi 29 chỗ Eco Express",
-                    Capacity = 29,
-                    BusTypeCode = "SEAT_29",
-                    OperatorName = "SmartBus Eco Line",
-                    ReviewCount = 1398,
+                    DepartureTime = new TimeSpan(7, 0, 0),
+                    BusTypeName = "Xe giường nằm 40 chỗ Bắc Nam Express",
+                    Capacity = 34,
+                    BusTypeCode = "SLEEPER_34",
+                    OperatorName = "Hoàng Long Xuyên Việt",
+                    ReviewCount = 2890,
                     Rating = 4.8,
                     IsFlashSale = true,
-                    FlashSaleText = "ƯU ĐÃI ĐẶT SỚM",
-                    NoticeText = "Ghế ngồi ngả êm ái, khởi hành buổi sáng mát mẻ, đón trả linh hoạt"
+                    FlashSaleText = "GIÁ VÉ TIẾT KIỆM",
+                    NoticeText = "Tuyến cao tốc Bắc Nam liên tục, giường nằm êm ái, hỗ trợ nước suối & khăn lạnh"
                 },
                 new DynamicTripConfig
                 {
                     SlotIndex = 1,
-                    DepartureTime = new TimeSpan(11, 30, 0),
-                    BusTypeName = "Xe ghế ngồi 45 chỗ Hyundai Universe",
-                    Capacity = 45,
-                    BusTypeCode = "SEAT_45",
-                    OperatorName = "Hoàng Long Express",
-                    ReviewCount = 980,
-                    Rating = 4.7,
+                    DepartureTime = new TimeSpan(12, 0, 0),
+                    BusTypeName = "Xe giường nằm 34 phòng Luxury Express",
+                    Capacity = 34,
+                    BusTypeCode = "SLEEPER_34",
+                    OperatorName = "Phương Trang FUTA Bus Lines",
+                    ReviewCount = 3850,
+                    Rating = 4.9,
                     IsFlashSale = false,
-                    NoticeText = "Xe 45 chỗ khoang hành lý cực rộng, tài xế kinh nghiệm đường dài an toàn"
+                    NoticeText = "Giường nằm 34 phòng riêng biệt, rèm che kín đáo, bao gồm suất ăn trạm dừng chân"
                 },
                 new DynamicTripConfig
                 {
                     SlotIndex = 2,
-                    DepartureTime = new TimeSpan(14, 30, 0),
-                    BusTypeName = "Xe giường nằm 2 tầng 34 chỗ Green Express",
-                    Capacity = 34,
-                    BusTypeCode = "SLEEPER_34",
-                    OperatorName = "Green Express Bus 4.0",
+                    DepartureTime = new TimeSpan(16, 30, 0),
+                    BusTypeName = "Limousine Cabin đôi 24 Phòng Suite",
+                    Capacity = 22,
+                    BusTypeCode = "LIMOUSINE_22",
+                    OperatorName = "Thuận Thảo VIP Grand",
                     ReviewCount = 2150,
                     Rating = 4.9,
                     IsFlashSale = true,
-                    FlashSaleText = "TIẾT KIỆM 20K",
-                    NoticeText = "Giường nằm 2 tầng cao cấp, chăn gối thơm tho, rèm che riêng tư từng phòng"
+                    FlashSaleText = "CABIN ĐÔI VIP",
+                    NoticeText = "Phòng Suite tiện nghi, nệm cao su non êm ái, cổng sạc Type-C, tivi giải trí"
                 },
                 new DynamicTripConfig
                 {
                     SlotIndex = 3,
-                    DepartureTime = new TimeSpan(19, 0, 0),
-                    BusTypeName = "Limousine VIP 22 Phòng Cung Điện",
+                    DepartureTime = new TimeSpan(20, 30, 0),
+                    BusTypeName = "Limousine VIP 22 Phòng Cung Điện Hoàng Gia",
                     Capacity = 22,
                     BusTypeCode = "LIMOUSINE_22",
-                    OperatorName = "SmartBus Royal VIP Travel",
-                    ReviewCount = 3120,
+                    OperatorName = "SmartBus Royal Grand Express",
+                    ReviewCount = 4200,
                     Rating = 5.0,
                     IsFlashSale = false,
-                    NoticeText = "Khoang cung điện VIP 2 tầng, tivi giải trí, massage, sạc type-C cao cấp"
+                    NoticeText = "Chuyên cơ mặt đất 22 phòng cung điện cao cấp nhất, ghế massage, wifi 5G xuyên suốt hành trình"
                 }
             };
         }
