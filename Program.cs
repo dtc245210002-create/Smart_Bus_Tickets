@@ -12,6 +12,9 @@ namespace WebApplication1
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
+            // Đăng ký dịch vụ quản lý giữ chỗ ghế (Thread-safe In-Memory Lock với TTL)
+            builder.Services.AddSingleton<WebApplication1.Services.ISeatHoldService, WebApplication1.Services.SeatHoldService>();
+
             builder.Services.AddDbContext<WebApplication1.Data.ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -20,6 +23,9 @@ namespace WebApplication1
 
             // Đăng ký dịch vụ Soát vé & Xác thực mã QR cho Ứng dụng Nhân viên / Tài xế
             builder.Services.AddScoped<WebApplication1.Services.TicketValidation.ITicketValidationService, WebApplication1.Services.TicketValidation.TicketValidationService>();
+
+            // Đăng ký dịch vụ Gửi Email (SMTP) xác thực tài khoản & thông báo vé
+            builder.Services.AddScoped<WebApplication1.Services.Email.IEmailService, WebApplication1.Services.Email.EmailService>();
 
             // Cấu hình Cookie Authentication cho Đăng nhập / Đăng ký
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -35,14 +41,27 @@ namespace WebApplication1
 
             var app = builder.Build();
 
+            // Cấu hình Localization chuẩn Việt Nam (Ngày/Tháng/Năm - dd/MM/yyyy)
+            var viCulture = new System.Globalization.CultureInfo("vi-VN");
+            viCulture.DateTimeFormat.ShortDatePattern = "dd/MM/yyyy";
+            viCulture.DateTimeFormat.DateSeparator = "/";
+
+            var localizationOptions = new RequestLocalizationOptions
+            {
+                DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture(viCulture),
+                SupportedCultures = new[] { viCulture },
+                SupportedUICultures = new[] { viCulture }
+            };
+            app.UseRequestLocalization(localizationOptions);
+
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
+                app.UseHttpsRedirection();
             }
 
-            app.UseHttpsRedirection();
             app.UseRouting();
 
             app.UseAuthentication();

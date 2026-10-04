@@ -30,7 +30,7 @@ namespace WebApplication1.Models.ViewModels
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vui lòng nhập số điện thoại")]
-        [RegularExpression(@"^(0[3|5|7|8|9])+([0-9]{8})$", ErrorMessage = "Số điện thoại không hợp lệ (10 chữ số, đầu 03, 05, 07, 08, 09)")]
+        [RegularExpression(@"^(?:\+?84|0)(?:3[2-9]|5[25689]|7[06-9]|8[1-9]|9\d)\d{7}$", ErrorMessage = "Số điện thoại không hợp lệ (10 chữ số, đầu 03, 05, 07, 08, 09 hoặc +84)")]
         [Display(Name = "Số điện thoại")]
         public string Phone { get; set; } = string.Empty;
 
@@ -90,6 +90,14 @@ namespace WebApplication1.Models.ViewModels
         [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã xác thực gồm 6 chữ số")]
         [RegularExpression(@"^[0-9]{6}$", ErrorMessage = "Mã OTP chỉ bao gồm các chữ số")]
         public string OtpCode { get; set; } = string.Empty;
+
+        public bool IsEmailSent { get; set; }
+        public string? FallbackOtp { get; set; }
+    }
+
+    public class ResendOtpRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 
     public class TicketDetailViewModel

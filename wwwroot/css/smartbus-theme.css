@@ -616,3 +616,135 @@ body {
 .sbg-seat-box.vip-cabin:hover:not(.booked) {
     border-color: #d97706;
 }
+/* Reschedule UI Enhancements */
+.hover-shadow:hover {
+    box-shadow: 0 12px 28px rgba(10, 77, 70, 0.12) !important;
+    transform: translateY(-2px);
+}
+
+.transition-all {
+    transition: all 0.2s ease-in-out;
+}
+
+@media (min-width: 768px) {
+    .border-start-md {
+        border-left: 1px solid var(--sbg-border) !important;
+    }
+    .border-end-md {
+        border-right: 1px solid var(--sbg-border) !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .border-start-lg {
+        border-left: 1px solid var(--sbg-border) !important;
+    }
+}
+
+/* Flatpickr Datepicker Customization for SmartBus Go */
+.sbg-alt-datepicker {
+    cursor: pointer !important;
+    letter-spacing: 0.5px;
+}
+
+.input-group .sbg-calendar-trigger {
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.input-group .sbg-calendar-trigger:hover {
+    background-color: var(--sbg-primary-light) !important;
+    color: var(--sbg-primary) !important;
+}
+
+.flatpickr-calendar {
+    font-family: inherit !important;
+    border-radius: 14px !important;
+    box-shadow: 0 16px 36px -4px rgba(10, 77, 70, 0.18), 0 8px 16px -6px rgba(10, 77, 70, 0.1) !important;
+    border: 1px solid var(--sbg-border) !important;
+    overflow: hidden;
+}
+
+.flatpickr-months {
+    background: var(--sbg-primary) !important;
+    color: #ffffff !important;
+    padding: 6px 0;
+}
+
+.flatpickr-months .flatpickr-month {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+.flatpickr-current-month {
+    font-size: 1.05rem !important;
+    padding-top: 4px !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    padding: 8px !important;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg {
+    fill: var(--sbg-accent) !important;
+}
+
+span.flatpickr-weekday {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-weight: 600 !important;
+    background: var(--sbg-primary) !important;
+}
+
+.flatpickr-day {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease-in-out;
+}
+
+.flatpickr-day.today {
+    border-color: var(--sbg-accent) !important;
+    color: var(--sbg-primary) !important;
+    font-weight: 700 !important;
+}
+
+.flatpickr-day.today:hover {
+    background: var(--sbg-primary-light) !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected.inRange,
+.flatpickr-day.selected:focus,
+.flatpickr-day.selected:hover,
+.flatpickr-day.prevMonthDay.selected,
+.flatpickr-day.nextMonthDay.selected {
+    background: var(--sbg-primary) !important;
+    border-color: var(--sbg-primary) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 10px rgba(10, 77, 70, 0.3) !important;
+}
+
+.flatpickr-day:hover:not(.selected):not(.disabled) {
+    background: var(--sbg-primary-light) !important;
+    border-color: transparent !important;
+    color: var(--sbg-primary) !important;
+}
+
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+    color: #cbd5e1 !important;
+    background: transparent !important;
+    cursor: not-allowed !important;
+}

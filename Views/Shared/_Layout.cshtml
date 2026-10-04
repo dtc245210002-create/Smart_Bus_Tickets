@@ -7,6 +7,7 @@
     
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/lib/flatpickr/flatpickr.min.css" />
     <link rel="stylesheet" href="~/css/smartbus-theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
@@ -52,6 +53,12 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link fw-semibold text-dark" asp-controller="Ticket" asp-action="Detail">Vé điện tử (Demo)</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-semibold text-dark" asp-controller="Ticket" asp-action="Reschedule">Đổi chuyến (Demo)</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-semibold text-dark" asp-controller="Ticket" asp-action="Cancel">Hủy vé (Demo)</a>
                         </li>
                     </ul>
 
@@ -167,6 +174,8 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/flatpickr/flatpickr.min.js"></script>
+    <script src="~/lib/flatpickr/vn.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     
     @await RenderSectionAsync("Scripts", required: false)

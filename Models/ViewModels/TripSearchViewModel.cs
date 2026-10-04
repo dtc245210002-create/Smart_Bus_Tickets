@@ -27,6 +27,9 @@ namespace WebApplication1.Models.ViewModels
         public string BusTypeName { get; set; } = "Limousine VIP 16 Chỗ";
         public string BusImage { get; set; } = "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&q=80";
         public string LicensePlate { get; set; } = "29B-888.68";
+        public string ProvinceName { get; set; } = "Hà Nội";
+        public bool IsMatchingDeparture { get; set; }
+        public bool IsMatchingDestination { get; set; }
 
         public TimeSpan DepartureTime { get; set; }
         public string DeparturePoint { get; set; } = string.Empty;

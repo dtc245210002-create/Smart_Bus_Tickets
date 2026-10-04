@@ -1,0 +1,633 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Hủy Vé & Hoàn Tiền - SmartBus Go #SBG-84920</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+    <style>
+        @@layer base {
+            html, body { margin: 0; padding: 0; }
+            body { overscroll-behavior: none; }
+            main > :first-child { margin-top: 0 !important; }
+            main > :last-child { margin-bottom: 0 !important; }
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary": "#565e74",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#dae2fd",
+                        "on-primary-fixed-variant": "#005049",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f7f9fb",
+                        "primary": "#00685f",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#191c1e",
+                        "on-surface-variant": "#3d4947",
+                        "surface-variant": "#e0e3e5",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "surface-tint": "#006a61",
+                        "on-secondary-fixed": "#131b2e",
+                        "inverse-on-surface": "#eff1f3",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#6bd8cb",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#f4fffc",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "tertiary-container": "#00855b",
+                        "outline-variant": "#bcc9c6",
+                        "surface-container-high": "#e6e8ea",
+                        "tertiary": "#006947",
+                        "primary-container": "#008378",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "background": "#f7f9fb",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container": "#eceef0",
+                        "on-background": "#191c1e",
+                        "primary-fixed": "#89f5e7",
+                        "on-secondary-container": "#5c647a",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#6bd8cb",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#dae2fd",
+                        "outline": "#6d7a77",
+                        "surface-bright": "#f7f9fb",
+                        "surface-container-low": "#f2f4f6",
+                        "surface-dim": "#d8dadc",
+                        "on-primary-fixed": "#00201d",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-tertiary-container": "#f5fff6"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "space-xs": "0.25rem",
+                        "space-sm": "0.5rem",
+                        "space-md": "1rem",
+                        "space-lg": "1.5rem",
+                        "space-xl": "2.5rem",
+                        "margin-sm": "1rem",
+                        "margin": "1.5rem",
+                        "margin-lg": "3rem",
+                        "gutter-sm": "1rem",
+                        "gutter": "1.5rem",
+                        "gutter-lg": "2rem"
+                    },
+                    fontFamily: {
+                        "numeric-data": ["Inter", "sans-serif"],
+                        "headline-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "display-lg": ["Plus Jakarta Sans", "sans-serif"],
+                        "headline-lg": ["Plus Jakarta Sans", "sans-serif"],
+                        "headline-sm": ["Plus Jakarta Sans", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
+                        "label-md": ["Inter", "sans-serif"],
+                        "title-md": ["Inter", "sans-serif"],
+                        "body-sm": ["Inter", "sans-serif"],
+                        "label-lg": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased selection:bg-primary selection:text-on-primary">
+    <!-- HEADER -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+        <div class="border-b border-gray-100 text-[13px] text-gray-600 bg-white">
+            <div class="max-w-7xl mx-auto px-4 lg:px-8 py-1.5 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-gray-600">
+                    <span class="material-symbols-outlined text-primary text-[17px]">verified_user</span>
+                    <span>Đặt vé thông minh 4.0</span>
+                    <span class="text-gray-400 mx-1">•</span>
+                    <span class="material-symbols-outlined text-gray-500 text-[17px]">directions_bus</span>
+                    <span>Hơn 3,000+ chuyến xe toàn quốc</span>
+                </div>
+                <div class="flex items-center gap-6 text-gray-700">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-primary text-[17px]">call</span>
+                        <span>Hotline: <strong class="text-gray-900 font-bold">1900 6868</strong></span>
+                    </div>
+                    <div class="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-[17px] text-gray-500">language</span>
+                        <span>VND | VI</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <a class="flex items-center gap-3" href="/Home/Index">
+                    <div class="text-[#008378] flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[38px] text-[#008378]">directions_bus</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[24px] font-bold text-[#0d3b2e] tracking-tight leading-none font-headline-sm">SmartBus<span class="text-[#008378]">Go</span></span>
+                        <span class="mt-1 bg-emerald-50 text-[#008378] text-[10px] font-semibold px-2 py-0.5 rounded leading-tight w-fit">Vé xe buýt thông minh</span>
+                    </div>
+                </a>
+
+                <nav class="flex items-center gap-6 ml-4">
+                    <a class="font-medium text-[15px] text-gray-800 hover:text-primary transition-colors" href="/Home/Index">Trang chủ</a>
+                    <a class="font-medium text-[15px] text-gray-800 hover:text-primary transition-colors" href="/Ticket/Payment">Thanh toán vé (Demo)</a>
+                    <a class="font-medium text-[15px] text-gray-800 hover:text-primary transition-colors" href="/Ticket/Detail">Vé điện tử (Demo)</a>
+                    <a class="font-medium text-[15px] text-gray-800 hover:text-primary transition-colors" href="/Ticket/Reschedule">Đổi chuyến (Demo)</a>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="/Account/Login" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#094c3b] hover:bg-[#073c2e] text-white font-semibold text-[14px] shadow-sm transition-all">
+                    <span class="material-symbols-outlined text-[19px]">login</span>
+                    <span>Đăng nhập / Đăng ký</span>
+                </a>
+                <a href="/Driver/Login" class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-[14px] transition-colors">
+                    <span class="material-symbols-outlined text-[19px] text-gray-600">badge</span>
+                    <span>Bác tài</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full pt-[104px] bg-[#f4f7f6] min-h-screen pb-16">
+        <div class="flex flex-col w-full relative">
+            <!-- TRANG NỀN: CHI TIẾT VÉ ĐIỆN TỬ -->
+            <div class="max-w-7xl mx-auto px-margin sm:px-gutter-lg py-margin w-full">
+                <!-- Breadcrumb -->
+                <div class="flex flex-wrap items-center justify-between gap-space-md mb-space-lg">
+                    <div class="flex items-center gap-space-sm text-secondary">
+                        <a class="flex items-center gap-1 font-body-sm text-body-sm hover:text-primary transition-colors" href="/Ticket/Detail">
+                            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                            <span>Vé của tôi</span>
+                        </a>
+                        <span class="text-outline-variant">•</span>
+                        <span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Chi tiết vé điện tử</span>
+                        <span class="text-outline-variant">•</span>
+                        <span class="font-numeric-data text-body-sm text-primary font-bold">#SBG-84920</span>
+                    </div>
+                    <div class="flex items-center gap-space-sm">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-fixed-dim/30 text-tertiary font-label-md text-label-md font-semibold">
+                            <span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                            Đã thanh toán • Chờ khởi hành
+                        </span>
+                        <button onclick="window.print();" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">print</span>
+                            In vé PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thẻ vé chính & Lộ trình -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+                    <div class="lg:col-span-8 flex flex-col gap-space-lg">
+                        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-margin sm:p-space-xl relative overflow-hidden">
+                            <div class="flex flex-wrap items-start justify-between gap-space-md pb-space-lg border-b border-surface-container">
+                                <div class="flex items-center gap-space-md">
+                                    <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined text-[28px]">directions_bus</span>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-headline-sm text-headline-sm text-on-surface">Phương Trang FUTA Bus Lines</span>
+                                            <span class="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-md text-body-sm">Limousine 34 phòng VIP</span>
+                                        </div>
+                                        <p class="font-body-sm text-body-sm text-secondary mt-0.5">Biển số: 29B-678.92 • Tuyến Bắc Nam cao tốc</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-label-md text-label-md text-secondary uppercase tracking-wider block">Mã đặt chỗ</span>
+                                    <span class="font-numeric-data text-headline-md text-primary font-bold tracking-tight">SBG-84920</span>
+                                </div>
+                            </div>
+
+                            <!-- Lộ trình -->
+                            <div class="py-space-xl grid grid-cols-1 sm:grid-cols-3 gap-space-lg items-center">
+                                <div>
+                                    <span class="font-numeric-data text-headline-lg text-on-surface block">20:30</span>
+                                    <span class="font-label-lg text-label-lg text-primary font-semibold block">Thứ Sáu, 24/10/2025</span>
+                                    <span class="font-body-md text-body-md text-on-surface-variant font-medium mt-1 block">Bến xe Nước Ngầm, Hà Nội</span>
+                                    <span class="font-body-sm text-body-sm text-secondary">Quầy vé số 14, Tầng 1</span>
+                                </div>
+                                <div class="flex flex-col items-center justify-center px-space-sm text-center">
+                                    <span class="font-label-md text-label-md text-secondary mb-1">Thời gian dự kiến 14h 30m</span>
+                                    <div class="w-full flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary/20"></span>
+                                        <div class="flex-1 h-0.5 bg-surface-variant relative">
+                                            <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-surface-container-lowest px-1.5 text-primary">
+                                                <span class="material-symbols-outlined text-[18px]">navigation</span>
+                                            </div>
+                                        </div>
+                                        <span class="w-2.5 h-2.5 rounded-full bg-tertiary ring-4 ring-tertiary/20"></span>
+                                    </div>
+                                    <span class="font-body-sm text-body-sm text-tertiary font-medium mt-1">Chạy thẳng cao tốc 1A</span>
+                                </div>
+                                <div class="text-left sm:text-right">
+                                    <span class="font-numeric-data text-headline-lg text-on-surface block">11:00</span>
+                                    <span class="font-label-lg text-label-lg text-primary font-semibold block">Thứ Bảy, 25/10/2025</span>
+                                    <span class="font-body-md text-body-md text-on-surface-variant font-medium mt-1 block">Bến xe Trung tâm Đà Nẵng</span>
+                                    <span class="font-body-sm text-body-sm text-secondary">Cổng trả khách số 02 Tôn Đức Thắng</span>
+                                </div>
+                            </div>
+
+                            <!-- Hành khách & Giá -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-space-md pt-space-lg border-t border-surface-container bg-surface-container-low -mx-margin sm:-mx-space-xl -mb-margin sm:-mb-space-xl p-margin sm:p-space-lg rounded-b-xl">
+                                <div>
+                                    <span class="font-label-md text-body-sm text-secondary block">Hành khách</span>
+                                    <span class="font-title-md text-title-md text-on-surface font-semibold">Nguyễn Văn An</span>
+                                    <span class="font-body-sm text-body-sm text-secondary block">0988 123 456</span>
+                                </div>
+                                <div>
+                                    <span class="font-label-md text-body-sm text-secondary block">Số lượng & Vị trí</span>
+                                    <span class="font-numeric-data text-title-md text-primary font-bold">2 Ghế: VIP 05, VIP 06</span>
+                                    <span class="font-body-sm text-body-sm text-secondary block">Tầng 1 - Khoang êm</span>
+                                </div>
+                                <div>
+                                    <span class="font-label-md text-body-sm text-secondary block">Cổng thanh toán</span>
+                                    <span class="font-title-md text-title-md text-on-surface font-semibold">VietQR Pro</span>
+                                    <span class="font-body-sm text-body-sm text-secondary block">Mã GD: #TX948271</span>
+                                </div>
+                                <div>
+                                    <span class="font-label-md text-body-sm text-secondary block">Tổng tiền thanh toán</span>
+                                    <span class="font-numeric-data text-headline-sm text-primary font-bold">530.000 đ</span>
+                                    <span class="font-body-sm text-body-sm text-tertiary block">Đã có VAT & Bảo hiểm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2 Nút hành động chính -->
+                        <div class="flex flex-wrap items-center justify-end gap-space-md">
+                            <a href="/Ticket/Reschedule" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-lg text-label-lg font-semibold transition-all">
+                                <span class="material-symbols-outlined text-[20px] text-secondary">sync_alt</span>
+                                <span>Đổi lịch trình / Đổi vé</span>
+                            </a>
+                            <button class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-error/10 hover:bg-error/20 text-error font-label-lg text-label-lg font-bold shadow-sm transition-all cursor-pointer" id="openModalBtn" type="button">
+                                <span class="material-symbols-outlined text-[20px]">cancel</span>
+                                <span>Yêu cầu Hủy vé & Hoàn tiền</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cột phải: Tiện ích -->
+                    <div class="lg:col-span-4 flex flex-col gap-space-lg">
+                        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-margin flex flex-col gap-space-md">
+                            <span class="font-title-md text-title-md text-on-surface font-semibold">Thông tin chuyến xe</span>
+                            <div class="space-y-space-sm font-body-md text-body-md text-on-surface-variant">
+                                <div class="flex items-center justify-between py-1">
+                                    <span class="text-secondary flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[18px]">wifi</span> Wifi 5G
+                                    </span>
+                                    <span class="font-semibold text-tertiary">Miễn phí</span>
+                                </div>
+                                <div class="flex items-center justify-between py-1">
+                                    <span class="text-secondary flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[18px]">water_drop</span> Nước & khăn lạnh
+                                    </span>
+                                    <span class="font-semibold text-tertiary">2 chai/khách</span>
+                                </div>
+                                <div class="flex items-center justify-between py-1">
+                                    <span class="text-secondary flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[18px]">luggage</span> Hành lý gửi
+                                    </span>
+                                    <span class="font-semibold text-on-surface">Tối đa 20kg</span>
+                                </div>
+                            </div>
+                            <div class="rounded-lg bg-surface-container-low p-space-sm mt-space-xs flex items-center gap-space-sm">
+                                <span class="material-symbols-outlined text-primary text-[24px]">support_agent</span>
+                                <div class="flex flex-col">
+                                    <span class="font-label-md text-label-md text-on-surface font-semibold">Bác tài đón: Bùi Minh Quân</span>
+                                    <span class="font-numeric-data text-body-sm text-secondary">0903 898 991</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- MODAL XÁC NHẬN HỦY VÉ & HOÀN TIỀN -->
+            <!-- ========================================================================= -->
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-on-surface/60 backdrop-blur-sm overflow-y-auto" id="cancelModalOverlay">
+                <div class="bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto transform transition-all flex flex-col max-h-[92vh]">
+                    <!-- Header Modal -->
+                    <div class="px-space-lg py-space-md bg-surface-container-low flex items-center justify-between border-b border-surface-container shrink-0">
+                        <div class="flex items-center gap-space-sm">
+                            <div class="w-10 h-10 rounded-full bg-error-container text-error flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[22px]">assignment_late</span>
+                            </div>
+                            <div>
+                                <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Xác nhận yêu cầu Hủy vé & Hoàn tiền</h2>
+                                <p class="font-body-sm text-body-sm text-secondary">
+                                    Mã vé: <span class="font-numeric-data text-primary font-bold">#SBG-84920</span> • Tuyến Hà Nội → Đà Nẵng
+                                </p>
+                            </div>
+                        </div>
+                        <button class="w-8 h-8 rounded-full flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-container-high transition-colors" id="closeModalCross" title="Đóng modal" type="button">
+                            <span class="material-symbols-outlined text-[20px]">close</span>
+                        </button>
+                    </div>
+
+                    <!-- Scrollable Modal Body -->
+                    <div class="p-space-lg sm:p-gutter overflow-y-auto space-y-space-lg flex-1">
+                        <!-- Mốc thời gian hoàn tiền -->
+                        <div class="rounded-xl bg-surface-container-low p-space-md sm:p-space-lg space-y-space-md">
+                            <div class="flex flex-wrap items-center justify-between gap-space-sm">
+                                <span class="font-title-md text-title-md text-on-surface font-bold flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-primary text-[20px]">schedule</span>
+                                    Chính sách & Mốc thời gian hoàn tiền
+                                </span>
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary font-label-md text-label-md font-semibold">
+                                    <span class="material-symbols-outlined text-[16px]">hourglass_top</span>
+                                    <span>Thời gian còn lại: <strong>36 giờ 15 phút</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Nấc thang biểu phí -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-space-sm pt-space-xs">
+                                <div class="relative p-space-sm rounded-xl bg-surface-container-lowest shadow-sm ring-2 ring-primary/80 flex flex-col justify-between">
+                                    <div class="absolute -top-2.5 right-3 bg-primary text-on-primary font-label-md text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                                        Đang áp dụng
+                                    </div>
+                                    <div>
+                                        <span class="font-label-lg text-label-lg text-primary font-bold block">Trước 24 giờ</span>
+                                        <span class="font-body-sm text-body-sm text-secondary">Hủy an toàn cao</span>
+                                    </div>
+                                    <div class="mt-space-sm pt-space-xs border-t border-surface-container">
+                                        <span class="font-numeric-data text-body-lg text-on-surface font-bold block">Hoàn 90%</span>
+                                        <span class="font-body-sm text-label-md text-secondary">Phí hủy 10%</span>
+                                    </div>
+                                </div>
+
+                                <div class="p-space-sm rounded-xl bg-surface-container-lowest/70 opacity-80 flex flex-col justify-between">
+                                    <div>
+                                        <span class="font-label-lg text-label-lg text-on-surface font-semibold block">Từ 12h - 24 giờ</span>
+                                        <span class="font-body-sm text-body-sm text-secondary">Sát giờ khởi hành</span>
+                                    </div>
+                                    <div class="mt-space-sm pt-space-xs border-t border-surface-container">
+                                        <span class="font-numeric-data text-body-lg text-on-surface font-bold block">Hoàn 70%</span>
+                                        <span class="font-body-sm text-label-md text-secondary">Phí hủy 30%</span>
+                                    </div>
+                                </div>
+
+                                <div class="p-space-sm rounded-xl bg-surface-container-lowest/50 opacity-60 flex flex-col justify-between">
+                                    <div>
+                                        <span class="font-label-lg text-label-lg text-secondary font-semibold block">Dưới 12 giờ</span>
+                                        <span class="font-body-sm text-body-sm text-secondary">Quá hạn hủy vé</span>
+                                    </div>
+                                    <div class="mt-space-sm pt-space-xs border-t border-surface-container">
+                                        <span class="font-numeric-data text-body-lg text-error font-bold block">Hoàn 0%</span>
+                                        <span class="font-body-sm text-label-md text-error">Phạt 100% giá vé</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bảng tính toán tiền hoàn -->
+                            <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm space-y-space-sm">
+                                <div class="flex items-center justify-between text-body-md font-body-md text-secondary">
+                                    <span>Tổng giá trị vé đã thanh toán (2 vé VIP):</span>
+                                    <span class="font-numeric-data font-semibold text-on-surface">530.000 đ</span>
+                                </div>
+                                <div class="flex items-center justify-between text-body-md font-body-md text-secondary">
+                                    <span>Phí hủy vé theo quy định (10%):</span>
+                                    <span class="font-numeric-data font-semibold text-error">- 53.000 đ</span>
+                                </div>
+                                <div class="pt-space-sm border-t border-surface-container flex flex-wrap items-baseline justify-between gap-space-xs">
+                                    <div>
+                                        <span class="font-title-md text-title-md text-on-surface font-bold block">Số tiền thực nhận hoàn lại</span>
+                                        <span class="font-body-sm text-body-sm text-secondary">Dự kiến tiền về tài khoản trong 1-3 ngày làm việc</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-numeric-data text-headline-md text-primary font-bold">477.000 đ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form hủy vé -->
+                        <form id="cancelTicketForm" method="post" action="/Ticket/ConfirmCancel" class="space-y-space-md">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ticketCode" value="SBG-84920" />
+
+                            <div>
+                                <label class="font-label-lg text-label-lg text-on-surface font-semibold block mb-1" for="cancelReason">
+                                    Lý do bạn muốn hủy vé <span class="text-error">*</span>
+                                </label>
+                                <div class="relative">
+                                    <select name="cancelReason" class="w-full h-12 px-4 pr-10 rounded-xl bg-surface-container-lowest text-on-surface font-body-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer" id="cancelReason">
+                                        <option selected value="change_plan">Thay đổi kế hoạch cá nhân / Đột xuất bận</option>
+                                        <option value="other_transit">Tìm được phương tiện khác phù hợp hơn</option>
+                                        <option value="health">Lý do sức khỏe / Ốm đau đột xuất</option>
+                                        <option value="weather">Thời tiết tại điểm đến không thuận lợi</option>
+                                        <option value="other">Lý do khác</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-secondary">
+                                        <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="font-label-lg text-label-lg text-on-surface font-semibold block mb-1" for="cancelNote">
+                                    Ghi chú thêm cho nhà xe & hệ thống <span class="font-normal text-secondary text-body-sm">(Tùy chọn)</span>
+                                </label>
+                                <textarea name="cancelNote" class="w-full p-3 rounded-xl bg-surface-container-lowest text-on-surface font-body-md text-body-md border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary resize-none" id="cancelNote" placeholder="Nhập thêm thông tin để SmartBusGo hỗ trợ quý khách tốt hơn..." rows="2"></textarea>
+                            </div>
+
+                            <!-- Phương thức nhận hoàn tiền -->
+                            <div>
+                                <label class="font-label-lg text-label-lg text-on-surface font-semibold block mb-2">
+                                    Chọn phương thức nhận tiền hoàn lại <span class="text-error">*</span>
+                                </label>
+                                <div class="space-y-space-xs">
+                                    <label class="flex items-start gap-space-sm p-space-sm rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer border border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                        <input checked class="mt-1 w-4 h-4 text-primary focus:ring-primary accent-primary" name="refundMethod" type="radio" value="original" />
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-title-md text-body-md text-on-surface font-semibold">Tài khoản thanh toán ban đầu (Khuyên dùng)</span>
+                                                <span class="font-label-md text-label-md px-2 py-0.5 rounded bg-primary/10 text-primary font-bold">Mặc định</span>
+                                            </div>
+                                            <p class="font-body-sm text-body-sm text-secondary mt-0.5">VietQR • Techcombank (STK: ****4756) • Người thụ hưởng: NGUYEN VAN AN</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-start gap-space-sm p-space-sm rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer border border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                        <input class="mt-1 w-4 h-4 text-primary focus:ring-primary accent-primary" name="refundMethod" type="radio" value="wallet" />
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-title-md text-body-md text-on-surface font-semibold">Ví điện tử SmartPay / Điểm SmartPoints</span>
+                                                <span class="font-label-md text-label-md px-2 py-0.5 rounded bg-tertiary-fixed-dim text-on-tertiary-fixed font-bold">+ Tặng 20.000 đ</span>
+                                            </div>
+                                            <p class="font-body-sm text-body-sm text-secondary mt-0.5">Cộng tiền ngay lập tức vào ví dùng cho chuyến xe tiếp theo kèm mã giảm 20k.</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-start gap-space-sm p-space-sm rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer border border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                        <input class="mt-1 w-4 h-4 text-primary focus:ring-primary accent-primary" name="refundMethod" type="radio" value="other_bank" />
+                                        <div class="flex-1">
+                                            <span class="font-title-md text-body-md text-on-surface font-semibold">Chuyển khoản đến tài khoản ngân hàng khác</span>
+                                            <p class="font-body-sm text-body-sm text-secondary mt-0.5">Yêu cầu nhập thông tin số tài khoản và ngân hàng nhận.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Cảnh báo & Checkbox -->
+                            <div class="space-y-space-sm pt-2">
+                                <div class="p-space-md rounded-xl bg-amber-50 text-amber-900 border border-amber-200/60 flex items-start gap-space-sm">
+                                    <span class="material-symbols-outlined text-amber-600 text-[22px] shrink-0 mt-0.5">warning</span>
+                                    <div class="text-body-sm font-body-sm leading-relaxed">
+                                        <strong class="font-semibold block text-amber-950 uppercase tracking-wide">Cảnh báo quan trọng:</strong>
+                                        Hành động hủy vé <strong>không thể hoàn tác</strong>. Hai vị trí ghế <strong>VIP 05</strong> và <strong>VIP 06</strong> của bạn trên chuyến xe khởi hành lúc 20:30 ngày 24/10/2025 sẽ được mở bán lại ngay lập tức cho các hành khách khác trên hệ thống.
+                                    </div>
+                                </div>
+
+                                <label class="flex items-start gap-2.5 cursor-pointer pt-1">
+                                    <input class="mt-1 w-4 h-4 text-primary focus:ring-primary rounded border-outline-variant accent-primary cursor-pointer" id="confirmAgreeCheckbox" type="checkbox" />
+                                    <span class="font-body-md text-body-sm text-on-surface select-none">
+                                        Tôi xác nhận đã đọc, hiểu rõ chính sách hoàn/hủy vé của nhà xe Phương Trang & SmartBusGo và đồng ý nhận số tiền hoàn 
+                                        <strong class="text-primary font-numeric-data">477.000 đ</strong>.
+                                    </span>
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Footer Modal -->
+                    <div class="px-space-lg py-space-md bg-surface-container-low flex flex-col-reverse sm:flex-row items-center justify-end gap-space-sm border-t border-surface-container shrink-0">
+                        <button class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-lg text-label-lg font-semibold transition-colors cursor-pointer" id="cancelModalCloseBtn" type="button">
+                            Giữ vé / Quay lại
+                        </button>
+                        <button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-error hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-on-primary font-label-lg text-label-lg font-bold shadow-md transition-all cursor-pointer" disabled id="submitCancelTicketBtn" type="button">
+                            <span class="material-symbols-outlined text-[19px]">delete_forever</span>
+                            <span>XÁC NHẬN HỦY VÉ & NHẬN HOÀN TIỀN</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toast thông báo thành công -->
+            <div class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none" id="toastSuccess">
+                <div class="bg-surface-container-lowest border-l-4 border-primary rounded-xl shadow-2xl p-space-md flex items-center gap-space-sm max-w-md">
+                    <div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                    </div>
+                    <div>
+                        <h4 class="font-title-md text-body-md text-on-surface font-bold">Yêu cầu hủy vé thành công!</h4>
+                        <p class="font-body-sm text-body-sm text-secondary">Số tiền 477.000 đ đang được xử lý chuyển về tài khoản Techcombank của bạn.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.02)] mt-margin-lg">
+        <div class="max-w-7xl mx-auto px-margin lg:px-margin-lg py-margin-lg">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter-lg pb-margin">
+                <div class="lg:col-span-2 flex flex-col gap-space-sm">
+                    <div class="flex items-center gap-space-sm">
+                        <span class="font-headline-sm text-headline-sm text-primary font-bold">SmartBus Go</span>
+                    </div>
+                    <p class="font-body-md text-body-md text-on-surface-variant max-w-sm mt-space-xs">Hệ thống kết nối tuyến xe liên tỉnh và xe buýt thông minh hàng đầu Việt Nam.</p>
+                    <div class="flex items-center gap-space-sm mt-space-sm">
+                        <span class="font-label-md text-label-md text-secondary">Tổng đài hỗ trợ 24/7:</span>
+                        <span class="font-numeric-data text-numeric-data text-primary">1900 6868</span>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-margin flex flex-col md:flex-row items-center justify-between gap-space-sm border-t border-gray-100">
+                <span class="font-body-sm text-body-sm text-secondary">© 2026 SmartBus Go Vietnam Corp.</span>
+                <div class="flex items-center gap-space-md">
+                    <span class="font-label-md text-label-md text-secondary">Kết nối an toàn qua cổng</span>
+                    <span class="font-numeric-data text-numeric-data text-on-surface-variant">NAPAS • VISA • VNPAY</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalOverlay = document.getElementById('cancelModalOverlay');
+            const openModalBtn = document.getElementById('openModalBtn');
+            const closeModalCross = document.getElementById('closeModalCross');
+            const cancelModalCloseBtn = document.getElementById('cancelModalCloseBtn');
+            const confirmCheckbox = document.getElementById('confirmAgreeCheckbox');
+            const submitCancelBtn = document.getElementById('submitCancelTicketBtn');
+            const cancelForm = document.getElementById('cancelTicketForm');
+            const toastSuccess = document.getElementById('toastSuccess');
+
+            function openModal() {
+                if (!modalOverlay) return;
+                modalOverlay.classList.remove('hidden');
+                modalOverlay.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                if (!modalOverlay) return;
+                modalOverlay.classList.add('hidden');
+                modalOverlay.classList.remove('flex');
+                document.body.style.overflow = '';
+            }
+
+            if (openModalBtn) openModalBtn.addEventListener('click', openModal);
+            if (closeModalCross) closeModalCross.addEventListener('click', closeModal);
+            if (cancelModalCloseBtn) cancelModalCloseBtn.addEventListener('click', closeModal);
+
+            if (confirmCheckbox && submitCancelBtn) {
+                confirmCheckbox.addEventListener('change', function() {
+                    submitCancelBtn.disabled = !this.checked;
+                });
+            }
+
+            if (submitCancelBtn && cancelForm) {
+                submitCancelBtn.addEventListener('click', function() {
+                    if (!confirmCheckbox || !confirmCheckbox.checked) return;
+                    
+                    submitCancelBtn.disabled = true;
+                    submitCancelBtn.innerHTML = '<span class="material-symbols-outlined text-[19px] animate-spin">progress_activity</span><span>Đang xử lý hủy vé...</span>';
+
+                    if (toastSuccess) {
+                        toastSuccess.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+                    }
+
+                    setTimeout(function() {
+                        cancelForm.submit();
+                    }, 1000);
+                });
+            }
+
+            if (modalOverlay) {
+                modalOverlay.addEventListener('click', function(e) {
+                    if (e.target === modalOverlay) {
+                        closeModal();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

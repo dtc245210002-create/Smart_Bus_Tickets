@@ -26,8 +26,9 @@
             <div class="col-md-3">
                 <label class="form-label text-muted small fw-bold mb-1">NGÀY ĐI</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar-event"></i></span>
-                    <input type="date" name="date" value="@Model.DepartureDate.ToString("yyyy-MM-dd")" class="form-control border-start-0 fw-bold" required />
+                    <span class="input-group-text bg-white border-end-0 text-muted sbg-calendar-trigger" title="Mở lịch chọn ngày"><i class="bi bi-calendar-event text-success"></i></span>
+                    <input type="text" name="date" value="@Model.DepartureDate.ToString("yyyy-MM-dd")" class="form-control border-start-0 border-end-0 fw-bold sbg-datepicker" placeholder="dd/mm/yyyy" required />
+                    <span class="input-group-text bg-white border-start-0 text-muted sbg-calendar-trigger" title="Mở lịch chọn ngày"><i class="bi bi-calendar3"></i></span>
                 </div>
             </div>
 
@@ -88,28 +89,28 @@
             <div class="sbg-filter-card">
                 <div class="sbg-filter-title">
                     <span><i class="bi bi-funnel me-1 text-success"></i> Lọc nâng cao</span>
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" class="text-success text-decoration-none small">Xóa lọc</a>
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" class="text-success text-decoration-none small">Xóa lọc</a>
                 </div>
 
                 <h6 class="fw-bold small text-muted text-uppercase mb-2">Khung giờ khởi hành</h6>
                 <div class="d-flex flex-column gap-2 mb-3">
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-timeOfDay="morning" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "morning" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-timeOfDay="morning" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "morning" ? "active text-white bg-success" : "")">
                         🌅 Buổi sáng (06:00 - 12:00)
                     </a>
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-timeOfDay="afternoon" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "afternoon" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-timeOfDay="afternoon" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "afternoon" ? "active text-white bg-success" : "")">
                         ☀️ Buổi chiều (12:00 - 18:00)
                     </a>
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-timeOfDay="evening" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "evening" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-timeOfDay="evening" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "evening" ? "active text-white bg-success" : "")">
                         🌙 Buổi tối (18:00 - 24:00)
                     </a>
                 </div>
 
                 <h6 class="fw-bold small text-muted text-uppercase mb-2">Loại xe</h6>
                 <div class="d-flex flex-column gap-2">
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-busType="Limousine" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.BusTypeFilter == "Limousine" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-busType="Limousine" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.BusTypeFilter == "Limousine" ? "active text-white bg-success" : "")">
                         🚌 Limousine VIP
                     </a>
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-busType="Giường Nằm" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.BusTypeFilter == "Giường Nằm" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-busType="Giường Nằm" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.BusTypeFilter == "Giường Nằm" ? "active text-white bg-success" : "")">
                         🛏️ Xe Giường Nằm
                     </a>
                 </div>
@@ -155,7 +156,27 @@
                                     <h5 class="fw-bold text-dark mb-0">@trip.OperatorName</h5>
                                     <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> @trip.Rating (@trip.ReviewCount)</span>
                                 </div>
-                                <div class="text-muted small mb-3">@trip.BusTypeName • Biển số: <strong>@trip.LicensePlate</strong></div>
+                                <div class="text-muted small mb-3 d-flex align-items-center flex-wrap gap-1">
+                                    <span>@trip.BusTypeName • Biển số: <strong class="text-dark">@trip.LicensePlate</strong></span>
+                                    @if (trip.IsMatchingDeparture)
+                                    {
+                                        <span class="badge bg-success text-white" title="Xe biển số tỉnh xuất phát (@trip.ProvinceName)">
+                                            <i class="bi bi-geo-alt-fill"></i> Xe @trip.ProvinceName
+                                        </span>
+                                    }
+                                    else if (trip.IsMatchingDestination)
+                                    {
+                                        <span class="badge bg-info text-dark" title="Xe biển số tỉnh điểm đến (@trip.ProvinceName)">
+                                            <i class="bi bi-geo-fill"></i> Xe @trip.ProvinceName
+                                        </span>
+                                    }
+                                    else if (!string.IsNullOrEmpty(trip.ProvinceName) && trip.ProvinceName != "Toàn quốc")
+                                    {
+                                        <span class="badge bg-light text-secondary border" title="Tỉnh đăng ký biển xe">
+                                            <i class="bi bi-geo-alt"></i> @trip.ProvinceName
+                                        </span>
+                                    }
+                                </div>
 
                                 <div class="position-relative ps-4">
                                     <div class="mb-3">
