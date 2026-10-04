@@ -51,6 +51,13 @@ namespace WebApplication1.Models.ViewModels
         public List<string> DropOffPoints { get; set; } = new();
         public List<SeatItemViewModel> Seats { get; set; } = new();
 
+        public string DriverName { get; set; } = "Tài xế SmartBus";
+        public string DriverPhone { get; set; } = "0988 777 999";
+        public string RouteCode { get; set; } = string.Empty;
+        public string RouteName { get; set; } = string.Empty;
+        public int EstimatedDuration { get; set; } = 180;
+        public decimal Distance { get; set; } = 220;
+
         // Cấu hình sơ đồ xe theo tầng (29 chỗ, 45 chỗ, giường nằm 2 tầng)
         public string BusTypeCode { get; set; } = "SEAT_29";
         public List<WebApplication1.Models.BusLayout.BusFloorLayout> FloorLayouts { get; set; } = new();

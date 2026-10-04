@@ -142,7 +142,7 @@
 
             <div class="sbg-ticket-stub">
                 <div class="mb-3">
-                    @if (Model.Status == "ACTIVE")
+                    @if (Model.Status == "ACTIVE" || Model.Status == "CONFIRMED" || Model.Status == "PAID" || Model.Status == "ISSUED")
                     {
                         <span class="sbg-ticket-status-badge sbg-status-active">
                             <i class="bi bi-check-circle-fill"></i> Vé Hợp Lệ

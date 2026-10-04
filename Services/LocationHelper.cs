@@ -36,7 +36,12 @@ namespace WebApplication1.Services
             ["Cà Mau"] = new() { "Cà Mau", "Ca Mau", "Đất Mũi", "Bến xe Cà Mau" },
             ["Châu Đốc"] = new() { "Châu Đốc", "Chau Doc", "An Giang", "Núi Sam", "Bến xe Châu Đốc" },
             ["Rạch Giá"] = new() { "Rạch Giá", "Rach Gia", "Kiên Giang", "Kien Giang", "Bến xe Rạch Sỏi" },
-            ["Thái Nguyên"] = new() { "Thái Nguyên", "Thai Nguyen", "Phổ Yên", "Bến xe Thái Nguyên" }
+            ["Thái Nguyên"] = new() { "Thái Nguyên", "Thai Nguyen", "Phổ Yên", "Bến xe Thái Nguyên" },
+            ["Thái Bình"] = new() { "Thái Bình", "Thai Binh", "TB", "Bến xe Thái Bình", "Bến xe Hoàng Hà", "Bến xe Chợ Tư" },
+            ["Nam Định"] = new() { "Nam Định", "Nam Dinh", "NĐ", "Bến xe Nam Định", "Bến xe Đò Quan" },
+            ["Hải Dương"] = new() { "Hải Dương", "Hai Duong", "HD", "Bến xe Hải Dương" },
+            ["Hưng Yên"] = new() { "Hưng Yên", "Hung Yen", "HY", "Bến xe Hưng Yên" },
+            ["Thanh Hóa"] = new() { "Thanh Hóa", "Thanh Hoa", "TH", "Bến xe Phía Bắc Thanh Hóa", "Bến xe Phía Nam Thanh Hóa" }
         };
 
         /// <summary>

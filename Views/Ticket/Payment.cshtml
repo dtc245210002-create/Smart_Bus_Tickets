@@ -234,9 +234,9 @@
 <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs hover:border-primary/40 transition-colors">
 <div>
 <span class="text-[11px] text-gray-500 block">Số tiền chính xác</span>
-<span class="font-mono font-bold text-lg text-primary">530,000 đ</span>
+<span class="font-mono font-bold text-lg text-primary">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</span>
 </div>
-<button onclick="navigator.clipboard.writeText('530000'); alert('Đã sao chép Số tiền: 530,000 đ');" class="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
+<button onclick="navigator.clipboard.writeText('@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("F0"))'); alert('Đã sao chép Số tiền: @(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ');" class="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
 <span class="material-symbols-outlined text-[15px]">content_copy</span>
 <span>Sao chép</span>
 </button>
@@ -248,15 +248,15 @@
                       Nội dung chuyển khoản (Bắt buộc)
                       <span class="material-symbols-outlined text-[13px] text-amber-700">info</span>
 </span>
-<span class="font-mono font-black text-lg text-red-600 tracking-wider">SBG84920</span>
+<span class="font-mono font-black text-lg text-red-600 tracking-wider">@(ViewBag.TicketCode != null ? ((string)ViewBag.TicketCode).Replace("-", "") : "SBG84920")</span>
 </div>
-<button onclick="navigator.clipboard.writeText('SBG84920'); alert('Đã sao chép Nội dung chuyển khoản: SBG84920');" class="inline-flex items-center gap-1 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 px-3.5 py-1.5 rounded-lg shadow-sm transition-colors" type="button">
+<button onclick="navigator.clipboard.writeText('@(ViewBag.TicketCode != null ? ((string)ViewBag.TicketCode).Replace("-", "") : "SBG84920")'); alert('Đã sao chép Nội dung chuyển khoản: @(ViewBag.TicketCode != null ? ((string)ViewBag.TicketCode).Replace("-", "") : "SBG84920")');" class="inline-flex items-center gap-1 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 px-3.5 py-1.5 rounded-lg shadow-sm transition-colors" type="button">
 <span class="material-symbols-outlined text-[15px]">content_copy</span>
 <span>Sao chép</span>
 </button>
 </div>
 <div class="text-[11px] text-amber-800 leading-tight">
-                  * Vui lòng giữ nguyên nội dung <strong>SBG84920</strong> để hệ thống tự động gạch nợ và gửi mã vé điện tử SMS/Email trong 3 giây.
+                  * Vui lòng giữ nguyên nội dung <strong>@(ViewBag.TicketCode != null ? ((string)ViewBag.TicketCode).Replace("-", "") : "SBG84920")</strong> để hệ thống tự động gạch nợ và gửi mã vé điện tử SMS/Email trong 3 giây.
                 </div>
 </div>
 </div>
@@ -277,9 +277,9 @@
 </div>
 <!-- Big CTA Confirmation Button -->
 <div class="mt-5">
-<button onclick="window.location.href='/Ticket/Detail';" class="w-full py-4 px-6 rounded-xl bg-[#008378] hover:bg-[#00685f] active:scale-[0.99] text-white font-bold text-base sm:text-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 tracking-wide font-headline-sm" type="button">
+<button onclick="window.location.href='/Ticket/Detail' + (window.location.search || '');" class="w-full py-4 px-6 rounded-xl bg-[#008378] hover:bg-[#00685f] active:scale-[0.99] text-white font-bold text-base sm:text-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 tracking-wide font-headline-sm" type="button">
 <span class="material-symbols-outlined text-[24px]">verified</span>
-<span>XÁC NHẬN ĐÃ CHUYỂN KHOẢN • 530.000đ</span>
+<span>XÁC NHẬN ĐÃ CHUYỂN KHOẢN • @(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0"))đ</span>
 </button>
 </div>
 <!-- Help Notice -->
@@ -326,7 +326,7 @@
 <span class="font-bold text-sm uppercase tracking-wide">Chi tiết chuyến xe</span>
 </div>
 <span class="text-[11px] bg-white/20 text-white font-medium px-2 py-0.5 rounded">
-              Mã vé: #SBG-84920
+              Mã vé: #@(ViewBag.TicketCode ?? "SBG-TN-CB-001")
             </span>
 </div>
 <div class="p-5 flex flex-col gap-4 text-sm">
@@ -334,10 +334,10 @@
 <div class="flex items-start justify-between pb-3 border-b border-gray-100">
 <div>
 <span class="text-xs text-gray-500 block">Tuyến xe</span>
-<span class="text-base font-bold text-gray-900">Hà Nội ➔ Đà Nẵng</span>
+<span class="text-base font-bold text-gray-900">@(ViewBag.RouteName ?? "Thái Nguyên ➔ Cao Bằng")</span>
 </div>
 <span class="bg-teal-50 text-teal-800 text-xs font-semibold px-2.5 py-1 rounded-md border border-teal-100">
-                Limousine VIP
+                @(ViewBag.BusTypeName ?? "Xe Limousine VIP")
               </span>
 </div>
 <!-- Departure & Vehicle -->
@@ -346,37 +346,37 @@
 <span class="material-symbols-outlined text-gray-400 text-[18px]">schedule</span>
 <div>
 <span class="text-gray-500 text-xs block">Thời gian khởi hành:</span>
-<span class="font-semibold text-gray-800">20:30, Thứ Sáu 24/10/2025</span>
+<span class="font-semibold text-gray-800">@(ViewBag.DepartureTime ?? "08:00"), @(ViewBag.TripDate ?? DateTime.Today.AddDays(1).ToString("dd/MM/yyyy"))</span>
 </div>
 </div>
 <div class="flex items-center gap-3">
 <span class="material-symbols-outlined text-gray-400 text-[18px]">directions_bus</span>
 <div>
 <span class="text-gray-500 text-xs block">Phương tiện:</span>
-<span class="font-semibold text-gray-800">Xe Limousine VIP 34 Phòng Cung Điện</span>
+<span class="font-semibold text-gray-800">@(ViewBag.BusTypeName ?? "Xe Limousine VIP Cao Cấp") (@(ViewBag.LicensePlate ?? "20B-188.68"))</span>
 </div>
 </div>
 <div class="flex items-start gap-3">
 <span class="material-symbols-outlined text-emerald-600 text-[18px] mt-0.5">trip_origin</span>
 <div>
 <span class="text-gray-500 text-xs block">Điểm đón:</span>
-<span class="font-semibold text-gray-800">Bến xe Mỹ Đình</span>
-<span class="text-red-600 font-medium block text-xs">(Có mặt trước 20:15)</span>
+<span class="font-semibold text-gray-800">@(ViewBag.BoardingStop ?? "Bến xe Thái Nguyên")</span>
+<span class="text-red-600 font-medium block text-xs">(Có mặt trước 15 phút)</span>
 </div>
 </div>
 <div class="flex items-start gap-3">
 <span class="material-symbols-outlined text-red-500 text-[18px] mt-0.5">location_on</span>
 <div>
 <span class="text-gray-500 text-xs block">Điểm trả:</span>
-<span class="font-semibold text-gray-800">Bến xe Trung tâm Đà Nẵng</span>
+<span class="font-semibold text-gray-800">@(ViewBag.DropOffStop ?? "Bến xe Cao Bằng")</span>
 </div>
 </div>
 </div>
 <!-- Seat info -->
 <div class="bg-emerald-50/60 border border-emerald-100 p-3 rounded-xl flex items-center justify-between">
 <div>
-<span class="text-xs text-emerald-800 font-medium block">Vị trí ghế (2 vé):</span>
-<span class="font-bold text-gray-900 text-sm">VIP 05 &amp; VIP 06 <span class="text-xs font-normal text-gray-600">(Tầng dưới)</span></span>
+<span class="text-xs text-emerald-800 font-medium block">Vị trí ghế:</span>
+<span class="font-bold text-gray-900 text-sm">@(ViewBag.SeatNumber ?? "A01")</span>
 </div>
 <span class="material-symbols-outlined text-primary text-[24px]">airline_seat_recline_extra</span>
 </div>
@@ -385,25 +385,25 @@
 <span class="font-semibold text-gray-700 block text-xs">Người liên hệ đặt vé:</span>
 <div class="flex justify-between text-gray-600">
 <span>Họ và tên:</span>
-<strong class="text-gray-900">Nguyễn Văn An</strong>
+<strong class="text-gray-900">@(ViewBag.PassengerName ?? "Trần Văn Bình")</strong>
 </div>
 <div class="flex justify-between text-gray-600">
 <span>Số điện thoại:</span>
-<strong class="text-gray-900">0987 654 321</strong>
+<strong class="text-gray-900">@(ViewBag.PassengerPhone ?? "0912 345 678")</strong>
 </div>
 </div>
 <!-- Fare Breakdown -->
 <div class="pt-2 space-y-2 border-t border-gray-100 text-xs sm:text-sm">
 <div class="flex justify-between text-gray-600">
-<span>Giá vé gốc (2 vé):</span>
-<span class="font-medium text-gray-900">580.000 đ</span>
+<span>Giá vé:</span>
+<span class="font-medium text-gray-900">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</span>
 </div>
 <div class="flex justify-between text-emerald-700 font-medium">
 <span class="flex items-center gap-1">
 <span class="material-symbols-outlined text-[14px]">local_offer</span>
-                  Mã KM (SMARTBUSNEW):
+                  Ưu đãi đặt vé thông minh:
                 </span>
-<span>-50.000 đ</span>
+<span class="text-emerald-700 font-semibold">Áp dụng trực tiếp</span>
 </div>
 <div class="flex justify-between text-gray-600">
 <span class="flex items-center gap-1">
@@ -419,7 +419,7 @@
 <span class="text-[11px] text-gray-400">Đã bao gồm VAT &amp; bảo hiểm</span>
 </div>
 <div class="text-right">
-<span class="text-2xl font-black text-[#008378] tracking-tight">530.000 đ</span>
+<span class="text-2xl font-black text-[#008378] tracking-tight">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</span>
 </div>
 </div>
 </div>
@@ -482,13 +482,15 @@
             // ==========================================
             // 2. TỰ ĐỘNG CHECK TRẠNG THÁI THANH TOÁN (POLLING)
             // ==========================================
-            const orderCode = "SBG84920"; // Mã đơn hàng / Nội dung chuyển khoản
+            const orderCode = "@(ViewBag.TicketCode != null ? ((string)ViewBag.TicketCode).Replace("-", "") : "SBG84920")"; // Mã đơn hàng / Nội dung chuyển khoản
+            const currentTicketCode = "@(ViewBag.TicketCode ?? "SBG-TN-CB-001")";
+            const currentBookingCode = "@(ViewBag.BookingCode ?? "BK-TNCB-001")";
             const checkIntervalMs = 3000;  // Kiểm tra mỗi 3 giây
             
             checkPaymentInterval = setInterval(async function () {
                 try {
                     // Gọi API kiểm tra trạng thái thanh toán từ backend
-                    const response = await fetch(`/api/payment/check-status?orderCode=${orderCode}`, {
+                    const response = await fetch(`/api/payment/check-status?orderCode=${encodeURIComponent(orderCode)}&ticketCode=${encodeURIComponent(currentTicketCode)}`, {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/json'
@@ -504,7 +506,7 @@
                             if (timerInterval) clearInterval(timerInterval);
 
                             // Chuyển hướng sang trang kết quả thanh toán Callback (/payment-result)
-                            window.location.href = `/payment-result?ticketCode=SBG-84920&bookingCode=BK-84920&status=success`;
+                            window.location.href = `/payment-result?ticketCode=${encodeURIComponent(currentTicketCode)}&bookingCode=${encodeURIComponent(currentBookingCode)}&status=success`;
                         }
                     }
                 } catch (error) {

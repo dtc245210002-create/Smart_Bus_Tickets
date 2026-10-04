@@ -99,10 +99,75 @@ document.addEventListener("DOMContentLoaded", function () {
                 btnContinue.classList.remove("disabled");
                 btnContinue.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Tiếp tục đặt ${count} vé (${totalPrice.toLocaleString("vi-VN")} đ) &rarr;`;
                 
-                // Cập nhật link điều hướng kèm danh sách ghế đã chọn
-                const currentHref = btnContinue.getAttribute("data-base-href") || btnContinue.getAttribute("href") || "/Ticket/Detail";
-                btnContinue.setAttribute("data-base-href", currentHref.split("?")[0]);
-                btnContinue.setAttribute("href", `${currentHref.split("?")[0]}?tripId=${tripId}&seats=${encodeURIComponent(seatCodes.join(","))}&total=${totalPrice}`);
+                // Đọc thông tin hành trình từ data attribute & dropdowns
+                const from = btnContinue.getAttribute("data-from") || "";
+                const to = btnContinue.getAttribute("data-to") || "";
+                const date = btnContinue.getAttribute("data-date") || "";
+                const depTime = btnContinue.getAttribute("data-deptime") || "";
+                const arrTime = btnContinue.getAttribute("data-arrtime") || "";
+                const busType = btnContinue.getAttribute("data-bustype") || "";
+                const licensePlate = btnContinue.getAttribute("data-licenseplate") || "";
+                const routeName = btnContinue.getAttribute("data-routename") || "";
+                const routeCode = btnContinue.getAttribute("data-routecode") || "";
+                const driverName = btnContinue.getAttribute("data-drivername") || "";
+                const driverPhone = btnContinue.getAttribute("data-driverphone") || "";
+                const estMinutes = btnContinue.getAttribute("data-estminutes") || "";
+                const distance = btnContinue.getAttribute("data-distance") || "";
+
+                const boardingSelect = accordion.querySelector(".select-boarding-point");
+                const dropoffSelect = accordion.querySelector(".select-dropoff-point");
+                const boarding = boardingSelect ? boardingSelect.value : "";
+                const dropoff = dropoffSelect ? dropoffSelect.value : "";
+
+                // Tạo URL với đầy đủ thông tin chuyến xe khách hàng đã chọn
+                const params = new URLSearchParams();
+                params.set("tripId", tripId);
+                params.set("seats", seatCodes.join(","));
+                params.set("total", totalPrice);
+                if (from) params.set("from", from);
+                if (to) params.set("to", to);
+                if (date) params.set("date", date);
+                if (boarding) params.set("boarding", boarding);
+                if (dropoff) params.set("dropoff", dropoff);
+                if (depTime) params.set("depTime", depTime);
+                if (arrTime) params.set("arrTime", arrTime);
+                if (busType) params.set("busType", busType);
+                if (licensePlate) params.set("licensePlate", licensePlate);
+                if (routeName) params.set("routeName", routeName);
+                if (routeCode) params.set("routeCode", routeCode);
+                if (driverName) params.set("driverName", driverName);
+                if (driverPhone) params.set("driverPhone", driverPhone);
+                if (estMinutes) params.set("estMinutes", estMinutes);
+                if (distance) params.set("distance", distance);
+
+                btnContinue.setAttribute("href", `/Ticket/Detail?${params.toString()}`);
+
+                // Lưu Cookie & localStorage để giữ trạng thái
+                try {
+                    const cookieMaxAge = 604800; // 7 ngày
+                    document.cookie = `sbg_last_from=${encodeURIComponent(from)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_to=${encodeURIComponent(to)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_date=${encodeURIComponent(date)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_seats=${encodeURIComponent(seatCodes.join(","))}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_total=${totalPrice}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_boarding=${encodeURIComponent(boarding)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_dropoff=${encodeURIComponent(dropoff)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_bustype=${encodeURIComponent(busType)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_licenseplate=${encodeURIComponent(licensePlate)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_driver=${encodeURIComponent(driverName)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_driverphone=${encodeURIComponent(driverPhone)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_routecode=${encodeURIComponent(routeCode)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_routename=${encodeURIComponent(routeName)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_deptime=${encodeURIComponent(depTime)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_arrtime=${encodeURIComponent(arrTime)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_estminutes=${encodeURIComponent(estMinutes)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_distance=${encodeURIComponent(distance)}; path=/; max-age=${cookieMaxAge}`;
+                    document.cookie = `sbg_last_tripid=${encodeURIComponent(tripId)}; path=/; max-age=${cookieMaxAge}`;
+
+                    localStorage.setItem("sbg_booking_draft", JSON.stringify({
+                        tripId, seats: seatCodes, total: totalPrice, from, to, date, boarding, dropoff, depTime, arrTime, busType, licensePlate, driverName, driverPhone, routeCode, routeName, estMinutes, distance
+                    }));
+                } catch (e) { }
             }
         } else {
             // Chưa chọn ghế nào
@@ -116,6 +181,16 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
     }
+
+    // Lắng nghe sự kiện thay đổi trạm đón / trả để cập nhật ngay vào nút đặt vé
+    document.querySelectorAll(".select-boarding-point, .select-dropoff-point").forEach(select => {
+        select.addEventListener("change", function () {
+            const tripId = this.getAttribute("data-trip-id");
+            if (tripId) {
+                updateSeatSummary(tripId);
+            }
+        });
+    });
 
     // 4. Hiển thị thông báo nhanh (Toast alert) trên accordion
     function showSeatAlert(tripId, message, type) {

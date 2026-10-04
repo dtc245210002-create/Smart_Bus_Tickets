@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace WebApplication1.Models.Entities;
@@ -12,6 +12,10 @@ public partial class Driver
     public string LicenseNo { get; set; } = null!;
 
     public DateOnly? LicenseExpiryDate { get; set; }
+
+    public DateOnly? DateOfBirth { get; set; }
+
+    public string? Gender { get; set; }
 
     public string? Status { get; set; }
 
