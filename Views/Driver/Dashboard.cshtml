@@ -100,12 +100,40 @@
 
     <!-- Danh sách các chuyến xe được phân công -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
-            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                <i class="bi bi-calendar2-check text-success"></i>
-                Lịch Phân Công Ca Chạy Của Bác Tài
-            </h5>
-            <span class="badge bg-light text-dark border">Cập nhật theo thời gian thực</span>
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar2-check text-success"></i>
+                    Lịch Phân Công Ca Chạy Của Bác Tài
+                </h5>
+                <div class="text-muted small">
+                    Hôm nay: <strong class="text-success">@Model.CurrentDate.ToString("dd/MM/yyyy")</strong> &bull; Tổng @Model.AssignedTrips.Count ca chạy được phân bổ
+                </div>
+            </div>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Cập nhật thời gian thực
+            </span>
+        </div>
+
+        <!-- Bộ lọc nhanh ca chạy theo ngày -->
+        <div class="bg-light p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex flex-wrap gap-2" id="tripFilterTabs">
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold trip-filter-btn active" data-filter="all">
+                    <i class="bi bi-grid-fill me-1"></i> Tất cả (@Model.AssignedTrips.Count)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold trip-filter-btn" data-filter="today">
+                    <i class="bi bi-clock-history me-1"></i> ⚡ Hôm nay (@Model.AssignedTrips.Count(t => t.IsToday))
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold trip-filter-btn" data-filter="upcoming">
+                    <i class="bi bi-calendar-event me-1"></i> 📅 Ngày mai & Sắp tới (@Model.AssignedTrips.Count(t => t.IsTomorrow || (!t.IsToday && !t.IsPast)))
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold trip-filter-btn" data-filter="past">
+                    <i class="bi bi-archive me-1"></i> 📜 Lịch sử ca chạy (@Model.AssignedTrips.Count(t => t.IsPast))
+                </button>
+            </div>
+            <div class="small text-muted">
+                <i class="bi bi-info-circle me-1"></i> Bấm "Soát vé xe này" để mở giao diện kiểm tra vé đúng xe & đúng chuyến
+            </div>
         </div>
 
         <div class="card-body p-0">
@@ -124,20 +152,49 @@
                                 <th class="text-end pe-4">Thao tác</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="assignedTripsBody">
                             @foreach (var trip in Model.AssignedTrips)
                             {
-                                <tr>
+                                var dateType = trip.IsToday ? "today" : (trip.IsTomorrow ? "tomorrow" : (trip.IsPast ? "past" : "future"));
+                                var rowBg = trip.IsToday ? "table-success-subtle border-start border-4 border-success" : "";
+
+                                <tr class="@rowBg" data-date-type="@dateType">
                                     <td class="ps-4">
-                                        <div class="fw-bold text-dark">@trip.RouteName</div>
+                                        <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                                            @trip.RouteName
+                                            @if (trip.IsToday)
+                                            {
+                                                <span class="badge bg-success text-white px-2 py-0 small" style="font-size: 0.72rem;">CA HIỆN TẠI</span>
+                                            }
+                                        </div>
                                         <div class="text-muted small">@trip.StartPoint &rarr; @trip.EndPoint</div>
                                     </td>
                                     <td>
-                                        <span class="fw-semibold">@trip.TripDate.ToString("dd/MM/yyyy")</span>
+                                        @if (trip.IsToday)
+                                        {
+                                            <span class="badge bg-success text-white px-2 py-1 shadow-sm">
+                                                <i class="bi bi-clock-history me-1"></i> Hôm nay (@trip.TripDate.ToString("dd/MM/yyyy"))
+                                            </span>
+                                        }
+                                        else if (trip.IsTomorrow)
+                                        {
+                                            <span class="badge bg-info text-dark px-2 py-1">
+                                                <i class="bi bi-calendar-event me-1"></i> Ngày mai (@trip.TripDate.ToString("dd/MM/yyyy"))
+                                            </span>
+                                        }
+                                        else if (trip.IsPast)
+                                        {
+                                            <span class="text-muted">@trip.TripDate.ToString("dd/MM/yyyy")</span>
+                                            <span class="badge bg-light text-secondary border ms-1">Đã qua</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="fw-semibold text-primary">@trip.TripDate.ToString("dd/MM/yyyy")</span>
+                                        }
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border fs-6">
-                                            <i class="bi bi-clock me-1 text-primary"></i> @trip.DepartureTime.ToString("HH:mm")
+                                        <span class="badge @(trip.IsToday ? "bg-primary text-white" : "bg-light text-dark border") fs-6">
+                                            <i class="bi bi-clock me-1"></i> @trip.DepartureTime.ToString("HH:mm")
                                         </span>
                                     </td>
                                     <td>
@@ -161,11 +218,24 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-success-subtle text-success">@trip.Status</span>
+                                        @if (trip.IsToday)
+                                        {
+                                            <span class="badge bg-success text-white px-2 py-1">
+                                                <i class="bi bi-broadcast me-1"></i> Đang vận hành
+                                            </span>
+                                        }
+                                        else if (trip.IsPast)
+                                        {
+                                            <span class="badge bg-light text-secondary border px-2 py-1">Hoàn thành</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">Lên lịch</span>
+                                        }
                                     </td>
                                     <td class="text-end pe-4">
-                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" 
-                                                onclick="openVerifyModalForTrip(@trip.TripId)">
+                                        <button type="button" class="btn btn-sm @(trip.IsToday ? "btn-success shadow-sm" : "btn-outline-success") rounded-pill px-3 fw-semibold" 
+                                                onclick="openVerifyModalForTrip(@trip.TripId, '@(trip.SampleTickets.FirstOrDefault() ?? "")')">
                                             <i class="bi bi-upc-scan me-1"></i> Soát vé xe này
                                         </button>
                                     </td>
@@ -292,6 +362,14 @@
                         <i class="bi bi-search me-1"></i> Kiểm tra
                     </button>
                 </div>
+                
+                <!-- Gợi ý mã vé mẫu trên xe để test nhanh -->
+                <div id="quickSampleCodeContainer" class="d-flex align-items-center gap-2 mb-2" style="display: none;">
+                    <span class="small text-muted"><i class="bi bi-magic me-1 text-warning"></i> Mã vé trên chuyến này:</span>
+                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 py-0 small font-monospace" id="btnQuickSampleCode" onclick="fillSampleCode(this.innerText)"></button>
+                    <span class="text-muted small" style="font-size: 0.75rem;">(Bấm để điền & soát ngay)</span>
+                </div>
+
                 <div class="form-text small text-muted mb-3"><i class="bi bi-info-circle me-1"></i>Hệ thống tự động tra cứu dữ liệu thời gian thực từ Database SmartBusTicketing.</div>
 
                 <!-- Vùng hiển thị kết quả kiểm tra vé -->
@@ -314,7 +392,7 @@
 
 @section Scripts {
     <script>
-        function openVerifyModalForTrip(tripId) {
+        function openVerifyModalForTrip(tripId, sampleCode) {
             const select = document.getElementById('modalTripSelect');
             if (select && tripId) {
                 select.value = tripId.toString();
@@ -323,10 +401,63 @@
             document.getElementById('verifyResultArea').style.display = 'none';
             document.getElementById('ticketCodeInput').value = '';
             
+            const sampleBox = document.getElementById('quickSampleCodeContainer');
+            const sampleBtn = document.getElementById('btnQuickSampleCode');
+            if (sampleCode && sampleCode.trim() && sampleBox && sampleBtn) {
+                sampleBtn.innerText = sampleCode.trim();
+                sampleBox.style.display = 'flex';
+            } else if (sampleBox) {
+                sampleBox.style.display = 'none';
+            }
+
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('verifyTicketModal'));
             modal.show();
             setTimeout(() => document.getElementById('ticketCodeInput')?.focus(), 400);
         }
+
+        function fillSampleCode(code) {
+            if (code && code.trim()) {
+                document.getElementById('ticketCodeInput').value = code.trim();
+                checkTicket();
+            }
+        }
+
+        // Bộ lọc nhanh các ca chạy (Tất cả, Hôm nay, Ngày mai, Lịch sử)
+        document.querySelectorAll('.trip-filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.trip-filter-btn').forEach(b => {
+                    b.classList.remove('active', 'btn-success', 'btn-primary', 'btn-secondary');
+                    const f = b.dataset.filter;
+                    b.classList.add(f === 'today' ? 'btn-outline-success' : (f === 'upcoming' ? 'btn-outline-primary' : (f === 'past' ? 'btn-outline-secondary' : 'btn-outline-success')));
+                });
+
+                this.classList.add('active');
+                const filter = this.dataset.filter;
+                if (filter === 'all' || filter === 'today') {
+                    this.classList.remove('btn-outline-success');
+                    this.classList.add('btn-success');
+                } else if (filter === 'upcoming') {
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-primary');
+                } else if (filter === 'past') {
+                    this.classList.remove('btn-outline-secondary');
+                    this.classList.add('btn-secondary');
+                }
+
+                document.querySelectorAll('#assignedTripsBody tr').forEach(row => {
+                    const type = row.dataset.dateType;
+                    if (filter === 'all') {
+                        row.style.display = '';
+                    } else if (filter === 'today') {
+                        row.style.display = (type === 'today') ? '' : 'none';
+                    } else if (filter === 'upcoming') {
+                        row.style.display = (type === 'tomorrow' || type === 'future') ? '' : 'none';
+                    } else if (filter === 'past') {
+                        row.style.display = (type === 'past') ? '' : 'none';
+                    }
+                });
+            });
+        });
 
         async function pasteTicketCode() {
             try {

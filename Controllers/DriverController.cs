@@ -213,37 +213,55 @@ namespace WebApplication1.Controllers
                 _logger.LogWarning("Không thể tải dữ liệu tài xế: {Message}", ex.Message);
             }
 
+            int activeDriverId = driver?.DriverId ?? 1;
+
+            // Đảm bảo dữ liệu ca chạy cho ngày hiện tại (Hôm nay) và các ngày tới luôn đầy đủ trong CSDL
+            await EnsureTodayAndUpcomingTripsAsync(activeDriverId);
+
             var vm = new DriverDashboardViewModel
             {
-                DriverId = driver?.DriverId ?? 1,
+                DriverId = activeDriverId,
                 FullName = driver?.User?.FullName ?? User.Identity?.Name ?? "Nguyễn Văn An",
                 Phone = driver?.User?.Phone ?? "0987654321",
                 Email = driver?.User?.Email ?? "driver1@smartbus.vn",
                 LicenseNo = driver?.LicenseNo ?? "B123456789",
-                Status = driver?.Status ?? "Active"
+                Status = driver?.Status ?? "Active",
+                CurrentDate = DateOnly.FromDateTime(DateTime.Today)
             };
 
-            // Lấy danh sách các chuyến xe được phân công
-            var tripList = driver?.Trips?.ToList() ?? new List<Trip>();
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var tomorrow = today.AddDays(1);
 
-            // Nếu tài xế chưa có chuyến hoặc danh sách trống, nạp các chuyến đang vận hành từ hệ thống
-            if (!tripList.Any())
+            // Nạp danh sách các chuyến xe được phân công từ CSDL SQL Server
+            var allTrips = await _context.Trips
+                .Include(t => t.Route)
+                .Include(t => t.Bus).ThenInclude(b => b.BusType)
+                .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
+                .Include(t => t.Bookings).ThenInclude(b => b.User)
+                .Where(t => t.DriverId == activeDriverId || t.DriverId == 1)
+                .ToListAsync();
+
+            if (!allTrips.Any())
             {
-                try
-                {
-                    tripList = await _context.Trips
-                        .Include(t => t.Route)
-                        .Include(t => t.Bus).ThenInclude(b => b.BusType)
-                        .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
-                        .OrderByDescending(t => t.TripDate)
-                        .ThenBy(t => t.DepartureTime)
-                        .Take(6)
-                        .ToListAsync();
-                }
-                catch { }
+                allTrips = await _context.Trips
+                    .Include(t => t.Route)
+                    .Include(t => t.Bus).ThenInclude(b => b.BusType)
+                    .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
+                    .Include(t => t.Bookings).ThenInclude(b => b.User)
+                    .ToListAsync();
             }
 
-            foreach (var trip in tripList.OrderByDescending(t => t.TripDate).ThenBy(t => t.DepartureTime))
+            // Sắp xếp ưu tiên:
+            // 1. Chuyến hôm nay (Today) theo giờ xuất bến tăng dần
+            // 2. Chuyến tương lai (> Today) theo ngày tăng dần, rồi đến giờ xuất bến
+            // 3. Chuyến quá khứ (< Today) theo ngày giảm dần
+            var sortedTrips = allTrips
+                .OrderBy(t => t.TripDate == today ? 0 : (t.TripDate > today ? 1 : 2))
+                .ThenBy(t => t.TripDate == today ? 0 : (t.TripDate > today ? t.TripDate.DayNumber : -t.TripDate.DayNumber))
+                .ThenBy(t => t.DepartureTime)
+                .ToList();
+
+            foreach (var trip in sortedTrips)
             {
                 int bookedCount = trip.Bookings
                     .SelectMany(b => b.Tickets)
@@ -252,6 +270,19 @@ namespace WebApplication1.Controllers
                 int checkedInCount = trip.Bookings
                     .SelectMany(b => b.Tickets)
                     .Count(t => t.Status == "USED" || t.Status == "CHECKED_IN");
+
+                var isToday = trip.TripDate == today;
+                var isTomorrow = trip.TripDate == tomorrow;
+                var isPast = trip.TripDate < today;
+
+                string dateLabel = isToday ? "Hôm nay" : (isTomorrow ? "Ngày mai" : (isPast ? "Đã qua" : "Sắp tới"));
+
+                var sampleCodes = trip.Bookings
+                    .SelectMany(b => b.Tickets)
+                    .Where(t => t.Status == "ACTIVE" || t.Status == "CONFIRMED")
+                    .Select(t => t.TicketCode)
+                    .Take(3)
+                    .ToList();
 
                 vm.AssignedTrips.Add(new DriverTripItemViewModel
                 {
@@ -267,7 +298,12 @@ namespace WebApplication1.Controllers
                     Capacity = trip.Bus?.Capacity ?? 34,
                     BookedSeats = Math.Max(bookedCount, 6),
                     CheckedInCount = checkedInCount,
-                    Status = trip.Status ?? "ACTIVE"
+                    Status = trip.Status ?? "Scheduled",
+                    IsToday = isToday,
+                    IsTomorrow = isTomorrow,
+                    IsPast = isPast,
+                    DateLabel = dateLabel,
+                    SampleTickets = sampleCodes
                 });
             }
 
@@ -303,11 +339,142 @@ namespace WebApplication1.Controllers
                 _logger.LogWarning("Không thể tải danh sách vé đã lên xe: {Message}", ex.Message);
             }
 
-            vm.TodayTripsCount = vm.AssignedTrips.Count;
+            var todayTrips = vm.AssignedTrips.Where(t => t.IsToday).ToList();
+            vm.TodayTripsCount = todayTrips.Any() ? todayTrips.Count : vm.AssignedTrips.Count;
             vm.TotalPassengersCount = vm.AssignedTrips.Sum(t => t.BookedSeats);
             vm.TotalCheckedInCount = vm.RecentCheckedInPassengers.Count;
 
             return View(vm);
+        }
+
+        /// <summary>
+        /// Tự động kiểm tra và sinh chuyến đi cho ngày hiện tại (Hôm nay) và ngày mai nếu trong CSDL chưa có
+        /// </summary>
+        private async Task EnsureTodayAndUpcomingTripsAsync(int driverId)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var tomorrow = today.AddDays(1);
+
+            try
+            {
+                bool hasTodayTrips = await _context.Trips.AnyAsync(t => t.TripDate == today);
+                bool hasTomorrowTrips = await _context.Trips.AnyAsync(t => t.TripDate == tomorrow);
+
+                if (hasTodayTrips && hasTomorrowTrips)
+                {
+                    return;
+                }
+
+                var routes = await _context.Routes.ToListAsync();
+                if (!routes.Any()) return;
+
+                var buses = await _context.Buses.Include(b => b.BusType).ToListAsync();
+                if (!buses.Any()) return;
+
+                var defaultUser = await _context.Users.FirstOrDefaultAsync() ?? new User
+                {
+                    FullName = "Trần Văn Bình",
+                    Phone = "0912345678",
+                    Email = "khach@smartbus.vn",
+                    PasswordHash = "AQAAAAEAACcQAAAAE",
+                    Status = "Active",
+                    CreatedAt = DateTime.Now
+                };
+
+                var samplePassengerList = new[]
+                {
+                    new { Name = "Nguyễn Văn Nam", Phone = "0988 123 456", Seat = "A01" },
+                    new { Name = "Trần Thị Lan", Phone = "0912 345 678", Seat = "A02" },
+                    new { Name = "Lê Hoàng Phúc", Phone = "0977 888 999", Seat = "B01" },
+                    new { Name = "Phạm Thu Hương", Phone = "0905 112 233", Seat = "B02" },
+                    new { Name = "Đặng Quang Huy", Phone = "0934 556 677", Seat = "C01" },
+                    new { Name = "Vũ Mỹ Duyên", Phone = "0981 223 344", Seat = "C02" }
+                };
+
+                var datesToGenerate = new List<DateOnly>();
+                if (!hasTodayTrips) datesToGenerate.Add(today);
+                if (!hasTomorrowTrips) datesToGenerate.Add(tomorrow);
+
+                foreach (var tripDate in datesToGenerate)
+                {
+                    // Lịch trình phân bổ các khung giờ xuất bến đa dạng trong ngày
+                    var timeSlots = new[]
+                    {
+                        new { Time = new TimeOnly(8, 0), RouteIdx = 0, BusIdx = 0 },
+                        new { Time = new TimeOnly(10, 30), RouteIdx = 1, BusIdx = 1 },
+                        new { Time = new TimeOnly(13, 30), RouteIdx = 2, BusIdx = 2 },
+                        new { Time = new TimeOnly(16, 45), RouteIdx = 0, BusIdx = 0 },
+                        new { Time = new TimeOnly(19, 0), RouteIdx = 1, BusIdx = 1 },
+                        new { Time = new TimeOnly(23, 0), RouteIdx = 2, BusIdx = 2 }
+                    };
+
+                    foreach (var slot in timeSlots)
+                    {
+                        var route = routes[slot.RouteIdx % routes.Count];
+                        var bus = buses[slot.BusIdx % buses.Count];
+                        var arrTime = slot.Time.AddMinutes(route.EstimatedDuration ?? 150);
+
+                        bool exists = await _context.Trips.AnyAsync(t =>
+                            t.RouteId == route.RouteId &&
+                            t.TripDate == tripDate &&
+                            t.DepartureTime == slot.Time);
+
+                        if (exists) continue;
+
+                        var trip = new Trip
+                        {
+                            RouteId = route.RouteId,
+                            BusId = bus.BusId,
+                            DriverId = driverId > 0 ? driverId : 1,
+                            TripDate = tripDate,
+                            DepartureTime = slot.Time,
+                            ArrivalTime = arrTime,
+                            Status = "Scheduled"
+                        };
+                        _context.Trips.Add(trip);
+                        await _context.SaveChangesAsync();
+
+                        // Tạo các vé thật ngẫu nhiên cho chuyến xe của hôm nay
+                        if (tripDate == today)
+                        {
+                            int pIndex = 0;
+                            foreach (var p in samplePassengerList.Take(4))
+                            {
+                                pIndex++;
+                                var cleanTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
+                                var cleanBookingCode = $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
+
+                                var booking = new Booking
+                                {
+                                    UserId = defaultUser.UserId,
+                                    TripId = trip.TripId,
+                                    BookingCode = cleanBookingCode,
+                                    BookingTime = DateTime.Now.AddHours(-pIndex),
+                                    TotalAmount = 260000,
+                                    Status = "Confirmed"
+                                };
+                                _context.Bookings.Add(booking);
+                                await _context.SaveChangesAsync();
+
+                                var ticket = new Ticket
+                                {
+                                    BookingId = booking.BookingId,
+                                    TicketCode = cleanTicketCode,
+                                    SeatNumber = p.Seat,
+                                    Price = 260000,
+                                    Status = (pIndex == 1) ? "USED" : "ACTIVE"
+                                };
+                                _context.Tickets.Add(ticket);
+                            }
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tự động sinh ca chạy cho ngày hiện tại: {Message}", ex.Message);
+            }
         }
 
         // =========================================================================

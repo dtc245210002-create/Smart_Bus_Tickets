@@ -170,23 +170,84 @@ namespace WebApplication1.Controllers
                 catch { }
             }
 
-            // Nếu không tìm thấy Trip theo effectiveTripId (ví dụ do fake ID), tìm Trip thật từ Route
+            // Xác định ngày khởi hành thực tế
+            DateTime parsedTripDate = DateTime.Today;
+            if (!string.IsNullOrWhiteSpace(effectiveDate))
+            {
+                var formats = new[] { "dd/MM/yyyy", "d/M/yyyy", "yyyy-MM-dd", "yyyy/MM/dd", "MM/dd/yyyy" };
+                if (DateTime.TryParseExact(effectiveDate.Trim(), formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var pExact))
+                {
+                    parsedTripDate = pExact;
+                }
+                else if (DateTime.TryParse(effectiveDate.Trim(), out var pDate))
+                {
+                    parsedTripDate = pDate;
+                }
+            }
+            var targetTripDateOnly = DateOnly.FromDateTime(parsedTripDate.Date);
+
+            // Nếu không tìm thấy Trip theo effectiveTripId (ví dụ do fake ID), tìm Trip thật từ Route và ngày chạy
             if (dbTrip == null)
             {
                 try
                 {
+                    // 1. Ưu tiên tìm chuyến đúng ngày khởi hành và đúng tuyến đường
                     dbTrip = await _context.Trips
                         .Include(t => t.Route)
                         .Include(t => t.Bus).ThenInclude(b => b.BusType)
                         .Include(t => t.Driver).ThenInclude(d => d.User)
-                        .FirstOrDefaultAsync(t => (t.Route.StartPoint.Contains(effectiveFrom) || effectiveFrom.Contains(t.Route.StartPoint)) &&
-                                                  (t.Route.EndPoint.Contains(effectiveTo) || effectiveTo.Contains(t.Route.EndPoint)))
-                        ?? await _context.Trips
+                        .FirstOrDefaultAsync(t => t.TripDate == targetTripDateOnly &&
+                                                  ((t.Route.StartPoint.Contains(effectiveFrom) || effectiveFrom.Contains(t.Route.StartPoint)) &&
+                                                   (t.Route.EndPoint.Contains(effectiveTo) || effectiveTo.Contains(t.Route.EndPoint))));
+
+                    // 2. Nếu chưa có chuyến cho ngày này, tự động tạo chuyến mới chuẩn xác và lưu vào DB
+                    if (dbTrip == null)
+                    {
+                        var matchRoute = await _context.Routes.FirstOrDefaultAsync(r => 
+                            (r.StartPoint.Contains(effectiveFrom) || effectiveFrom.Contains(r.StartPoint)) &&
+                            (r.EndPoint.Contains(effectiveTo) || effectiveTo.Contains(r.EndPoint)))
+                            ?? await _context.Routes.FirstOrDefaultAsync();
+
+                        var matchBus = await _context.Buses.Include(b => b.BusType).FirstOrDefaultAsync(b => b.Status == "Active" || b.Status == "ACTIVE")
+                            ?? await _context.Buses.Include(b => b.BusType).FirstOrDefaultAsync();
+
+                        var sampleDriver = await _context.Drivers.Include(d => d.User).FirstOrDefaultAsync();
+
+                        if (matchRoute != null && matchBus != null)
+                        {
+                            var newDepTime = TimeOnly.TryParse(effectiveDepTime, out var pt) ? pt : new TimeOnly(8, 0);
+                            var newArrTime = newDepTime.AddMinutes(matchRoute.EstimatedDuration ?? 150);
+
+                            dbTrip = new Trip
+                            {
+                                RouteId = matchRoute.RouteId,
+                                BusId = matchBus.BusId,
+                                DriverId = sampleDriver?.DriverId ?? 1,
+                                TripDate = targetTripDateOnly,
+                                DepartureTime = newDepTime,
+                                ArrivalTime = newArrTime,
+                                Status = "Scheduled"
+                            };
+                            _context.Trips.Add(dbTrip);
+                            await _context.SaveChangesAsync();
+
+                            dbTrip = await _context.Trips
+                                .Include(t => t.Route)
+                                .Include(t => t.Bus).ThenInclude(b => b.BusType)
+                                .Include(t => t.Driver).ThenInclude(d => d.User)
+                                .FirstOrDefaultAsync(t => t.TripId == dbTrip.TripId);
+                        }
+                    }
+
+                    if (dbTrip == null)
+                    {
+                        dbTrip = await _context.Trips
                             .Include(t => t.Route)
                             .Include(t => t.Bus).ThenInclude(b => b.BusType)
                             .Include(t => t.Driver).ThenInclude(d => d.User)
                             .FirstOrDefaultAsync();
-                    
+                    }
+
                     if (dbTrip != null)
                     {
                         effectiveTripId = dbTrip.TripId;
@@ -240,12 +301,6 @@ namespace WebApplication1.Controllers
                 parsedArr = pArr;
                 var diff = (int)(parsedArr - parsedDep).TotalMinutes;
                 if (diff > 0) finalEstMinutes = diff;
-            }
-
-            DateTime parsedTripDate = DateTime.Today.AddDays(1);
-            if (!string.IsNullOrWhiteSpace(effectiveDate) && DateTime.TryParse(effectiveDate, out var pDate))
-            {
-                parsedTripDate = pDate;
             }
 
             // Nếu đọc từ vé đã lưu trong DB

@@ -37,6 +37,7 @@ namespace WebApplication1.Models.ViewModels
         public int TodayTripsCount { get; set; }
         public int TotalPassengersCount { get; set; }
         public int TotalCheckedInCount { get; set; }
+        public DateOnly CurrentDate { get; set; }
 
         // Danh sách các chuyến xe được giao
         public List<DriverTripItemViewModel> AssignedTrips { get; set; } = new();
@@ -63,6 +64,13 @@ namespace WebApplication1.Models.ViewModels
         public int BookedSeats { get; set; }
         public int CheckedInCount { get; set; }
         public string Status { get; set; } = "ACTIVE";
+
+        // Nhận diện ngày chạy
+        public bool IsToday { get; set; }
+        public bool IsTomorrow { get; set; }
+        public bool IsPast { get; set; }
+        public string DateLabel { get; set; } = string.Empty;
+        public List<string> SampleTickets { get; set; } = new();
     }
 
     /// <summary>
