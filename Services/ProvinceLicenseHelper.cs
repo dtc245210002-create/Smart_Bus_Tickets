@@ -227,6 +227,13 @@ namespace WebApplication1.Services
         /// - Chuyến 2: Ưu tiên xe biển tỉnh đến (To)
         /// - Chuyến 3: Xe biển tỉnh lân cận hoặc tỉnh đi/đến khác
         /// - Chuyến 4: Xe biển đầu mối vận tải lớn (Hà Nội, Sài Gòn, Đà Nẵng...)
+        /// <summary>
+        /// Lọc danh sách xe thật từ Database theo tuyến:
+        /// - Chuyến 1 (07:30): Xe 29 chỗ (Ưu tiên biển tỉnh đi)
+        /// - Chuyến 2 (11:00): Xe 45 chỗ (Ưu tiên biển tỉnh đến)
+        /// - Chuyến 3 (14:30): Limousine VIP 22 Phòng (Ưu tiên biển tỉnh đi)
+        /// - Chuyến 4 (19:00): Giường Nằm 34 Phòng (Ưu tiên biển tỉnh đến hoặc đầu mối)
+        /// Tất cả xe đều được lấy từ bảng Bus trong CSDL SQL Server, đồng nhất 100% giữa tất cả người dùng
         /// </summary>
         public static List<Bus> SelectDiverseBusesForRoute(List<Bus> allBuses, string from, string to, int targetCount = 4)
         {
@@ -237,53 +244,49 @@ namespace WebApplication1.Services
 
             var fromCodes = GetAllCodes(from);
             var toCodes = GetAllCodes(to);
-
-            // 1. Chọn xe thuộc tỉnh xuất phát (From)
-            var fromBus = allBuses.FirstOrDefault(b => !usedIds.Contains(b.BusId) && fromCodes.Any(c => b.LicensePlate.StartsWith(c)));
-            if (fromBus != null)
-            {
-                selected.Add(fromBus);
-                usedIds.Add(fromBus.BusId);
-            }
-
-            // 2. Chọn xe thuộc tỉnh điểm đến (To)
-            var toBus = allBuses.FirstOrDefault(b => !usedIds.Contains(b.BusId) && toCodes.Any(c => b.LicensePlate.StartsWith(c)));
-            if (toBus != null)
-            {
-                selected.Add(toBus);
-                usedIds.Add(toBus.BusId);
-            }
-
-            // 3. Chọn thêm xe từ tỉnh đi hoặc đến nếu còn
-            var additionalRouteBus = allBuses.FirstOrDefault(b => !usedIds.Contains(b.BusId) && 
-                (fromCodes.Any(c => b.LicensePlate.StartsWith(c)) || toCodes.Any(c => b.LicensePlate.StartsWith(c))));
-            if (additionalRouteBus != null && selected.Count < targetCount)
-            {
-                selected.Add(additionalRouteBus);
-                usedIds.Add(additionalRouteBus.BusId);
-            }
-
-            // 4. Chọn xe từ các tỉnh trung tâm kết nối (Hà Nội 29/30, Hải Phòng 15, Sài Gòn 51, Đà Nẵng 43...)
             var hubCodes = new[] { "29", "30", "51", "50", "15", "43", "18", "34", "36", "37" };
-            foreach (var hc in hubCodes)
-            {
-                if (selected.Count >= targetCount) break;
-                var hubBus = allBuses.FirstOrDefault(b => !usedIds.Contains(b.BusId) && b.LicensePlate.StartsWith(hc));
-                if (hubBus != null)
-                {
-                    selected.Add(hubBus);
-                    usedIds.Add(hubBus.BusId);
-                }
-            }
 
-            // 5. Nếu vẫn chưa đủ targetCount, điền tiếp các xe còn lại bất kỳ trong DB để đảm bảo đủ chuyến
-            foreach (var b in allBuses)
+            // 4 dòng xe tiêu chuẩn tương ứng 4 khung giờ trong ngày:
+            // Khung 1 (07:30): Xe 29 chỗ (BusTypeId 2)
+            // Khung 2 (11:00): Xe 45 chỗ (BusTypeId 3)
+            // Khung 3 (14:30): Limousine VIP 22 Phòng (BusTypeId 4)
+            // Khung 4 (19:00): Giường Nằm 34 Phòng (BusTypeId 5)
+            var targetTypes = new[] { 2, 3, 4, 5 };
+
+            for (int i = 0; i < targetTypes.Length && selected.Count < targetCount; i++)
             {
-                if (selected.Count >= targetCount) break;
-                if (!usedIds.Contains(b.BusId))
+                int typeId = targetTypes[i];
+                var preferredCodes = (i % 2 == 0) ? fromCodes.Concat(toCodes).ToList() : toCodes.Concat(fromCodes).ToList();
+
+                // Ưu tiên 1: Xe đúng loại thuộc tỉnh đi hoặc tỉnh đến
+                var bus = allBuses.FirstOrDefault(b => !usedIds.Contains(b.BusId) 
+                    && b.BusTypeId == typeId 
+                    && preferredCodes.Any(c => b.LicensePlate.StartsWith(c)));
+
+                // Ưu tiên 2: Xe đúng loại thuộc các tỉnh trung tâm kết nối
+                if (bus == null)
                 {
-                    selected.Add(b);
-                    usedIds.Add(b.BusId);
+                    bus = allBuses.FirstOrDefault(b => !usedIds.Contains(b.BusId) 
+                        && b.BusTypeId == typeId 
+                        && hubCodes.Any(c => b.LicensePlate.StartsWith(c)));
+                }
+
+                // Ưu tiên 3: Xe bất kỳ đúng loại trong DB
+                if (bus == null)
+                {
+                    bus = allBuses.FirstOrDefault(b => !usedIds.Contains(b.BusId) && b.BusTypeId == typeId);
+                }
+
+                // Ưu tiên 4: Xe bất kỳ còn lại trong DB
+                if (bus == null)
+                {
+                    bus = allBuses.FirstOrDefault(b => !usedIds.Contains(b.BusId));
+                }
+
+                if (bus != null)
+                {
+                    selected.Add(bus);
+                    usedIds.Add(bus.BusId);
                 }
             }
 
@@ -291,7 +294,7 @@ namespace WebApplication1.Services
         }
 
         /// <summary>
-        /// Tạo danh sách 4 biển số thực tế chuẩn đa dạng khi chạy chế độ sinh chuyến động
+        /// Danh sách 4 biển số cố định chuẩn theo tỉnh đi và đến, khớp 100% với dữ liệu trong bảng Bus của Database
         /// </summary>
         public static string[] GenerateDiverseLicensePlates(string from, string to)
         {
@@ -304,30 +307,78 @@ namespace WebApplication1.Services
                 toCode = fromCode == "29" ? "15" : "29";
             }
 
-            var plates = new string[4];
-            // Chuyến 1: Biển tỉnh đi
-            plates[0] = $"{fromCode}B-{GenerateRandomFiveDigits()}";
-            // Chuyến 2: Biển tỉnh đến
-            plates[1] = $"{toCode}B-{GenerateRandomFiveDigits()}";
-            // Chuyến 3: Biển tỉnh đi (hoặc tỉnh lân cận)
-            plates[2] = $"{fromCode}B-{GenerateRandomFiveDigits(true)}";
-            // Chuyến 4: Biển trung tâm (29B hoặc 51B hoặc toCode)
             var hubCode = (fromCode != "29" && toCode != "29") ? "29" : (fromCode != "51" && toCode != "51" ? "51" : "43");
-            plates[3] = $"{hubCode}B-{GenerateRandomFiveDigits(true)}";
 
-            return plates;
+            return new[]
+            {
+                $"{fromCode}B-012.34",  // Chuyến 1: Xe 29 chỗ (Tỉnh đi)
+                $"{toCode}B-025.79",    // Chuyến 2: Xe 45 chỗ (Tỉnh đến)
+                $"{fromCode}B-068.86",  // Chuyến 3: Xe Limousine VIP 22 Phòng (Tỉnh đi)
+                $"{hubCode}B-088.99"    // Chuyến 4: Xe Giường Nằm 34 Phòng (Đầu mối trung tâm)
+            };
         }
 
-        private static string GenerateRandomFiveDigits(bool isVip = false)
+        /// <summary>
+        /// Khởi tạo và lưu cố định vào bảng Bus toàn bộ danh mục xe chuẩn của 63 tỉnh thành Việt Nam
+        /// Đảm bảo mỗi tỉnh thành đều có sẵn 12 xe đa dạng trong SQL Server (3 xe 29 chỗ, 3 xe 45 chỗ, 3 Limousine VIP, 3 Giường nằm)
+        /// </summary>
+        public static async Task EnsureAllProvincesBusesSeededAsync(WebApplication1.Data.ApplicationDbContext context)
         {
-            if (isVip)
+            try
             {
-                var vipTemplates = new[] { "888.88", "999.99", "668.68", "888.68", "777.88", "999.11", "567.89", "333.66", "028.68", "068.86" };
-                return vipTemplates[Random.Shared.Next(vipTemplates.Length)];
+                var existingPlates = new HashSet<string>(
+                    await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                        System.Linq.Queryable.Select(context.Buses, b => b.LicensePlate)
+                    ),
+                    StringComparer.OrdinalIgnoreCase
+                );
+
+                var newBuses = new List<Bus>();
+                var distinctCodes = CodeToProvince.Keys.Distinct().ToList();
+
+                var busTemplates = new (string suffix, int busTypeId, int capacity)[]
+                {
+                    // Xe 29 chỗ (BusTypeId: 2, Capacity: 29)
+                    ("B-012.34", 2, 29),
+                    ("B-015.68", 2, 29),
+                    ("F-016.78", 2, 29),
+                    // Xe 45 chỗ (BusTypeId: 3, Capacity: 45)
+                    ("B-025.79", 3, 45),
+                    ("B-036.88", 3, 45),
+                    ("F-045.67", 3, 45),
+                    // Limousine VIP 22 Phòng (BusTypeId: 4, Capacity: 22)
+                    ("B-068.86", 4, 22),
+                    ("B-079.97", 4, 22),
+                    ("F-066.88", 4, 22),
+                    // Giường Nằm 34 Phòng (BusTypeId: 5, Capacity: 34)
+                    ("B-088.99", 5, 34),
+                    ("B-099.88", 5, 34),
+                    ("F-089.98", 5, 34)
+                };
+
+                foreach (var code in distinctCodes)
+                {
+                    foreach (var (suffix, busTypeId, capacity) in busTemplates)
+                    {
+                        var plate = $"{code}{suffix}";
+                        if (!existingPlates.Contains(plate))
+                        {
+                            newBuses.Add(new Bus { BusTypeId = busTypeId, LicensePlate = plate, Capacity = capacity, Status = "Active" });
+                            existingPlates.Add(plate);
+                        }
+                    }
+                }
+
+                if (newBuses.Any())
+                {
+                    context.Buses.AddRange(newBuses);
+                    await context.SaveChangesAsync();
+                }
             }
-            var n1 = Random.Shared.Next(1, 999);
-            var n2 = Random.Shared.Next(10, 99);
-            return $"{n1:D3}.{n2:D2}";
+            catch
+            {
+                // Bỏ qua nếu có xung đột kết nối
+            }
         }
     }
 }

@@ -121,6 +121,9 @@ namespace WebApplication1.Controllers
 
             try
             {
+                // Đảm bảo toàn bộ danh mục xe 63 tỉnh thành đã được nạp cố định vào bảng Bus trong CSDL
+                await WebApplication1.Services.ProvinceLicenseHelper.EnsureAllProvincesBusesSeededAsync(_context);
+
                 // Truy vấn tất cả tuyến xe và chuyến xe phù hợp từ DB
                 var queryRoutes = _context.Routes
                     .Include(r => r.RouteStops.OrderBy(rs => rs.StopOrder))
@@ -144,6 +147,53 @@ namespace WebApplication1.Controllers
                                             r.RouteStops.Any(rs => WebApplication1.Services.LocationHelper.Matches(rs.Stop.StopName, ta)))
                     )
                     .ToList();
+
+                // Nếu chưa có tuyến đường nào phù hợp trong DB, tự động tạo Tuyến đường mới và lưu cố định vào SQL Server
+                if (!queryRoutes.Any())
+                {
+                    var metrics = WebApplication1.Services.RoutePricingService.GetRouteMetrics(model.From, model.To);
+                    var fromCodes = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(model.From);
+                    var toCodes = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(model.To);
+                    var fCode = fromCodes.FirstOrDefault() ?? "HN";
+                    var tCode = toCodes.FirstOrDefault() ?? "HP";
+
+                    var baseCode = $"{fCode}-{tCode}";
+                    var rCode = $"{baseCode}-01";
+                    int counter = 1;
+                    while (await _context.Routes.AnyAsync(r => r.RouteCode == rCode))
+                    {
+                        counter++;
+                        rCode = $"{baseCode}-{counter:D2}";
+                    }
+
+                    var cleanFrom = FormatToTitleCase(model.From);
+                    var cleanTo = FormatToTitleCase(model.To);
+
+                    var newRoute = new WebApplication1.Models.Entities.Route
+                    {
+                        RouteCode = rCode,
+                        RouteName = $"{cleanFrom} - {cleanTo}",
+                        StartPoint = cleanFrom,
+                        EndPoint = cleanTo,
+                        Distance = metrics.Distance,
+                        EstimatedDuration = metrics.EstimatedMinutes,
+                        Status = "Active"
+                    };
+                    _context.Routes.Add(newRoute);
+                    await _context.SaveChangesAsync();
+
+                    var loadedRoute = await _context.Routes
+                        .Include(r => r.RouteStops.OrderBy(rs => rs.StopOrder)).ThenInclude(rs => rs.Stop)
+                        .Include(r => r.Trips).ThenInclude(t => t.Bus).ThenInclude(b => b.BusType)
+                        .Include(r => r.Trips).ThenInclude(t => t.Driver).ThenInclude(d => d.User)
+                        .Include(r => r.Trips).ThenInclude(t => t.Bookings).ThenInclude(b => b.Tickets)
+                        .FirstOrDefaultAsync(r => r.RouteId == newRoute.RouteId);
+
+                    if (loadedRoute != null)
+                    {
+                        queryRoutes.Add(loadedRoute);
+                    }
+                }
 
                 // Lọc các chuyến xe thực tế trong DB
                 foreach (var route in queryRoutes)
@@ -328,13 +378,6 @@ namespace WebApplication1.Controllers
                 // Fallback nếu kết nối cơ sở dữ liệu tạm gián đoạn
             }
 
-            // Nếu DB chưa có tuyến hoặc chuyến xe phù hợp, sinh danh sách chuyến xe động ĐÚNG TUYẾN NGƯỜI DÙNG TÌM KIẾM
-            if (!tripViewModels.Any())
-            {
-                var dynamicTrips = GenerateDynamicTrips(model.From, model.To, searchDate);
-                tripViewModels.AddRange(dynamicTrips);
-            }
-
             // Lọc theo loại xe
             if (!string.IsNullOrEmpty(busType))
             {
@@ -394,24 +437,21 @@ namespace WebApplication1.Controllers
                 new { Dep = new TimeOnly(19, 0), Duration = route.EstimatedDuration ?? 120, BusIdx = 3 }
             };
 
-            int fakeId = route.RouteId * 1000;
             foreach (var slot in timeSlots)
             {
-                fakeId++;
                 var bus = sampleBuses.ElementAtOrDefault(slot.BusIdx % Math.Max(1, sampleBuses.Count)) 
-                          ?? new Bus { BusId = 1, Capacity = 29, LicensePlate = "29B-888.88", BusType = new BusType { TypeName = "Xe 29 chỗ" } };
+                          ?? allActiveBuses.FirstOrDefault()
+                          ?? new Bus { BusId = 1, Capacity = 29, LicensePlate = "29B-012.34" };
 
                 var arrTime = slot.Dep.AddMinutes(slot.Duration);
 
                 trips.Add(new Trip
                 {
-                    TripId = fakeId,
                     RouteId = route.RouteId,
                     Route = route,
                     BusId = bus.BusId,
                     Bus = bus,
                     DriverId = sampleDriver?.DriverId ?? 1,
-                    Driver = sampleDriver ?? new Driver { DriverId = 1, LicenseNo = "B123456789", Status = "Active", User = new User { FullName = "Nguyễn Văn An", Phone = "0987654321" } },
                     TripDate = date,
                     DepartureTime = slot.Dep,
                     ArrivalTime = arrTime,
@@ -430,151 +470,6 @@ namespace WebApplication1.Controllers
             if (busType != null && busType.Contains("Giường", StringComparison.OrdinalIgnoreCase))
                 return "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=400&q=80";
             return "https://images.unsplash.com/photo-1494515843206-f3117d3f51b7?w=400&q=80";
-        }
-
-        /// <summary>
-        /// Sinh danh sách chuyến xe động ĐÚNG 100% ĐIỂM ĐI VÀ ĐIỂM ĐẾN người dùng tìm kiếm
-        /// với 4 khung giờ và 4 dòng xe đa dạng, gắn biển số thông minh theo tỉnh thành
-        /// </summary>
-        private List<TripItemViewModel> GenerateDynamicTrips(string from, string to, DateTime tripDate)
-        {
-            var trips = new List<TripItemViewModel>();
-            var cleanFrom = FormatToTitleCase(from);
-            var cleanTo = FormatToTitleCase(to);
-
-            var fromCodes = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(from);
-            var toCodes = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(to);
-
-            // Tra cứu khoảng cách (km) và số phút di chuyển thực tế theo cự ly và địa hình Việt Nam
-            var metrics = WebApplication1.Services.RoutePricingService.GetRouteMetrics(from, to);
-
-            // Tìm xe phù hợp theo từng loại từ DB nếu có
-            string? plate1 = null, plate2 = null, plate3 = null, plate4 = null;
-            try
-            {
-                var allActiveBuses = _context.Buses
-                    .Where(b => b.Status == null || b.Status == "Active" || b.Status == "ACTIVE")
-                    .ToList();
-
-                var selectedBuses = WebApplication1.Services.ProvinceLicenseHelper.SelectDiverseBusesForRoute(allActiveBuses, from, to, 4);
-                if (selectedBuses.Count > 0) plate1 = selectedBuses[0].LicensePlate;
-                if (selectedBuses.Count > 1) plate2 = selectedBuses[1].LicensePlate;
-                if (selectedBuses.Count > 2) plate3 = selectedBuses[2].LicensePlate;
-                if (selectedBuses.Count > 3) plate4 = selectedBuses[3].LicensePlate;
-            }
-            catch
-            {
-                // Fallback nếu kết nối cơ sở dữ liệu tạm gián đoạn
-            }
-
-            // Nếu DB chưa có đủ biển số tương ứng, tự động sinh biển số thực tế chuẩn tỉnh thành
-            var fallbackPlates = WebApplication1.Services.ProvinceLicenseHelper.GenerateDiverseLicensePlates(from, to);
-            plate1 ??= fallbackPlates[0];
-            plate2 ??= fallbackPlates[1];
-            plate3 ??= fallbackPlates[2];
-            plate4 ??= fallbackPlates[3];
-            var plates = new[] { plate1, plate2, plate3, plate4 };
-
-            // Lấy danh sách 4 cấu hình chuyến xe đa dạng phù hợp nhất với cự ly tuyến
-            var tripConfigs = WebApplication1.Services.RoutePricingService.GetTripConfigsForRoute(metrics.Distance);
-
-            int hours = metrics.EstimatedMinutes / 60;
-            int mins = metrics.EstimatedMinutes % 60;
-            string durationText = hours > 0 ? (mins > 0 ? $"{hours}h {mins}m" : $"{hours}h 00m") : $"{mins}m";
-
-            // Danh sách ghế mẫu đã được đặt để tạo tính chân thực
-            var sampleBookedSeatsList = new[]
-            {
-                new[] { "A02", "A05", "A12" },
-                new[] { "A01", "A02", "B01", "B02", "C05", "D05" },
-                new[] { "A01", "A02", "B02", "C03", "A08", "B10" },
-                new[] { "VIP-T1-01", "VIP-T1-03", "VIP-T2-02" }
-            };
-
-            for (int i = 0; i < tripConfigs.Count; i++)
-            {
-                var cfg = tripConfigs[i];
-                var plate = plates[i % plates.Length];
-                var provName = WebApplication1.Services.ProvinceLicenseHelper.GetProvinceName(plate);
-
-                // Tính giá vé chuẩn xác theo khoảng cách, loại xe, sức chứa và khung giờ chuyến
-                decimal tripPrice = WebApplication1.Services.RoutePricingService.CalculateTripPrice(metrics.Distance, cfg.BusTypeName, cfg.Capacity, cfg.SlotIndex);
-                decimal originalPrice = Math.Round(tripPrice * 1.15m / 5000m, MidpointRounding.AwayFromZero) * 5000m;
-
-                var depTime = cfg.DepartureTime;
-                var totalMinutes = (int)depTime.TotalMinutes + metrics.EstimatedMinutes;
-                var arrTime = TimeSpan.FromMinutes(totalMinutes % (24 * 60));
-
-                var booked = sampleBookedSeatsList[i % sampleBookedSeatsList.Length];
-                var floors = _busLayoutService.GenerateFloorLayouts(cfg.BusTypeName, cfg.Capacity, booked, tripPrice);
-                var flatSeats = floors.SelectMany(f => f.Seats)
-                    .Where(s => s.IsBookable)
-                    .Select(s => new SeatItemViewModel
-                    {
-                        SeatCode = s.SeatCode,
-                        Floor = s.Floor,
-                        Price = s.Price,
-                        Status = s.Status
-                    }).ToList();
-
-                var depPoint = i % 2 == 0 ? $"Bến xe Trung Tâm {cleanFrom}" : $"Văn phòng đón trả {cleanFrom}";
-                var arrPoint = i % 2 == 0 ? $"Bến xe {cleanTo}" : $"Văn phòng trung tâm {cleanTo}";
-
-                var boardingList = new List<string>
-                {
-                    $"{depPoint} ({depTime:hh\\:mm})",
-                    $"Điểm dừng chân {cleanFrom} ({depTime.Add(TimeSpan.FromMinutes(15)):hh\\:mm})"
-                };
-
-                var dropOffList = new List<string>
-                {
-                    $"Cửa ngõ {cleanTo} ({arrTime.Subtract(TimeSpan.FromMinutes(15)):hh\\:mm})",
-                    $"{arrPoint} ({arrTime:hh\\:mm})"
-                };
-
-                int availableCount = Math.Max(5, cfg.Capacity - booked.Length);
-
-                trips.Add(new TripItemViewModel
-                {
-                    TripId = 101 + i,
-                    OperatorName = cfg.OperatorName,
-                    Rating = cfg.Rating,
-                    ReviewCount = cfg.ReviewCount,
-                    BusTypeName = cfg.BusTypeName,
-                    BusImage = GetBusImage(cfg.BusTypeName),
-                    LicensePlate = plate,
-                    ProvinceName = provName,
-                    IsMatchingDeparture = fromCodes.Any(c => plate.StartsWith(c)),
-                    IsMatchingDestination = toCodes.Any(c => plate.StartsWith(c)),
-                    DepartureTime = depTime,
-                    DeparturePoint = depPoint,
-                    ArrivalTime = arrTime,
-                    ArrivalPoint = arrPoint,
-                    DurationText = durationText,
-                    Price = tripPrice,
-                    OriginalPrice = originalPrice,
-                    AvailableSeats = availableCount,
-                    TotalCapacity = cfg.Capacity,
-                    IsFlashSale = cfg.IsFlashSale,
-                    FlashSaleText = cfg.FlashSaleText ?? "ƯU ĐÃI ĐẶT SỚM",
-                    NoticeText = string.IsNullOrEmpty(cfg.NoticeText) 
-                        ? $"Chuyến khởi hành ngày {tripDate:dd/MM/yyyy} tuyến {cleanFrom} - {cleanTo}" 
-                        : cfg.NoticeText,
-                    BoardingPoints = boardingList,
-                    DropOffPoints = dropOffList,
-                    BusTypeCode = cfg.BusTypeCode,
-                    FloorLayouts = floors,
-                    Seats = flatSeats,
-                    RouteCode = $"{fromCodes.FirstOrDefault() ?? "HN"}-{toCodes.FirstOrDefault() ?? "HP"}-{i + 1:D2}",
-                    RouteName = $"{cleanFrom} - {cleanTo}",
-                    DriverName = i % 2 == 0 ? $"Nguyễn Văn Tuấn (Tài xế {cleanFrom})" : $"Trần Đình Trọng (Tài xế {cleanTo})",
-                    DriverPhone = i % 2 == 0 ? "0988 777 999" : "0912 345 678",
-                    EstimatedDuration = metrics.EstimatedMinutes,
-                    Distance = metrics.Distance
-                });
-            }
-
-            return trips;
         }
 
         private static string FormatToTitleCase(string? text)
