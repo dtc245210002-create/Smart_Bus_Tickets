@@ -1,11 +1,34 @@
 // =========================================================================
-// SmartBus Go - Xử lý sự kiện chọn/hủy chọn ghế & tính tổng tiền tự động
+// SmartBus Go - Xử lý sự kiện chọn/hủy chọn ghế & lưu giữ chỗ vào Database
+// Đồng bộ trạng thái ghế thời gian thực giữa các tài khoản người dùng
 // =========================================================================
 
 document.addEventListener("DOMContentLoaded", function () {
     const MAX_SEATS = 6; // Giới hạn số ghế tối đa mỗi lần đặt
+    let pollInterval = null;
+    let activePollingTripId = null;
 
-    // 1. Xử lý mở / đóng Accordion sơ đồ chọn ghế
+    // Helper: Lấy hoặc tạo SessionId đồng bộ lưu trữ qua Cookie & LocalStorage
+    function getOrCreateSessionId() {
+        const name = "sbg_session_id=";
+        const decodedCookie = decodeURIComponent(document.cookie);
+        const ca = decodedCookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i].trim();
+            if (c.indexOf(name) === 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        let stored = localStorage.getItem("sbg_session_id");
+        if (!stored) {
+            stored = "sess_" + Math.random().toString(36).substring(2, 12) + Date.now().toString(36);
+            localStorage.setItem("sbg_session_id", stored);
+        }
+        document.cookie = `sbg_session_id=${stored}; path=/; max-age=604800; SameSite=Lax`;
+        return stored;
+    }
+
+    // 1. Xử lý mở / đóng Accordion sơ đồ chọn ghế & Bắt đầu đồng bộ ghế
     const toggleButtons = document.querySelectorAll(".btn-toggle-seat-map");
     toggleButtons.forEach(btn => {
         btn.addEventListener("click", function () {
@@ -16,6 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (accordion.classList.contains("show")) {
                 accordion.classList.remove("show");
                 this.innerHTML = '<i class="bi bi-chevron-down me-1"></i> Chọn chỗ';
+                stopSeatPolling();
             } else {
                 // Đóng các accordion khác trước khi mở cái mới
                 document.querySelectorAll(".sbg-seat-accordion").forEach(acc => acc.classList.remove("show"));
@@ -26,22 +50,25 @@ document.addEventListener("DOMContentLoaded", function () {
                 accordion.classList.add("show");
                 this.innerHTML = '<i class="bi bi-chevron-up me-1"></i> Đóng lại';
                 
+                // Đồng bộ trạng thái ghế mới nhất từ CSDL và bắt đầu Polling
+                startSeatPolling(tripId);
+
                 // Cuộn nhẹ tới accordion
                 accordion.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         });
     });
 
-    // 2. Xử lý sự kiện click chọn / hủy chọn ghế
+    // 2. Xử lý sự kiện click chọn / hủy chọn ghế & Gọi API lưu Database
     const seatBoxes = document.querySelectorAll(".sbg-seat-box");
     seatBoxes.forEach(seat => {
-        seat.addEventListener("click", function () {
+        seat.addEventListener("click", async function () {
             const tripId = this.getAttribute("data-trip-id");
             const seatCode = this.getAttribute("data-code");
 
-            // Nếu ghế đã bán -> Thông báo không cho chọn
+            // Nếu ghế đã bán hoặc đang được tài khoản khác giữ -> Không cho chọn
             if (this.classList.contains("booked")) {
-                showSeatAlert(tripId, `Ghế ${seatCode} đã có người đặt, vui lòng chọn ghế khác!`, "warning");
+                showSeatAlert(tripId, `Ghế ${seatCode} đang được tài khoản khác giữ chỗ hoặc đã bán. Vui lòng chọn ghế khác!`, "warning");
                 return;
             }
 
@@ -49,26 +76,159 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!accordion) return;
 
             const currentSelected = accordion.querySelectorAll(".sbg-seat-box.selected");
+            const isSelecting = !this.classList.contains("selected");
 
-            // Kiểm tra trạng thái: chọn hay hủy chọn
-            if (this.classList.contains("selected")) {
-                // HỦY CHỌN GHẾ
-                this.classList.remove("selected");
-            } else {
-                // CHỌN GHẾ MỚI (Kiểm tra số lượng tối đa)
-                if (currentSelected.length >= MAX_SEATS) {
-                    showSeatAlert(tripId, `Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế cho một lần đặt vé!`, "danger");
-                    return;
-                }
-                this.classList.add("selected");
+            // Kiểm tra số lượng tối đa
+            if (isSelecting && currentSelected.length >= MAX_SEATS) {
+                showSeatAlert(tripId, `Bạn chỉ được chọn tối đa ${MAX_SEATS} ghế cho một lần đặt vé!`, "danger");
+                return;
             }
 
-            // Tự động tính toán lại tổng tiền và cập nhật giao diện
-            updateSeatSummary(tripId);
+            // Gọi API giữ hoặc hủy giữ ghế lưu vào CSDL SQL Server
+            await toggleSeatHold(tripId, seatCode, isSelecting, this);
         });
     });
 
-    // 3. Hàm tính tổng tiền và cập nhật thông tin ghế đã chọn
+    // Hàm gọi API giữ chỗ / hủy giữ ghế đồng bộ CSDL
+    async function toggleSeatHold(tripId, seatCode, isSelecting, seatEl) {
+        const sessionId = getOrCreateSessionId();
+        const userId = window.sbgCurrentUserId || null;
+
+        // Tạm thời vô hiệu hóa tương tác tránh double click
+        seatEl.style.pointerEvents = "none";
+
+        try {
+            if (isSelecting) {
+                // CHỌN GHẾ -> GỬI API GIỮ CHỖ
+                const res = await fetch("/api/bookings/hold-seats", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        tripId: parseInt(tripId),
+                        seatNumbers: [seatCode],
+                        sessionId: sessionId,
+                        userId: userId,
+                        holdDurationMinutes: 10
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    // GHẾ BỊ XUNG ĐỘT (Tài khoản khác đã chọn trước)
+                    seatEl.classList.remove("selected");
+                    seatEl.classList.add("booked");
+                    showSeatAlert(tripId, data.message || `Ghế ${seatCode} vừa có tài khoản khác chọn. Vui lòng chọn ghế khác!`, "warning");
+                    updateSeatSummary(tripId);
+                    return;
+                }
+
+                // Thành công: Đánh dấu ghế Đang chọn
+                seatEl.classList.add("selected");
+                seatEl.classList.remove("booked");
+                showSeatAlert(tripId, `Đã chọn và giữ ghế ${seatCode} vào hệ thống (giữ 10 phút)!`, "success");
+            } else {
+                // HỦY CHỌN GHẾ -> GỬI API HỦY GIỮ CHỖ
+                await fetch("/api/bookings/release-seats", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        tripId: parseInt(tripId),
+                        seatNumbers: [seatCode],
+                        sessionId: sessionId,
+                        userId: userId
+                    })
+                });
+
+                seatEl.classList.remove("selected");
+                showSeatAlert(tripId, `Đã hủy giữ ghế ${seatCode}.`, "info");
+            }
+
+            updateSeatSummary(tripId);
+        } catch (err) {
+            console.error("Lỗi khi kết nối API giữ ghế:", err);
+            // Fallback giao diện người dùng
+            if (isSelecting) {
+                seatEl.classList.add("selected");
+            } else {
+                seatEl.classList.remove("selected");
+            }
+            updateSeatSummary(tripId);
+        } finally {
+            seatEl.style.pointerEvents = "auto";
+        }
+    }
+
+    // 3. Cơ chế Polling thời gian thực: Cập nhật trạng thái ghế giữa các tài khoản
+    function startSeatPolling(tripId) {
+        stopSeatPolling();
+        activePollingTripId = tripId;
+        syncSeatStatuses(tripId);
+        pollInterval = setInterval(() => {
+            if (activePollingTripId) {
+                syncSeatStatuses(activePollingTripId);
+            }
+        }, 4000); // 4 giây đồng bộ 1 lần
+    }
+
+    function stopSeatPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+        activePollingTripId = null;
+    }
+
+    async function syncSeatStatuses(tripId) {
+        const accordion = document.getElementById("seatAccordion-" + tripId);
+        if (!accordion || !accordion.classList.contains("show")) return;
+
+        const sessionId = getOrCreateSessionId();
+        const userId = window.sbgCurrentUserId || "";
+
+        try {
+            const res = await fetch(`/api/bookings/trip-seat-status?tripId=${tripId}&sessionId=${encodeURIComponent(sessionId)}&userId=${userId}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.success) return;
+
+            const booked = new Set((data.bookedSeats || []).map(s => s.toUpperCase()));
+            const myHeld = new Set((data.myHeldSeats || []).map(s => s.toUpperCase()));
+
+            const seatBoxes = accordion.querySelectorAll(".sbg-seat-box");
+            seatBoxes.forEach(seat => {
+                const code = (seat.getAttribute("data-code") || "").toUpperCase();
+
+                if (booked.has(code)) {
+                    // Ghế đã bán hoặc đang được tài khoản khác giữ -> Khóa không cho chọn
+                    seat.classList.add("booked");
+                    seat.classList.remove("selected");
+                    seat.setAttribute("title", `Ghế ${code} - Đã bán hoặc đang được tài khoản khác giữ`);
+                } else if (myHeld.has(code)) {
+                    // Ghế do chính tài khoản này đang giữ
+                    seat.classList.add("selected");
+                    seat.classList.remove("booked");
+                    seat.setAttribute("title", `Ghế ${code} - Bạn đang giữ chỗ`);
+                } else {
+                    // Ghế trống: Nếu client chưa click chọn thì mở khóa
+                    if (!seat.classList.contains("selected")) {
+                        seat.classList.remove("booked");
+                        seat.setAttribute("title", `Ghế ${code} - Còn trống, bấm để chọn`);
+                    }
+                }
+            });
+
+            updateSeatSummary(tripId);
+        } catch (e) {
+            // Giữ nguyên giao diện nếu kết nối mạng tạm gián đoạn
+        }
+    }
+
+    // 4. Hàm tính tổng tiền và cập nhật thông tin ghế đã chọn
     function updateSeatSummary(tripId) {
         const accordion = document.getElementById("seatAccordion-" + tripId);
         if (!accordion) return;
@@ -192,7 +352,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // 4. Hiển thị thông báo nhanh (Toast alert) trên accordion
+    // 5. Hiển thị thông báo nhanh (Toast alert) trên accordion
     function showSeatAlert(tripId, message, type) {
         const accordion = document.getElementById("seatAccordion-" + tripId);
         if (!accordion) return;
@@ -218,19 +378,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 3500);
     }
 
-    // 5. Tự động viết hoa chữ cái đầu (Title Case: "hà nội" -> "Hà Nội", "thái nguyên" -> "Thái Nguyên")
+    // 6. Tự động viết hoa chữ cái đầu (Title Case: "hà nội" -> "Hà Nội", "thái nguyên" -> "Thái Nguyên")
     const locationInputs = document.querySelectorAll('input[name="from"], input[name="to"]');
     locationInputs.forEach(input => {
-        // Viết hoa khi người dùng nhập xong và chuyển ô (blur) hoặc gửi form
         input.addEventListener("blur", function () {
             if (this.value) {
                 this.value = formatTitleCase(this.value);
             }
-        });
-        
-        // Hỗ trợ viết hoa chữ cái đầu tiên ngay khi gõ
-        input.addEventListener("input", function () {
-            // CSS text-transform: capitalize đã làm hiển thị viết hoa ngay lập tức
         });
     });
 

@@ -162,11 +162,23 @@
                     }
                 </div>
 
-                <div class="sbg-qr-box" id="ticketQrCanvas"></div>
+                <div class="sbg-qr-box d-flex align-items-center justify-content-center p-2 bg-white rounded-3 shadow-sm border mx-auto" id="ticketQrCanvas" style="width: 190px; height: 190px; background-color: #ffffff;">
+                    <img id="ticketQrImage" 
+                         src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=@Uri.EscapeDataString(Model.TicketCode)&color=0A4D46" 
+                         alt="Mã QR Vé Xe @Model.TicketCode" 
+                         class="img-fluid rounded" 
+                         style="width: 170px; height: 170px; object-fit: contain;"
+                         onerror="this.onerror=null; this.src='https://quickchart.io/qr?text=@Uri.EscapeDataString(Model.TicketCode)&size=170';" />
+                </div>
 
-                <div class="text-center">
+                <div class="text-center mt-3">
                     <span class="text-muted small d-block">Mã vé (Ticket Code):</span>
-                    <strong class="fs-6 text-dark" id="ticketCodeDisplay">@Model.TicketCode</strong>
+                    <div class="d-inline-flex align-items-center justify-content-center gap-2 mt-1">
+                        <strong class="fs-5 text-dark font-monospace text-primary fw-bold" id="ticketCodeDisplay">@Model.TicketCode</strong>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-2 py-0" title="Sao chép mã vé" onclick="navigator.clipboard.writeText('@Model.TicketCode'); alert('Đã sao chép mã vé: @Model.TicketCode\nBạn có thể sang trang Bác tài để dán vào kiểm tra vé!');">
+                            <i class="bi bi-copy"></i>
+                        </button>
+                    </div>
                     <p class="text-muted small mt-2 mb-0">Xuất trình mã này cho tài xế hoặc phụ xe khi lên xe buýt.</p>
                 </div>
 

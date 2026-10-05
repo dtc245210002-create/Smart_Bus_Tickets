@@ -436,5 +436,8 @@
 </div>
 
 @section Scripts {
+    <script>
+        window.sbgCurrentUserId = @(User.Identity?.IsAuthenticated == true && int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : "null");
+    </script>
     <script src="~/js/seat-selection.js" asp-append-version="true"></script>
 }

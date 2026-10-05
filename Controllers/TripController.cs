@@ -14,15 +14,20 @@ namespace WebApplication1.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly WebApplication1.Services.BusLayout.IBusLayoutService _busLayoutService;
+        private readonly WebApplication1.Services.ISeatHoldService _seatHoldService;
 
-        public TripController(ApplicationDbContext context, WebApplication1.Services.BusLayout.IBusLayoutService busLayoutService)
+        public TripController(
+            ApplicationDbContext context, 
+            WebApplication1.Services.BusLayout.IBusLayoutService busLayoutService,
+            WebApplication1.Services.ISeatHoldService seatHoldService)
         {
             _context = context;
             _busLayoutService = busLayoutService;
+            _seatHoldService = seatHoldService;
         }
 
         [HttpGet]
-        public IActionResult Search(
+        public async Task<IActionResult> Search(
             string? from = "Hà Nội", 
             string? to = "Hải Phòng", 
             string? date = null, 
@@ -147,11 +152,37 @@ namespace WebApplication1.Controllers
                         .Where(t => t.TripDate == tripDateOnly && (t.Status == null || !t.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)))
                         .ToList();
 
-                    // Nếu ngày tìm kiếm chưa có chuyến tạo sẵn trong DB, tự động sinh các chuyến theo Route thực tế
+                    // Nếu ngày tìm kiếm chưa có chuyến tạo sẵn trong DB, tự động sinh các chuyến theo Route thực tế và lưu vào DB
                     if (!activeTrips.Any())
                     {
-                        activeTrips = GenerateScheduledTripsForRoute(route, tripDateOnly);
+                        var generated = GenerateScheduledTripsForRoute(route, tripDateOnly);
+                        foreach (var gt in generated)
+                        {
+                            var dbTrip = new Trip
+                            {
+                                RouteId = gt.RouteId,
+                                BusId = gt.BusId,
+                                DriverId = gt.DriverId,
+                                TripDate = gt.TripDate,
+                                DepartureTime = gt.DepartureTime,
+                                ArrivalTime = gt.ArrivalTime,
+                                Status = "Scheduled"
+                            };
+                            _context.Trips.Add(dbTrip);
+                        }
+                        await _context.SaveChangesAsync();
+
+                        activeTrips = await _context.Trips
+                            .Include(t => t.Bus).ThenInclude(b => b.BusType)
+                            .Include(t => t.Driver).ThenInclude(d => d.User)
+                            .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
+                            .Where(t => t.RouteId == route.RouteId && t.TripDate == tripDateOnly && (t.Status == null || !t.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)))
+                            .ToListAsync();
                     }
+
+                    int? currentUserId = User.Identity?.IsAuthenticated == true && int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : null;
+                    string currentSessionId = Request.Cookies["sbg_session_id"] ?? "";
+                    var now = DateTime.Now;
 
                     foreach (var trip in activeTrips)
                     {
@@ -161,13 +192,51 @@ namespace WebApplication1.Controllers
                             .Where(tk => tk.Status == null || !tk.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase))
                             .ToList() ?? new List<Ticket>();
 
-                        var bookedSeatNumbers = validTickets
-                            .Where(tk => !string.IsNullOrEmpty(tk.SeatNumber))
-                            .Select(tk => tk.SeatNumber!)
-                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                        var bookedSeatNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                        // 1. Quét từ vé trong Database
+                        foreach (var tk in validTickets)
+                        {
+                            if (string.IsNullOrWhiteSpace(tk.SeatNumber)) continue;
+                            var st = (tk.Status ?? "").ToUpper();
+                            var seats = tk.SeatNumber.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                            if (st == "CONFIRMED" || st == "ACTIVE" || st == "PAID" || st == "USED")
+                            {
+                                foreach (var s in seats) bookedSeatNumbers.Add(s.Trim().ToUpper());
+                            }
+                            else if (st == "HELD" || st == "PENDING")
+                            {
+                                bool isExpired = tk.Booking == null || tk.Booking.BookingTime.AddMinutes(10) < now;
+                                if (!isExpired)
+                                {
+                                    bool isMine = (currentUserId.HasValue && tk.Booking?.UserId == currentUserId.Value)
+                                                  || (!string.IsNullOrEmpty(currentSessionId) && tk.Booking?.BookingCode.Contains(currentSessionId) == true);
+                                    if (!isMine)
+                                    {
+                                        foreach (var s in seats) bookedSeatNumbers.Add(s.Trim().ToUpper());
+                                    }
+                                }
+                            }
+                        }
+
+                        // 2. Quét từ ISeatHoldService
+                        if (_seatHoldService != null && trip.TripId > 0)
+                        {
+                            var activeHolds = await _seatHoldService.GetActiveHoldsForTripAsync(trip.TripId);
+                            foreach (var hold in activeHolds.Values)
+                            {
+                                bool isMine = (currentUserId.HasValue && hold.UserId == currentUserId.Value)
+                                              || (!string.IsNullOrEmpty(currentSessionId) && string.Equals(hold.SessionId, currentSessionId, StringComparison.OrdinalIgnoreCase));
+                                if (!isMine)
+                                {
+                                    bookedSeatNumbers.Add(hold.SeatNumber.Trim().ToUpper());
+                                }
+                            }
+                        }
 
                         var totalCapacity = trip.Bus?.Capacity ?? 29;
-                        var bookedCount = validTickets.Count;
+                        var bookedCount = bookedSeatNumbers.Count;
                         var availableSeats = Math.Max(0, totalCapacity - bookedCount);
 
                         if (availableSeats <= 0) continue;

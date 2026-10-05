@@ -128,17 +128,32 @@ namespace WebApplication1.Controllers
                                  effectiveId.Equals("SBG-HN-DN-20251024-008", StringComparison.OrdinalIgnoreCase) ||
                                  effectiveId.StartsWith("SBG-84920", StringComparison.OrdinalIgnoreCase);
 
-            // Kiểm tra xem đây có phải là khách hàng vừa chọn chuyến/đặt vé không
-            bool isNewBookingFlow = !string.IsNullOrWhiteSpace(seats) || 
-                                    !string.IsNullOrWhiteSpace(depTime) || 
-                                    !string.IsNullOrWhiteSpace(busType) ||
-                                    !string.IsNullOrWhiteSpace(licensePlate) ||
-                                    tripId.HasValue ||
-                                    !string.IsNullOrWhiteSpace(Request.Cookies["sbg_last_seats"]);
+            // Kiểm tra xem vé này đã tồn tại trong CSDL SQL Server chưa
+            Ticket? existingTicket = null;
+            if (!string.IsNullOrEmpty(effectiveId) && !isLegacyDefault)
+            {
+                try
+                {
+                    existingTicket = await _context.Tickets
+                        .Include(t => t.Booking).ThenInclude(b => b.User)
+                        .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
+                        .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
+                        .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
+                        .Include(t => t.BoardingStop)
+                        .Include(t => t.DropOffStop)
+                        .FirstOrDefaultAsync(t => t.TicketCode == effectiveId || t.TicketId.ToString() == effectiveId);
+                }
+                catch { }
+            }
 
             // 2. Nếu có TripId trong CSDL SQL Server, đồng bộ các thông tin chính thức từ Trip thật
             Trip? dbTrip = null;
-            if (effectiveTripId.HasValue && effectiveTripId.Value > 0)
+            if (existingTicket?.Booking?.Trip != null)
+            {
+                dbTrip = existingTicket.Booking.Trip;
+                effectiveTripId = dbTrip.TripId;
+            }
+            else if (effectiveTripId.HasValue && effectiveTripId.Value > 0)
             {
                 try
                 {
@@ -151,6 +166,31 @@ namespace WebApplication1.Controllers
                         .Include(t => t.Driver)
                             .ThenInclude(d => d.User)
                         .FirstOrDefaultAsync(t => t.TripId == effectiveTripId.Value);
+                }
+                catch { }
+            }
+
+            // Nếu không tìm thấy Trip theo effectiveTripId (ví dụ do fake ID), tìm Trip thật từ Route
+            if (dbTrip == null)
+            {
+                try
+                {
+                    dbTrip = await _context.Trips
+                        .Include(t => t.Route)
+                        .Include(t => t.Bus).ThenInclude(b => b.BusType)
+                        .Include(t => t.Driver).ThenInclude(d => d.User)
+                        .FirstOrDefaultAsync(t => (t.Route.StartPoint.Contains(effectiveFrom) || effectiveFrom.Contains(t.Route.StartPoint)) &&
+                                                  (t.Route.EndPoint.Contains(effectiveTo) || effectiveTo.Contains(t.Route.EndPoint)))
+                        ?? await _context.Trips
+                            .Include(t => t.Route)
+                            .Include(t => t.Bus).ThenInclude(b => b.BusType)
+                            .Include(t => t.Driver).ThenInclude(d => d.User)
+                            .FirstOrDefaultAsync();
+                    
+                    if (dbTrip != null)
+                    {
+                        effectiveTripId = dbTrip.TripId;
+                    }
                 }
                 catch { }
             }
@@ -208,6 +248,14 @@ namespace WebApplication1.Controllers
                 parsedTripDate = pDate;
             }
 
+            // Nếu đọc từ vé đã lưu trong DB
+            if (existingTicket != null)
+            {
+                if (!string.IsNullOrEmpty(existingTicket.SeatNumber)) effectiveSeats = existingTicket.SeatNumber;
+                if (existingTicket.Price > 0) effectiveTotal = existingTicket.Price;
+                if (existingTicket.Booking != null && existingTicket.Booking.TotalAmount > 0) effectiveTotal = existingTicket.Booking.TotalAmount;
+            }
+
             // Tính toán giá tiền theo số lượng ghế, khoảng cách và loại xe
             var seatCount = effectiveSeats.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Length;
             if (effectiveTotal <= 0)
@@ -222,32 +270,128 @@ namespace WebApplication1.Controllers
             var boardingAddress = await GetAccurateStopAddressAsync(effectiveBoarding, effectiveFrom);
             var dropOffAddress = await GetAccurateStopAddressAsync(effectiveDropoff, effectiveTo);
 
-            // Sinh mã vé và mã đặt chỗ độc nhất cho đơn đặt vé của khách
-            var cleanTicketCode = !string.IsNullOrEmpty(code) ? code 
-                : (!string.IsNullOrEmpty(id) && !isLegacyDefault ? id 
-                : $"SBG-{fromCode}-{toCode}-{parsedTripDate:yyyyMMdd}-{effectiveTripId ?? 101}");
-            var cleanBookingCode = $"BK-{fromCode}{toCode}-{DateTime.Now:MMddHHmmss}-{Random.Shared.Next(100, 999)}";
+            // =========================================================================
+            // SINH MÃ VÉ VÀ MÃ ĐẶT CHỖ TỰ ĐỘNG RANDOM & LƯU VÀO DATABASE
+            // =========================================================================
+            string cleanTicketCode;
+            string cleanBookingCode;
+            string finalTicketStatus;
 
-            // Trạng thái vé: Luôn là ACTIVE (Vé Hợp Lệ) khi khách hàng vừa đặt hoặc đã thanh toán
-            var finalTicketStatus = !string.IsNullOrWhiteSpace(status) ? status.ToUpper() : "ACTIVE";
+            if (existingTicket != null)
+            {
+                cleanTicketCode = existingTicket.TicketCode;
+                cleanBookingCode = existingTicket.Booking?.BookingCode ?? $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
+                finalTicketStatus = !string.IsNullOrWhiteSpace(existingTicket.Status) ? existingTicket.Status.ToUpper() : "ACTIVE";
+            }
+            else
+            {
+                // Sinh mã vé ngẫu nhiên duy nhất dạng SBG-XXXXXX (6 chữ số ngẫu nhiên)
+                do
+                {
+                    cleanTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
+                } while (await _context.Tickets.AnyAsync(t => t.TicketCode == cleanTicketCode));
+
+                cleanBookingCode = $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
+                finalTicketStatus = !string.IsNullOrWhiteSpace(status) ? status.ToUpper() : "ACTIVE";
+
+                // Lưu ngay vé mới được sinh ngẫu nhiên vào Database SQL Server
+                try
+                {
+                    int? currentAuthUid = null;
+                    if (User.Identity?.IsAuthenticated == true && int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var pUid))
+                    {
+                        currentAuthUid = pUid;
+                    }
+
+                    var validUser = (currentAuthUid.HasValue ? await _context.Users.FirstOrDefaultAsync(u => u.UserId == currentAuthUid.Value) : null)
+                        ?? await _context.Users.FirstOrDefaultAsync(u => u.Email == "khachhang@smartbus.vn")
+                        ?? await _context.Users.FirstOrDefaultAsync();
+
+                    if (validUser == null)
+                    {
+                        validUser = new User
+                        {
+                            FullName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Trần Văn Bình",
+                            Phone = "0912 345 678",
+                            Email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "khachhang@smartbus.vn",
+                            PasswordHash = "AQAAAAEAACcQAAAAE",
+                            Status = "Active",
+                            CreatedAt = DateTime.Now
+                        };
+                        _context.Users.Add(validUser);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    if (dbTrip != null && validUser != null)
+                    {
+                        var newBooking = new Booking
+                        {
+                            UserId = validUser.UserId,
+                            TripId = dbTrip.TripId,
+                            BookingCode = cleanBookingCode.Length > 30 ? cleanBookingCode.Substring(0, 30) : cleanBookingCode,
+                            BookingTime = DateTime.Now,
+                            TotalAmount = effectiveTotal,
+                            Status = "Confirmed"
+                        };
+                        _context.Bookings.Add(newBooking);
+                        await _context.SaveChangesAsync();
+
+                        var seatStr = effectiveSeats ?? "A01";
+                        if (seatStr.Length > 10) seatStr = seatStr.Substring(0, 10);
+
+                        var newTicket = new Ticket
+                        {
+                            BookingId = newBooking.BookingId,
+                            TicketCode = cleanTicketCode,
+                            SeatNumber = seatStr,
+                            Price = effectiveTotal,
+                            Status = finalTicketStatus
+                        };
+                        _context.Tickets.Add(newTicket);
+                        await _context.SaveChangesAsync();
+
+                        _logger.LogInformation("Đã lưu vé ngẫu nhiên vào Database thành công: Mã vé [{TicketCode}] - Ghế [{Seat}] - Booking [{BookingCode}]", cleanTicketCode, seatStr, cleanBookingCode);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi khi lưu vé ngẫu nhiên vào CSDL: {Message}", ex.Message);
+                }
+            }
+
+            // Ghi nhớ mã vé mới vào Cookie để duy trì trạng thái phiên xem vé
+            try
+            {
+                Response.Cookies.Append("sbg_last_ticket_code", cleanTicketCode, new Microsoft.AspNetCore.Http.CookieOptions
+                {
+                    Expires = DateTimeOffset.Now.AddDays(7),
+                    IsEssential = true,
+                    SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax
+                });
+            }
+            catch { }
 
             // 3. Khởi tạo ViewModel chứa 100% THÔNG TIN CHUYẾN XE KHÁCH HÀNG ĐÃ ĐẶT
+            var passengerName = existingTicket?.Booking?.User?.FullName ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? (User.Identity?.Name ?? "Trần Văn Bình");
+            var passengerPhone = existingTicket?.Booking?.User?.Phone ?? "0912 345 678";
+            var passengerEmail = existingTicket?.Booking?.User?.Email ?? User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "khachhang@smartbus.vn";
+
             var model = new TicketDetailViewModel
             {
-                TicketId = effectiveTripId ?? 2026,
+                TicketId = existingTicket?.TicketId ?? (effectiveTripId ?? 2026),
                 TicketCode = cleanTicketCode,
                 SeatNumber = effectiveSeats,
                 Price = effectiveTotal,
                 Status = finalTicketStatus,
 
-                BookingId = 8821,
+                BookingId = existingTicket?.BookingId ?? 8821,
                 BookingCode = cleanBookingCode,
-                BookingTime = DateTime.Now,
+                BookingTime = existingTicket?.Booking?.BookingTime ?? DateTime.Now,
                 TotalAmount = effectiveTotal,
 
-                PassengerName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? (User.Identity?.Name ?? "Trần Văn Bình"),
-                PassengerPhone = "0912 345 678",
-                PassengerEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "khachhang@smartbus.vn",
+                PassengerName = passengerName,
+                PassengerPhone = passengerPhone,
+                PassengerEmail = passengerEmail,
 
                 RouteCode = effectiveRouteCode,
                 RouteName = effectiveRouteName,
@@ -264,81 +408,16 @@ namespace WebApplication1.Controllers
                 DropOffStopAddress = dropOffAddress,
                 ArrivalTime = parsedArr,
 
-                TripId = effectiveTripId ?? 101,
+                TripId = dbTrip?.TripId ?? (effectiveTripId ?? 101),
                 TripDate = parsedTripDate,
                 LicensePlate = effectiveLicensePlate,
                 BusTypeName = effectiveBusType,
                 DriverName = effectiveDriverName,
                 DriverPhone = effectiveDriverPhone,
 
-                QrDataPayload = $"SMARTBUS|TICKET:{cleanTicketCode}|BOOKING:{cleanBookingCode}|ROUTE:{effectiveFrom}-{effectiveTo}|SEAT:{effectiveSeats}|DATE:{parsedTripDate:yyyy-MM-dd}|STATUS:{finalTicketStatus}"
+                // Payload mã QR định dạng chuẩn an toàn không dấu
+                QrDataPayload = $"SMARTBUS|TICKET:{cleanTicketCode}|BOOKING:{cleanBookingCode}|SEAT:{effectiveSeats}|DATE:{parsedTripDate:yyyy-MM-dd}|STATUS:{finalTicketStatus}"
             };
-
-            // 4. Lưu / Cập nhật vé này vào CSDL SQL Server để liên kết đồng bộ với tính năng Đổi chuyến và Hủy vé
-            try
-            {
-                var existingTicket = await _context.Tickets
-                    .Include(t => t.Booking)
-                    .FirstOrDefaultAsync(t => t.TicketCode == model.TicketCode);
-
-                if (existingTicket != null)
-                {
-                    existingTicket.SeatNumber = model.SeatNumber;
-                    existingTicket.Price = model.Price;
-                    existingTicket.Status = "ACTIVE";
-                    if (existingTicket.Booking != null)
-                    {
-                        existingTicket.Booking.Status = "Confirmed";
-                        existingTicket.Booking.TotalAmount = model.TotalAmount;
-                    }
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    var validTrip = (dbTrip != null ? dbTrip : null) 
-                        ?? await _context.Trips.Include(t => t.Route).FirstOrDefaultAsync(t => 
-                            (t.Route.StartPoint.Contains(model.StartPoint) || model.StartPoint.Contains(t.Route.StartPoint)) &&
-                            (t.Route.EndPoint.Contains(model.EndPoint) || model.EndPoint.Contains(t.Route.EndPoint)))
-                        ?? await _context.Trips.FirstOrDefaultAsync();
-
-                    var validUser = await _context.Users.FirstOrDefaultAsync() 
-                        ?? new User { FullName = model.PassengerName, Phone = model.PassengerPhone, Email = model.PassengerEmail, PasswordHash = "AQAAAAEAACcQAAAAE", CreatedAt = DateTime.Now };
-
-                    if (validTrip != null && validUser != null)
-                    {
-                        var existingBooking = await _context.Bookings.FirstOrDefaultAsync(b => b.BookingCode == model.BookingCode);
-                        if (existingBooking == null)
-                        {
-                            var newBooking = new Booking
-                            {
-                                UserId = validUser.UserId,
-                                TripId = validTrip.TripId,
-                                BookingCode = model.BookingCode,
-                                BookingTime = DateTime.Now,
-                                TotalAmount = model.TotalAmount,
-                                Status = "Confirmed"
-                            };
-                            _context.Bookings.Add(newBooking);
-                            await _context.SaveChangesAsync();
-
-                            var newTicket = new Ticket
-                            {
-                                BookingId = newBooking.BookingId,
-                                TicketCode = model.TicketCode,
-                                SeatNumber = model.SeatNumber,
-                                Price = model.Price,
-                                Status = "ACTIVE"
-                            };
-                            _context.Tickets.Add(newTicket);
-                            await _context.SaveChangesAsync();
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Không thể lưu vé vào CSDL: {Message}", ex.Message);
-            }
 
             return View(model);
         }

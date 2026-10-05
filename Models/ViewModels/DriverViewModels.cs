@@ -36,9 +36,13 @@ namespace WebApplication1.Models.ViewModels
         // Thống kê ca làm việc
         public int TodayTripsCount { get; set; }
         public int TotalPassengersCount { get; set; }
+        public int TotalCheckedInCount { get; set; }
 
         // Danh sách các chuyến xe được giao
         public List<DriverTripItemViewModel> AssignedTrips { get; set; } = new();
+
+        // Danh sách hành khách đã soát vé / đã lên xe thời gian thực
+        public List<DriverCheckedInPassengerViewModel> RecentCheckedInPassengers { get; set; } = new();
     }
 
     /// <summary>
@@ -57,7 +61,23 @@ namespace WebApplication1.Models.ViewModels
         public string BusTypeName { get; set; } = string.Empty;
         public int Capacity { get; set; }
         public int BookedSeats { get; set; }
+        public int CheckedInCount { get; set; }
         public string Status { get; set; } = "ACTIVE";
+    }
+
+    /// <summary>
+    /// ViewModel thông tin hành khách đã soát vé lên xe
+    /// </summary>
+    public class DriverCheckedInPassengerViewModel
+    {
+        public string TicketCode { get; set; } = string.Empty;
+        public string PassengerName { get; set; } = string.Empty;
+        public string PassengerPhone { get; set; } = string.Empty;
+        public string SeatNumber { get; set; } = string.Empty;
+        public string RouteName { get; set; } = string.Empty;
+        public string LicensePlate { get; set; } = string.Empty;
+        public DateTime CheckInTime { get; set; } = DateTime.Now;
+        public string Status { get; set; } = "USED";
     }
 
     /// <summary>

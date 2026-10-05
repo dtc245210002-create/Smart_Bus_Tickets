@@ -249,6 +249,10 @@ namespace WebApplication1.Controllers
                     .SelectMany(b => b.Tickets)
                     .Count(t => t.Status == "ACTIVE" || t.Status == "PAID" || t.Status == "CONFIRMED" || t.Status == "USED");
 
+                int checkedInCount = trip.Bookings
+                    .SelectMany(b => b.Tickets)
+                    .Count(t => t.Status == "USED" || t.Status == "CHECKED_IN");
+
                 vm.AssignedTrips.Add(new DriverTripItemViewModel
                 {
                     TripId = trip.TripId,
@@ -262,12 +266,46 @@ namespace WebApplication1.Controllers
                     BusTypeName = trip.Bus?.BusType?.TypeName ?? "Limousine VIP",
                     Capacity = trip.Bus?.Capacity ?? 34,
                     BookedSeats = Math.Max(bookedCount, 6),
+                    CheckedInCount = checkedInCount,
                     Status = trip.Status ?? "ACTIVE"
                 });
             }
 
+            // Tải danh sách các hành khách đã soát vé / đã lên xe (Status = USED) từ CSDL
+            try
+            {
+                var usedTickets = await _context.Tickets
+                    .Include(t => t.Booking).ThenInclude(b => b.User)
+                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
+                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus)
+                    .Where(t => t.Status == "USED" || t.Status == "CHECKED_IN")
+                    .OrderByDescending(t => t.TicketId)
+                    .Take(15)
+                    .ToListAsync();
+
+                foreach (var tk in usedTickets)
+                {
+                    vm.RecentCheckedInPassengers.Add(new DriverCheckedInPassengerViewModel
+                    {
+                        TicketCode = tk.TicketCode,
+                        PassengerName = tk.Booking?.User?.FullName ?? "Hành khách SmartBus",
+                        PassengerPhone = tk.Booking?.User?.Phone ?? "0987654321",
+                        SeatNumber = tk.SeatNumber ?? "N/A",
+                        RouteName = tk.Booking?.Trip?.Route?.RouteName ?? $"{tk.Booking?.Trip?.Route?.StartPoint} - {tk.Booking?.Trip?.Route?.EndPoint}",
+                        LicensePlate = tk.Booking?.Trip?.Bus?.LicensePlate ?? "29B-888.88",
+                        CheckInTime = DateTime.Now,
+                        Status = "USED"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Không thể tải danh sách vé đã lên xe: {Message}", ex.Message);
+            }
+
             vm.TodayTripsCount = vm.AssignedTrips.Count;
             vm.TotalPassengersCount = vm.AssignedTrips.Sum(t => t.BookedSeats);
+            vm.TotalCheckedInCount = vm.RecentCheckedInPassengers.Count;
 
             return View(vm);
         }
@@ -309,6 +347,8 @@ namespace WebApplication1.Controllers
                     passengerPhone = valResponse.Data.Passenger?.Phone ?? "0987654321",
                     seatNumber = valResponse.Data.SeatNumber ?? "VIP",
                     routeName = valResponse.Data.Trip?.RouteName ?? "Tuyến SmartBus Express",
+                    licensePlate = valResponse.Data.Trip?.LicensePlate ?? "20B-188.68",
+                    checkInTime = DateTime.Now.ToString("HH:mm:ss dd/MM"),
                     status = valResponse.Data.Status ?? "USED"
                 });
             }
@@ -338,7 +378,9 @@ namespace WebApplication1.Controllers
                 message = valResponse.Message,
                 ticketCode = valResponse.Data?.TicketCode ?? effectiveCode,
                 passengerName = valResponse.Data?.Passenger?.FullName,
+                passengerPhone = valResponse.Data?.Passenger?.Phone,
                 seatNumber = valResponse.Data?.SeatNumber,
+                routeName = valResponse.Data?.Trip?.RouteName,
                 status = valResponse.Data?.Status ?? "INVALID"
             });
         }
