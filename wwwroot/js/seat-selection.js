@@ -10,13 +10,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Helper: Lấy hoặc tạo SessionId đồng bộ lưu trữ qua Cookie & LocalStorage
     function getOrCreateSessionId() {
+        // Kiểm tra xem tài khoản đăng nhập có thay đổi không
+        const currentUserId = window.sbgCurrentUserId ? String(window.sbgCurrentUserId) : "guest";
+        const savedAuthUser = localStorage.getItem("sbg_auth_user_id");
+        if (savedAuthUser !== currentUserId) {
+            // Đã đổi user hoặc đăng xuất -> Xóa session cũ của user trước
+            localStorage.removeItem("sbg_session_id");
+            localStorage.setItem("sbg_auth_user_id", currentUserId);
+            document.cookie = "sbg_session_id=; path=/; max-age=0; SameSite=Lax";
+        }
+
         const name = "sbg_session_id=";
         const decodedCookie = decodeURIComponent(document.cookie);
         const ca = decodedCookie.split(';');
         for (let i = 0; i < ca.length; i++) {
             let c = ca[i].trim();
             if (c.indexOf(name) === 0) {
-                return c.substring(name.length, c.length);
+                const val = c.substring(name.length, c.length);
+                if (val && val.length > 5) return val;
             }
         }
         let stored = localStorage.getItem("sbg_session_id");
@@ -62,6 +73,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // 2. Xử lý sự kiện click chọn / hủy chọn ghế & Gọi API lưu Database
     const seatBoxes = document.querySelectorAll(".sbg-seat-box");
     seatBoxes.forEach(seat => {
+        if (seat.classList.contains("booked")) {
+            seat.style.pointerEvents = "none";
+        }
         seat.addEventListener("click", async function () {
             const tripId = this.getAttribute("data-trip-id");
             const seatCode = this.getAttribute("data-code");
@@ -207,16 +221,19 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Ghế đã bán hoặc đang được tài khoản khác giữ -> Khóa không cho chọn
                     seat.classList.add("booked");
                     seat.classList.remove("selected");
+                    seat.style.pointerEvents = "none";
                     seat.setAttribute("title", `Ghế ${code} - Đã bán hoặc đang được tài khoản khác giữ`);
                 } else if (myHeld.has(code)) {
                     // Ghế do chính tài khoản này đang giữ
                     seat.classList.add("selected");
                     seat.classList.remove("booked");
+                    seat.style.pointerEvents = "auto";
                     seat.setAttribute("title", `Ghế ${code} - Bạn đang giữ chỗ`);
                 } else {
                     // Ghế trống: Nếu client chưa click chọn thì mở khóa
                     if (!seat.classList.contains("selected")) {
                         seat.classList.remove("booked");
+                        seat.style.pointerEvents = "auto";
                         seat.setAttribute("title", `Ghế ${code} - Còn trống, bấm để chọn`);
                     }
                 }

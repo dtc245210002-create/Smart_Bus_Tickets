@@ -51,17 +51,26 @@ namespace WebApplication1.Services
                     var key = GetKey(tripId, seat);
                     if (_holds.TryGetValue(key, out var existingHold))
                     {
-                        if (!existingHold.IsExpired)
-                        {
                             // Kiểm tra nếu là của chính session/user này thì được phép gia hạn/giữ tiếp
-                            bool isSameOwner = (!string.IsNullOrEmpty(sessionId) && string.Equals(existingHold.SessionId, sessionId, StringComparison.OrdinalIgnoreCase))
-                                               || (userId.HasValue && existingHold.UserId == userId.Value);
+                            bool isSameOwner = false;
+                            if (userId.HasValue && existingHold.UserId.HasValue)
+                            {
+                                isSameOwner = (existingHold.UserId.Value == userId.Value);
+                            }
+                            else if (!userId.HasValue && !existingHold.UserId.HasValue)
+                            {
+                                isSameOwner = (!string.IsNullOrEmpty(sessionId) && string.Equals(existingHold.SessionId, sessionId, StringComparison.OrdinalIgnoreCase));
+                            }
+                            else if (userId.HasValue && !existingHold.UserId.HasValue)
+                            {
+                                // Cho phép gắn user vào hold trước đó nếu cùng sessionId
+                                isSameOwner = (!string.IsNullOrEmpty(sessionId) && string.Equals(existingHold.SessionId, sessionId, StringComparison.OrdinalIgnoreCase));
+                            }
 
                             if (!isSameOwner)
                             {
                                 conflictedSeats.Add(seat);
                             }
-                        }
                     }
                 }
 
@@ -114,8 +123,19 @@ namespace WebApplication1.Services
                     var key = GetKey(tripId, seat);
                     if (_holds.TryGetValue(key, out var holdItem))
                     {
-                        bool isOwner = (!string.IsNullOrEmpty(sessionId) && string.Equals(holdItem.SessionId, sessionId, StringComparison.OrdinalIgnoreCase))
-                                       || (userId.HasValue && holdItem.UserId == userId.Value);
+                        bool isOwner = false;
+                        if (userId.HasValue && holdItem.UserId.HasValue)
+                        {
+                            isOwner = (holdItem.UserId.Value == userId.Value);
+                        }
+                        else if (!userId.HasValue && !holdItem.UserId.HasValue)
+                        {
+                            isOwner = (!string.IsNullOrEmpty(sessionId) && string.Equals(holdItem.SessionId, sessionId, StringComparison.OrdinalIgnoreCase));
+                        }
+                        else if (userId.HasValue && !holdItem.UserId.HasValue)
+                        {
+                            isOwner = (!string.IsNullOrEmpty(sessionId) && string.Equals(holdItem.SessionId, sessionId, StringComparison.OrdinalIgnoreCase));
+                        }
 
                         if (isOwner || holdItem.IsExpired)
                         {

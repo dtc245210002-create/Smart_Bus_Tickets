@@ -81,30 +81,41 @@ namespace WebApplication1.Controllers.Api
 
                     foreach (var bk in trip.Bookings.Where(b => b.Status != "Cancelled" && b.Status != "CANCELLED"))
                     {
-                        bool isMyBooking = (request.UserId.HasValue && bk.UserId == request.UserId.Value)
-                                           || (!string.IsNullOrEmpty(effectiveSessionId) && bk.BookingCode.Contains(effectiveSessionId));
+                        bool isMyBooking = false;
+                        if (request.UserId.HasValue)
+                        {
+                            isMyBooking = (bk.UserId == request.UserId.Value);
+                        }
+                        else if (!string.IsNullOrEmpty(effectiveSessionId))
+                        {
+                            isMyBooking = bk.BookingCode.Contains(effectiveSessionId);
+                        }
 
                         foreach (var tk in bk.Tickets)
                         {
                             if (string.IsNullOrWhiteSpace(tk.SeatNumber)) continue;
-                            var s = tk.SeatNumber.Trim().ToUpper();
+                            var seatsInTicket = tk.SeatNumber.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                             var st = (tk.Status ?? "").ToUpper();
 
-                            if (st == "CONFIRMED" || st == "ACTIVE" || st == "PAID" || st == "USED")
+                            foreach (var singleSeat in seatsInTicket)
                             {
-                                if (cleanSeatNumbers.Contains(s)) bookedOrHeldByOther.Add(s);
-                            }
-                            else if (st == "HELD" || st == "PENDING")
-                            {
-                                bool isExpired = bk.BookingTime.AddMinutes(10) < now;
-                                if (isExpired)
+                                var s = singleSeat.Trim().ToUpper();
+                                if (st == "CONFIRMED" || st == "ACTIVE" || st == "PAID" || st == "USED")
                                 {
-                                    tk.Status = "CANCELLED";
-                                    bk.Status = "Cancelled";
+                                    if (cleanSeatNumbers.Contains(s)) bookedOrHeldByOther.Add(s);
                                 }
-                                else if (!isMyBooking && cleanSeatNumbers.Contains(s))
+                                else if (st == "HELD" || st == "PENDING")
                                 {
-                                    bookedOrHeldByOther.Add(s);
+                                    bool isExpired = bk.BookingTime.AddMinutes(10) < now;
+                                    if (isExpired)
+                                    {
+                                        tk.Status = "CANCELLED";
+                                        bk.Status = "Cancelled";
+                                    }
+                                    else if (!isMyBooking && cleanSeatNumbers.Contains(s))
+                                    {
+                                        bookedOrHeldByOther.Add(s);
+                                    }
                                 }
                             }
                         }
@@ -355,27 +366,39 @@ namespace WebApplication1.Controllers.Api
 
                 foreach (var tk in tickets)
                 {
-                    var seat = tk.SeatNumber!.Trim().ToUpper();
+                    var seats = tk.SeatNumber!.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     var status = (tk.Status ?? "").ToUpper();
 
-                    if (status == "CONFIRMED" || status == "ACTIVE" || status == "PAID" || status == "USED")
+                    foreach (var s in seats)
                     {
-                        bookedSeats.Add(seat);
-                    }
-                    else if (status == "HELD" || status == "PENDING")
-                    {
-                        bool isExpired = tk.Booking == null || tk.Booking.BookingTime.AddMinutes(10) < now;
-                        if (!isExpired)
+                        var seat = s.Trim().ToUpper();
+                        if (status == "CONFIRMED" || status == "ACTIVE" || status == "PAID" || status == "USED")
                         {
-                            bool isMine = (userId.HasValue && tk.Booking?.UserId == userId.Value)
-                                          || (!string.IsNullOrEmpty(sessionId) && tk.Booking?.BookingCode.Contains(sessionId) == true);
-                            if (isMine)
+                            bookedSeats.Add(seat);
+                        }
+                        else if (status == "HELD" || status == "PENDING")
+                        {
+                            bool isExpired = tk.Booking == null || tk.Booking.BookingTime.AddMinutes(10) < now;
+                            if (!isExpired)
                             {
-                                myHeldSeats.Add(seat);
-                            }
-                            else
-                            {
-                                bookedSeats.Add(seat);
+                                bool isMine = false;
+                                if (userId.HasValue && tk.Booking != null)
+                                {
+                                    isMine = (tk.Booking.UserId == userId.Value);
+                                }
+                                else if (!string.IsNullOrEmpty(sessionId) && tk.Booking != null)
+                                {
+                                    isMine = (tk.Booking.UserId <= 0) && tk.Booking.BookingCode.Contains(sessionId);
+                                }
+
+                                if (isMine)
+                                {
+                                    myHeldSeats.Add(seat);
+                                }
+                                else
+                                {
+                                    bookedSeats.Add(seat);
+                                }
                             }
                         }
                     }
@@ -390,8 +413,20 @@ namespace WebApplication1.Controllers.Api
                 foreach (var hold in activeHolds.Values)
                 {
                     var seat = hold.SeatNumber.Trim().ToUpper();
-                    bool isMine = (userId.HasValue && hold.UserId == userId.Value)
-                                  || (!string.IsNullOrEmpty(sessionId) && string.Equals(hold.SessionId, sessionId, StringComparison.OrdinalIgnoreCase));
+                    bool isMine = false;
+                    if (userId.HasValue && hold.UserId.HasValue)
+                    {
+                        isMine = (hold.UserId.Value == userId.Value);
+                    }
+                    else if (!userId.HasValue && !hold.UserId.HasValue && !string.IsNullOrEmpty(sessionId))
+                    {
+                        isMine = string.Equals(hold.SessionId, sessionId, StringComparison.OrdinalIgnoreCase);
+                    }
+                    else if (userId.HasValue && !hold.UserId.HasValue && !string.IsNullOrEmpty(sessionId))
+                    {
+                        isMine = string.Equals(hold.SessionId, sessionId, StringComparison.OrdinalIgnoreCase);
+                    }
+
                     if (isMine)
                     {
                         myHeldSeats.Add(seat);

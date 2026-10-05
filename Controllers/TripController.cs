@@ -260,8 +260,16 @@ namespace WebApplication1.Controllers
                                 bool isExpired = tk.Booking == null || tk.Booking.BookingTime.AddMinutes(10) < now;
                                 if (!isExpired)
                                 {
-                                    bool isMine = (currentUserId.HasValue && tk.Booking?.UserId == currentUserId.Value)
-                                                  || (!string.IsNullOrEmpty(currentSessionId) && tk.Booking?.BookingCode.Contains(currentSessionId) == true);
+                                    bool isMine = false;
+                                    if (currentUserId.HasValue && tk.Booking != null)
+                                    {
+                                        isMine = (tk.Booking.UserId == currentUserId.Value);
+                                    }
+                                    else if (!string.IsNullOrEmpty(currentSessionId) && tk.Booking != null)
+                                    {
+                                        isMine = (tk.Booking.UserId <= 0) && tk.Booking.BookingCode.Contains(currentSessionId);
+                                    }
+
                                     if (!isMine)
                                     {
                                         foreach (var s in seats) bookedSeatNumbers.Add(s.Trim().ToUpper());
@@ -276,8 +284,20 @@ namespace WebApplication1.Controllers
                             var activeHolds = await _seatHoldService.GetActiveHoldsForTripAsync(trip.TripId);
                             foreach (var hold in activeHolds.Values)
                             {
-                                bool isMine = (currentUserId.HasValue && hold.UserId == currentUserId.Value)
-                                              || (!string.IsNullOrEmpty(currentSessionId) && string.Equals(hold.SessionId, currentSessionId, StringComparison.OrdinalIgnoreCase));
+                                bool isMine = false;
+                                if (currentUserId.HasValue && hold.UserId.HasValue)
+                                {
+                                    isMine = (hold.UserId.Value == currentUserId.Value);
+                                }
+                                else if (!currentUserId.HasValue && !hold.UserId.HasValue && !string.IsNullOrEmpty(currentSessionId))
+                                {
+                                    isMine = string.Equals(hold.SessionId, currentSessionId, StringComparison.OrdinalIgnoreCase);
+                                }
+                                else if (currentUserId.HasValue && !hold.UserId.HasValue && !string.IsNullOrEmpty(currentSessionId))
+                                {
+                                    isMine = string.Equals(hold.SessionId, currentSessionId, StringComparison.OrdinalIgnoreCase);
+                                }
+
                                 if (!isMine)
                                 {
                                     bookedSeatNumbers.Add(hold.SeatNumber.Trim().ToUpper());

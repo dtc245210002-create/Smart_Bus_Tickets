@@ -391,21 +391,24 @@ namespace WebApplication1.Controllers
                         _context.Bookings.Add(newBooking);
                         await _context.SaveChangesAsync();
 
-                        var seatStr = effectiveSeats ?? "A01";
-                        if (seatStr.Length > 10) seatStr = seatStr.Substring(0, 10);
+                        var seatList = (effectiveSeats ?? "A01").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        decimal pricePerSeat = seatList.Length > 0 ? Math.Round(effectiveTotal / seatList.Length, 0) : effectiveTotal;
 
-                        var newTicket = new Ticket
+                        foreach (var singleSeat in seatList)
                         {
-                            BookingId = newBooking.BookingId,
-                            TicketCode = cleanTicketCode,
-                            SeatNumber = seatStr,
-                            Price = effectiveTotal,
-                            Status = finalTicketStatus
-                        };
-                        _context.Tickets.Add(newTicket);
+                            var newTicket = new Ticket
+                            {
+                                BookingId = newBooking.BookingId,
+                                TicketCode = seatList.Length > 1 ? $"{cleanTicketCode}-{singleSeat}" : cleanTicketCode,
+                                SeatNumber = singleSeat,
+                                Price = pricePerSeat,
+                                Status = finalTicketStatus
+                            };
+                            _context.Tickets.Add(newTicket);
+                        }
                         await _context.SaveChangesAsync();
 
-                        _logger.LogInformation("Đã lưu vé ngẫu nhiên vào Database thành công: Mã vé [{TicketCode}] - Ghế [{Seat}] - Booking [{BookingCode}]", cleanTicketCode, seatStr, cleanBookingCode);
+                        _logger.LogInformation("Đã lưu vé vào Database thành công: Mã vé [{TicketCode}] - Ghế [{Seat}] - Booking [{BookingCode}]", cleanTicketCode, effectiveSeats, cleanBookingCode);
                     }
                 }
                 catch (Exception ex)
