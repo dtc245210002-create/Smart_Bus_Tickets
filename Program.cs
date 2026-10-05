@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using WebApplication1.Services.Extensions;
 
 namespace WebApplication1
 {
@@ -27,6 +28,9 @@ namespace WebApplication1
                     options.Cookie.Name = "SmartBusGo_Auth";
                 });
 
+            // Đăng ký toàn bộ hệ sinh thái dịch vụ Backend Thông báo, QR Code, PDF và Background Queue
+            builder.Services.AddSmartBusNotificationSystem(builder.Configuration);
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -43,6 +47,7 @@ namespace WebApplication1
             app.UseAuthorization();
 
             app.MapStaticAssets();
+            app.MapControllers();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")

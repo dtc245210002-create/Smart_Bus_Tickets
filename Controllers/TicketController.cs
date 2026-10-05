@@ -107,13 +107,9 @@ namespace WebApplication1.Controllers
                 TicketId = 1024,
                 TicketCode = ticketCode,
 
-                SeatNumber = "VIP-05",
-                Price = 450000m,
-                Status = status?.ToUpper() ?? "ACTIVE",
-
                 SeatNumber = TempData["NewSeatNumber"]?.ToString() ?? "VIP-05",
                 Price = TempData["NewTicketPrice"] != null ? Convert.ToDecimal(TempData["NewTicketPrice"]) : 450000m,
-                Status = ticketStatus,
+                Status = status?.ToUpper() ?? "ACTIVE",
 
 
                 BookingId = 5082,
@@ -130,27 +126,16 @@ namespace WebApplication1.Controllers
                 Distance = 760m,
                 EstimatedDuration = 750,
 
-                BoardingStopName = "Bến xe Nước Ngầm (Cổng A2)",
-                BoardingStopAddress = "Km 8 Giải Phóng, P. Hoàng Liệt, Q. Hoàng Mai, Hà Nội",
-                DepartureTime = new TimeSpan(19, 30, 0),
-                DropOffStopName = "Bến xe Trung Tâm Đà Nẵng (Cột 04)",
-
-
                 BoardingStopName = TempData["NewBoardingStop"]?.ToString() ?? "Bến xe Nước Ngầm (Cổng A2)",
                 BoardingStopAddress = "Km 8 Giải Phóng, P. Hoàng Liệt, Q. Hoàng Mai, Hà Nội",
                 DepartureTime = TempData["NewDepartureTime"] != null ? TimeSpan.Parse(TempData["NewDepartureTime"]!.ToString()!) : new TimeSpan(19, 30, 0),
 
                 DropOffStopName = TempData["NewDropOffStop"]?.ToString() ?? "Bến xe Trung Tâm Đà Nẵng (Cột 04)",
-
                 DropOffStopAddress = "Đường Nam Trân, P. Hòa Minh, Q. Liên Chiểu, Đà Nẵng",
                 ArrivalTime = new TimeSpan(8, 0, 0),
                 TripId = 302,
 
-                TripDate = DateTime.Today,
-                LicensePlate = "29B-888.68",
-                BusTypeName = "Limousine VIP 22 Phòng Đơn Cung Điện",
-
-                TripDate = TempData["NewTripDate"] != null ? DateTime.Parse(TempData["NewTripDate"]!.ToString()!) : DateTime.Parse("2025-10-24"),
+                TripDate = TempData["NewTripDate"] != null ? DateTime.Parse(TempData["NewTripDate"]!.ToString()!) : DateTime.Today,
                 LicensePlate = TempData["NewLicensePlate"]?.ToString() ?? "29B-888.68",
                 BusTypeName = TempData["NewBusTypeName"]?.ToString() ?? "Limousine VIP 22 Phòng Đơn Cung Điện",
 

@@ -33,3 +33,6 @@ project.lock.json
 
 # Logs
 *.log
+
+# Temporary test emails
+wwwroot/sent_emails/
