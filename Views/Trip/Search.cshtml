@@ -375,20 +375,20 @@
                                     
                                     <div class="mb-2">
                                         <label class="form-label small text-muted fw-bold mb-1">Điểm đón:</label>
-                                        <select class="form-select form-select-sm">
+                                        <select class="form-select form-select-sm select-boarding-point" data-trip-id="@trip.TripId">
                                             @foreach (var bp in trip.BoardingPoints)
                                             {
-                                                <option>@bp</option>
+                                                <option value="@bp">@bp</option>
                                             }
                                         </select>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label small text-muted fw-bold mb-1">Điểm trả:</label>
-                                        <select class="form-select form-select-sm">
+                                        <select class="form-select form-select-sm select-dropoff-point" data-trip-id="@trip.TripId">
                                             @foreach (var dp in trip.DropOffPoints)
                                             {
-                                                <option>@dp</option>
+                                                <option value="@dp">@dp</option>
                                             }
                                         </select>
                                     </div>
@@ -406,7 +406,23 @@
                                 </div>
 
                                 <div class="mt-3">
-                                    <a asp-controller="Ticket" asp-action="Detail" class="btn sbg-btn-primary w-100 py-2 fw-bold btn-continue-booking disabled">
+                                    <a asp-controller="Ticket" asp-action="Detail" 
+                                       class="btn sbg-btn-primary w-100 py-2 fw-bold btn-continue-booking disabled"
+                                       data-trip-id="@trip.TripId"
+                                       data-from="@Model.From"
+                                       data-to="@Model.To"
+                                       data-date="@Model.DepartureDate.ToString("yyyy-MM-dd")"
+                                       data-deptime="@trip.DepartureTime.ToString(@"hh\:mm")"
+                                       data-arrtime="@trip.ArrivalTime.ToString(@"hh\:mm")"
+                                       data-duration="@trip.DurationText"
+                                       data-estminutes="@trip.EstimatedDuration"
+                                       data-distance="@trip.Distance"
+                                       data-bustype="@trip.BusTypeName"
+                                       data-licenseplate="@trip.LicensePlate"
+                                       data-routecode="@trip.RouteCode"
+                                       data-routename="@(string.IsNullOrEmpty(trip.RouteName) ? $"{Model.From} - {Model.To}" : trip.RouteName)"
+                                       data-drivername="@trip.DriverName"
+                                       data-driverphone="@trip.DriverPhone">
                                         Tiếp tục đặt vé với các ghế đã chọn &rarr;
                                     </a>
                                 </div>
