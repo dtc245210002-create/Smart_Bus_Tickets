@@ -1,0 +1,125 @@
+@model WebApplication1.Models.ViewModels.GoogleAccountChoiceViewModel
+@{
+    ViewData["Title"] = "Đăng nhập bằng Google - SmartBus Go";
+    Layout = "_Layout";
+}
+
+<div class="container py-5">
+    <div class="card shadow-sm border-0 mx-auto" style="max-width: 480px; border-radius: 20px; overflow: hidden; background: #ffffff;">
+        <div class="card-body p-4 p-md-5">
+            <!-- Google Logo & Title -->
+            <div class="text-center mb-4">
+                <svg class="mb-3" width="36" height="36" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                </svg>
+                <h4 class="fw-bold mb-1" style="font-family: 'Segoe UI', Roboto, sans-serif;">Chọn một tài khoản</h4>
+                <p class="text-muted small mb-0">để tiếp tục truy cập <strong>SmartBus Go</strong></p>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger small py-2 px-3 mb-3 rounded-3">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <!-- Danh sách tài khoản Google gợi ý chọn nhanh 1-click -->
+            <div class="list-group list-group-flush border rounded-3 mb-3 overflow-hidden shadow-xs">
+                @foreach (var acc in Model.SuggestedAccounts)
+                {
+                    <form asp-controller="GoogleAuth" asp-action="Authenticate" method="post" class="m-0 p-0">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Email" value="@acc.Email" />
+                        <input type="hidden" name="FullName" value="@acc.FullName" />
+                        <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+                        <button type="submit" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 border-0 border-bottom text-start transition-all hover-google-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                                    @(string.IsNullOrEmpty(acc.FullName) ? "G" : acc.FullName.Substring(0, 1).ToUpper())
+                                </div>
+                                <div>
+                                    <div class="fw-semibold text-dark small mb-0">@acc.FullName</div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">@acc.Email</div>
+                                </div>
+                            </div>
+                            <span class="badge bg-light text-secondary border small">@acc.RoleBadge</span>
+                        </button>
+                    </form>
+                }
+
+                <!-- Tùy chọn nhập tài khoản Gmail bất kỳ -->
+                <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-3 border-0 text-start" onclick="toggleCustomAccountForm()">
+                    <div class="rounded-circle bg-light border text-muted d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                        <i class="bi bi-person-plus fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold text-dark small">Sử dụng một tài khoản khác</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">Nhập địa chỉ Gmail của bạn</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Form mở rộng để nhập tài khoản Google khác -->
+            <div id="customAccountForm" style="display: none;" class="p-3 bg-light rounded-3 mb-3 border">
+                <form asp-controller="GoogleAuth" asp-action="Authenticate" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Họ và tên của bạn</label>
+                        <input type="text" name="FullName" class="form-control form-control-sm bg-white" placeholder="vd: Hầu Tuấn Đạt" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Địa chỉ Gmail</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-google text-danger"></i></span>
+                            <input type="email" name="Email" class="form-control bg-white" placeholder="vd: bavavan1968@gmail.com" required />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleCustomAccountForm()">Hủy</button>
+                        <button type="submit" class="btn btn-sm btn-primary px-3" style="background-color: #1a73e8; border-color: #1a73e8;">Tiếp tục</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Điều khoản bảo mật chuẩn của Google -->
+            <p class="text-muted text-center" style="font-size: 0.75rem; line-height: 1.4;">
+                Để tiếp tục, Google sẽ chia sẻ tên, địa chỉ email và thông tin tài khoản của bạn với <strong>SmartBus Go</strong> theo <a href="#" class="text-decoration-none">Chính sách quyền riêng tư</a>.
+            </p>
+
+            <div class="text-center mt-3 pt-3 border-top">
+                <a asp-controller="Account" asp-action="Login" class="text-decoration-none small text-muted">
+                    &larr; Hủy và quay lại trang đăng nhập
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-google-item:hover {
+        background-color: #f8fafc;
+        transform: translateX(2px);
+    }
+    .shadow-xs {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+</style>
+
+<script>
+    function toggleCustomAccountForm() {
+        const form = document.getElementById('customAccountForm');
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block';
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            form.style.display = 'none';
+        }
+    }
+</script>

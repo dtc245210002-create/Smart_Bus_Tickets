@@ -26,16 +26,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const qrContainer = document.getElementById("ticketQrCanvas");
     const qrPayload = document.getElementById("qrPayloadData")?.value || "SMARTBUS_DEFAULT";
+    const qrImage = document.getElementById("ticketQrImage");
 
     if (qrContainer && typeof QRCode !== 'undefined') {
-        new QRCode(qrContainer, {
-            text: qrPayload,
-            width: 180,
-            height: 180,
-            colorDark: "#0A4D46",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
+        try {
+            // Tạo phần tử tạm để thử vẽ QR bằng QRCodeJS
+            const tempDiv = document.createElement("div");
+            new QRCode(tempDiv, {
+                text: qrPayload,
+                width: 170,
+                height: 170,
+                colorDark: "#0A4D46",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            // Nếu vẽ thành công, thay thế nội dung của qrContainer
+            setTimeout(() => {
+                if (tempDiv.querySelector("canvas") || tempDiv.querySelector("img")) {
+                    qrContainer.innerHTML = "";
+                    qrContainer.appendChild(tempDiv.firstChild);
+                }
+            }, 50);
+        } catch (e) {
+            console.warn("QRCodeJS fallback to API image:", e);
+            // Giữ nguyên qrImage fallback
+        }
     }
 
     const btnDownload = document.getElementById("btnDownloadTicket");
