@@ -164,8 +164,9 @@
                                         <span class="badge bg-success-subtle text-success">@trip.Status</span>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#verifyTicketModal">
-                                            <i class="bi bi-upc-scan me-1"></i> Soát vé
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" 
+                                                onclick="openVerifyModalForTrip(@trip.TripId)">
+                                            <i class="bi bi-upc-scan me-1"></i> Soát vé xe này
                                         </button>
                                     </td>
                                 </tr>
@@ -239,7 +240,7 @@
                             <tr id="emptyCheckedInRow">
                                 <td colspan="8" class="text-center py-4 text-muted small">
                                     <i class="bi bi-inbox fs-3 text-secondary d-block mb-1"></i>
-                                    Chưa có hành khách nào vừa soát vé trong ca này. Hãy bấm nút [Soát vé lên xe] ở trên để tiến hành soát vé!
+                                    Chưa có hành khách nào vừa soát vé trong ca này. Hãy bấm nút [Soát vé xe này] ở trên để tiến hành soát vé!
                                 </td>
                             </tr>
                         }
@@ -261,6 +262,24 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
+                <!-- Chọn Xe & Chuyến Xe Đang Soát Vé -->
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <label class="small text-muted fw-bold d-block mb-1">
+                        <i class="bi bi-bus-front-fill text-success me-1"></i> Xe & Chuyến xe Bác tài đang soát vé:
+                    </label>
+                    <select id="modalTripSelect" class="form-select fw-semibold border-success text-dark">
+                        @foreach (var t in Model.AssignedTrips)
+                        {
+                            <option value="@t.TripId">
+                                Xe: @t.LicensePlate | Tuyến: @t.RouteName (Xuất phát @t.DepartureTime.ToString("HH:mm") ngày @t.TripDate.ToString("dd/MM/yyyy"))
+                            </option>
+                        }
+                    </select>
+                    <div class="small text-danger mt-1 fw-semibold">
+                        <i class="bi bi-shield-exclamation me-1"></i> Chỉ vé đúng Xe và đúng Chuyến này mới hợp lệ. Vé của xe hoặc chuyến khác sẽ bị từ chối!
+                    </div>
+                </div>
+
                 <p class="text-muted small mb-2">Nhập mã vé in trên vé điện tử hoặc quét mã QR từ điện thoại của hành khách:</p>
 
                 <div class="input-group mb-2">
@@ -295,6 +314,20 @@
 
 @section Scripts {
     <script>
+        function openVerifyModalForTrip(tripId) {
+            const select = document.getElementById('modalTripSelect');
+            if (select && tripId) {
+                select.value = tripId.toString();
+            }
+            // Reset kết quả kiểm tra trước
+            document.getElementById('verifyResultArea').style.display = 'none';
+            document.getElementById('ticketCodeInput').value = '';
+            
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('verifyTicketModal'));
+            modal.show();
+            setTimeout(() => document.getElementById('ticketCodeInput')?.focus(), 400);
+        }
+
         async function pasteTicketCode() {
             try {
                 const text = await navigator.clipboard.readText();
@@ -328,6 +361,9 @@
                 return;
             }
 
+            const tripSelect = document.getElementById('modalTripSelect');
+            const tripId = tripSelect ? parseInt(tripSelect.value) : null;
+
             const btn = document.getElementById('btnVerifyTicket');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang soát vé...';
@@ -338,7 +374,10 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ ticketCode: code })
+                    body: JSON.stringify({ 
+                        ticketCode: code,
+                        tripId: tripId 
+                    })
                 });
 
                 const data = await response.json();
@@ -354,6 +393,7 @@
                     alertBox.className = 'alert alert-success p-3 rounded-4 mb-0 shadow-sm border border-success';
                     icon.className = 'bi bi-check-circle-fill text-success fs-3';
                     title.innerText = 'Vé Hợp Lệ - Cho Phép Lên Xe';
+                    title.className = 'fw-bold mb-0 text-success fs-6';
                     details.innerHTML = `
                         <div class="row g-2">
                             <div class="col-6"><span class="text-muted">Mã vé:</span> <strong class="font-monospace text-dark">${data.ticketCode || code}</strong></div>
@@ -362,7 +402,7 @@
                             <div class="col-12"><span class="text-muted">Tuyến đường:</span> <span class="fw-semibold text-dark">${data.routeName || 'N/A'}</span></div>
                         </div>
                         <div class="text-success fw-bold mt-2 pt-2 border-top d-flex align-items-center gap-1">
-                            <i class="bi bi-shield-fill-check fs-5"></i> Đã đối soát CSDL & Đánh dấu trạng thái [ĐÃ LÊN XE] thành công!
+                            <i class="bi bi-shield-fill-check fs-5"></i> ĐÚNG XE & ĐÚNG CHUYẾN! Đã đánh dấu trạng thái [ĐÃ LÊN XE] thành công.
                         </div>
                     `;
                     input.value = '';
@@ -404,25 +444,35 @@
                         }
                     }
                 } else {
+                    const isMismatch = data.code === "TRIP_MISMATCH" || (data.message && data.message.includes("MÃ VÉ KHÔNG HỢP LỆ CHO CHUYẾN"));
                     const isAlreadyUsed = data.code === "ALREADY_USED" || (data.message && data.message.includes("trước đó"));
-                    if (isAlreadyUsed) {
+
+                    if (isMismatch) {
+                        // CẢNH BÁO MÃ VÉ KHÔNG HỢP LỆ CHO CHUYẾN XE NÀY
+                        alertBox.className = 'alert alert-danger p-3 rounded-4 mb-0 shadow border border-danger';
+                        icon.className = 'bi bi-x-octagon-fill text-danger fs-2';
+                        title.innerText = 'MÃ VÉ KHÔNG HỢP LỆ CHO CHUYẾN XE NÀY!';
+                        title.className = 'fw-bold mb-0 text-danger fs-6';
+                    } else if (isAlreadyUsed) {
                         alertBox.className = 'alert alert-warning p-3 rounded-4 mb-0 shadow-sm border border-warning';
                         icon.className = 'bi bi-exclamation-triangle-fill text-warning fs-3';
                         title.innerText = 'Cảnh Báo: Vé Đã Được Soát Trước Đó!';
+                        title.className = 'fw-bold mb-0 text-warning-emphasis fs-6';
                     } else {
                         alertBox.className = 'alert alert-danger p-3 rounded-4 mb-0 shadow-sm border border-danger';
                         icon.className = 'bi bi-x-circle-fill text-danger fs-3';
-                        title.innerText = 'Không Thể Xác Thực Vé';
+                        title.innerText = 'Mã Vé Không Hợp Lệ';
+                        title.className = 'fw-bold mb-0 text-danger fs-6';
                     }
 
+                    const formattedMsg = (data.message || '').replace(/\n/g, '<br/>');
                     details.innerHTML = `
-                        <div class="text-dark fw-semibold mb-2">${data.message}</div>
+                        <div class="text-dark fw-semibold mb-2" style="line-height: 1.6;">${formattedMsg}</div>
                         ${data.passengerName ? `
-                            <div class="p-2 bg-white rounded-3 border small">
-                                <div><span class="text-muted">Hành khách:</span> <strong>${data.passengerName}</strong></div>
-                                <div><span class="text-muted">Số ghế:</span> <span class="badge bg-secondary">${data.seatNumber || 'N/A'}</span></div>
-                                ${data.routeName ? `<div><span class="text-muted">Tuyến xe:</span> ${data.routeName}</div>` : ''}
-                                <div><span class="text-muted">Trạng thái CSDL:</span> <span class="badge bg-warning text-dark">${data.status || 'USED'}</span></div>
+                            <div class="p-2 bg-white rounded-3 border small mt-2">
+                                <div><span class="text-muted">Hành khách:</span> <strong>${data.passengerName}</strong> ${data.passengerPhone ? `(${data.passengerPhone})` : ''}</div>
+                                <div><span class="text-muted">Số ghế trên vé:</span> <span class="badge bg-secondary">${data.seatNumber || 'N/A'}</span></div>
+                                ${data.routeName ? `<div><span class="text-muted">Tuyến đã mua:</span> <strong class="text-primary">${data.routeName}</strong></div>` : ''}
                             </div>
                         ` : ''}
                     `;

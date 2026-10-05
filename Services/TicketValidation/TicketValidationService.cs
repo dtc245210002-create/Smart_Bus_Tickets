@@ -169,17 +169,30 @@ namespace WebApplication1.Services.TicketValidation
 
             var ticketData = MapToValidationData(ticket);
 
-            // Kiểm tra ràng buộc đối soát chuyến xe hiện tại (nếu nhân viên gửi kèm currentTripId)
+            // Kiểm tra ràng buộc đối soát chuyến xe hiện tại: Mua xe nào chuyến nào thì chỉ đúng xe đó chuyến đó mới nhận
             if (request.CurrentTripId.HasValue && trip != null && trip.TripId != request.CurrentTripId.Value)
             {
-                _logger.LogWarning("Soát vé sai chuyến: Vé [{TicketCode}] thuộc Chuyến {TicketTripId}, nhưng đang quét trên Chuyến {CurrentTripId}",
-                    ticket.TicketCode, trip.TripId, request.CurrentTripId.Value);
+                var curTrip = await _context.Trips
+                    .Include(t => t.Route)
+                    .Include(t => t.Bus)
+                    .FirstOrDefaultAsync(t => t.TripId == request.CurrentTripId.Value);
+
+                var curRoute = curTrip?.Route?.RouteName ?? $"{curTrip?.Route?.StartPoint} - {curTrip?.Route?.EndPoint}";
+                var curPlate = curTrip?.Bus?.LicensePlate ?? "Chưa rõ biển số";
+                var curTime = curTrip != null ? $"{curTrip.DepartureTime:hh\\:mm} ngày {curTrip.TripDate:dd/MM/yyyy}" : "";
+
+                var boughtRoute = route?.RouteName ?? $"{route?.StartPoint} - {route?.EndPoint}";
+                var boughtPlate = bus?.LicensePlate ?? "Chưa rõ biển số";
+                var boughtTime = $"{trip.DepartureTime:hh\\:mm} ngày {trip.TripDate:dd/MM/yyyy}";
+
+                _logger.LogWarning("Soát vé sai chuyến: Vé [{TicketCode}] mua cho Xe {BoughtPlate} ({BoughtRoute}), nhưng đang soát trên Xe {CurPlate} ({CurRoute})",
+                    ticket.TicketCode, boughtPlate, boughtRoute, curPlate, curRoute);
 
                 return new ValidateQrResponse
                 {
                     Success = false,
                     Code = TicketValidationCodes.TripMismatch,
-                    Message = $"Vé này thuộc Chuyến xe #{trip.TripId} ({route?.RouteName ?? "N/A"} lúc {trip.DepartureTime:hh\\:mm} ngày {trip.TripDate:dd/MM/yyyy}), không trùng khớp với chuyến xe bạn đang soát!",
+                    Message = $"MÃ VÉ KHÔNG HỢP LỆ CHO CHUYẾN XE NÀY!\n• Vé [{ticket.TicketCode}] được mua cho Xe [{boughtPlate}] - Tuyến [{boughtRoute}] (Khởi hành {boughtTime}).\n• Chuyến xe đang soát: Xe [{curPlate}] - Tuyến [{curRoute}] (Khởi hành {curTime}).\n➡ Hành khách mua xe nào chuyến nào thì chỉ đúng xe đó chuyến đó mới nhận vé!",
                     Data = ticketData
                 };
             }

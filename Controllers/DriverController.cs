@@ -333,7 +333,8 @@ namespace WebApplication1.Controllers
             // Gọi dịch vụ TicketValidationService để đối soát và chuyển trạng thái vé sang USED
             var valResponse = await _ticketValidationService.ValidateAndCheckInAsync(new ValidateQrRequest
             {
-                QrPayload = effectiveCode
+                QrPayload = effectiveCode,
+                CurrentTripId = request?.TripId
             }, staffUserId);
 
             if (valResponse.Success && valResponse.Data != null)
@@ -353,24 +354,7 @@ namespace WebApplication1.Controllers
                 });
             }
 
-            // Nếu không tìm thấy trong DB nhưng là mã vé demo đặc trưng (SBG-84920, TK-M03-1025)
-            var cleanCode = effectiveCode.ToUpperInvariant();
-            if (valResponse.Code == TicketValidationCodes.TicketNotFound && 
-                (cleanCode.Contains("84920") || cleanCode.Contains("M03") || cleanCode.Contains("DEMO") || cleanCode == "TEST"))
-            {
-                return Json(new
-                {
-                    success = true,
-                    message = $"Xác thực vé demo thành công! Mời hành khách Nguyễn Văn An (Ghế: VIP-05) lên xe.",
-                    ticketCode = cleanCode,
-                    passengerName = "Nguyễn Văn An",
-                    passengerPhone = "0912 345 678",
-                    seatNumber = "VIP-05",
-                    routeName = "Hà Nội - Đà Nẵng",
-                    status = "USED"
-                });
-            }
-
+            // Nếu sai chuyến xe (TRIP_MISMATCH) hoặc các lỗi khác
             return Json(new
             {
                 success = false,
@@ -403,6 +387,7 @@ namespace WebApplication1.Controllers
     {
         public string? TicketCode { get; set; }
         public string? QrCode { get; set; }
+        public int? TripId { get; set; }
         public string EffectiveCode => !string.IsNullOrWhiteSpace(TicketCode) ? TicketCode : (QrCode ?? string.Empty);
     }
 }
