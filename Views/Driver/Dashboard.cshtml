@@ -1,16 +1,273 @@
+@model WebApplication1.Models.ViewModels.DriverDashboardViewModel
 @{
-    ViewData["Title"] = "Bảng điều khiển Bác tài";
+    ViewData["Title"] = "Bảng điều khiển Bác tài - SmartBus Go";
 }
 
-<div class="container mt-4">
-    <div class="card rounded-4 border-0 shadow-sm p-4 text-center">
-        <i class="bi bi-truck-front-fill text-success" style="font-size: 3rem;"></i>
-        <h3 class="fw-bold mt-2">Khu Vực Bác Tài Đã Sẵn Sàng!</h3>
-        <p class="text-muted">Đăng nhập tài xế thành công. Từ đây bạn có thể mở máy quét mã QR để kiểm tra vé hành khách lên xe.</p>
-        <div class="mt-3">
-            <a asp-controller="Ticket" asp-action="Detail" class="btn sbg-btn-primary">
-                <i class="bi bi-qr-code-scan me-1"></i> Xem giao diện vé của hành khách
-            </a>
+<div class="container py-4">
+    <!-- Header Thông tin Bác tài -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, var(--sbg-primary) 0%, #0d6057 100%);">
+        <div class="card-body p-4 text-white">
+            <div class="row align-items-center">
+                <div class="col-md-8 d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center shadow" style="width: 68px; height: 68px; font-size: 2rem;">
+                        <i class="bi bi-person-badge-fill"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h3 class="fw-bold mb-0 text-white">@Model.FullName</h3>
+                            <span class="badge bg-warning text-dark px-2 py-1">Mã: TX-@Model.DriverId.ToString("D3")</span>
+                            <span class="badge bg-success-subtle text-success px-2 py-1">@Model.Status</span>
+                        </div>
+                        <div class="text-white-50 small d-flex flex-wrap gap-3">
+                            <span><i class="bi bi-card-text me-1"></i> Bằng lái: <strong>@Model.LicenseNo</strong></span>
+                            <span><i class="bi bi-telephone me-1"></i> SĐT: <strong>@Model.Phone</strong></span>
+                            <span><i class="bi bi-shield-check me-1"></i> Đội xe SmartBus Express</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
+                    <button type="button" class="btn btn-warning rounded-pill px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#verifyTicketModal">
+                        <i class="bi bi-qr-code-scan"></i>
+                        <span>Soát vé lên xe</span>
+                    </button>
+                    <form asp-controller="Driver" asp-action="Logout" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold" title="Kết thúc ca làm việc">
+                            <i class="bi bi-box-arrow-right"></i> Rời ca
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Thống kê ca chạy -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-primary-subtle text-primary fs-3">
+                    <i class="bi bi-bus-front"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Tổng chuyến được giao</div>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.TodayTripsCount</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-success-subtle text-success fs-3">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Khách đã đặt vé</div>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.TotalPassengersCount <span class="fs-6 fw-normal text-muted">vé</span></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-warning-subtle text-warning-emphasis fs-3">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Trạng thái vận hành</div>
+                    <h5 class="fw-bold mb-0 text-success">Sẵn sàng xuất bến</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách các chuyến xe được phân công -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-calendar2-check text-success"></i>
+                Lịch Phân Công Ca Chạy Của Bác Tài
+            </h5>
+            <span class="badge bg-light text-dark border">Cập nhật theo thời gian thực</span>
+        </div>
+
+        <div class="card-body p-0">
+            @if (Model.AssignedTrips.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Tuyến đường</th>
+                                <th>Ngày chạy</th>
+                                <th>Giờ xuất phát</th>
+                                <th>Xe buýt & Biển số</th>
+                                <th>Số khách / Sức chứa</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-4">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var trip in Model.AssignedTrips)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">@trip.RouteName</div>
+                                        <div class="text-muted small">@trip.StartPoint &rarr; @trip.EndPoint</div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold">@trip.TripDate.ToString("dd/MM/yyyy")</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border fs-6">
+                                            <i class="bi bi-clock me-1 text-primary"></i> @trip.DepartureTime.ToString("HH:mm")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@trip.LicensePlate</div>
+                                        <div class="text-muted small">@trip.BusTypeName</div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                                @{
+                                                    int pct = trip.Capacity > 0 ? (trip.BookedSeats * 100 / trip.Capacity) : 0;
+                                                }
+                                                <div class="progress-bar bg-success" style="width: @pct%;"></div>
+                                            </div>
+                                            <span class="small fw-bold">@trip.BookedSeats/@trip.Capacity</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success-subtle text-success">@trip.Status</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#verifyTicketModal">
+                                            <i class="bi bi-upc-scan me-1"></i> Soát vé
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="p-5 text-center text-muted">
+                    <i class="bi bi-calendar-x fs-1 text-secondary mb-2 d-block"></i>
+                    <h6>Hiện tại chưa có chuyến xe mới nào được phân công cho ca này.</h6>
+                    <p class="small">Vui lòng liên hệ Trực ban điều hành để nhận điều động ca chạy.</p>
+                </div>
+            }
         </div>
     </div>
 </div>
+
+<!-- Modal Soát Vé Hành Khách (Verify Ticket) -->
+<div class="modal fade" id="verifyTicketModal" tabindex="-1" aria-labelledby="verifyTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="verifyTicketModalLabel">
+                    <i class="bi bi-qr-code-scan text-success me-2"></i> Soát Vé Hành Khách
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">Nhập mã vé in trên vé điện tử hoặc quét mã QR từ điện thoại của hành khách:</p>
+
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-light"><i class="bi bi-ticket-perforated"></i></span>
+                    <input type="text" id="ticketCodeInput" class="form-control" placeholder="vd: TK-M03-1025 hoặc nhập số ID..." />
+                    <button class="btn sbg-btn-primary" type="button" id="btnVerifyTicket" onclick="checkTicket()">
+                        Kiểm tra
+                    </button>
+                </div>
+
+                <!-- Vùng hiển thị kết quả kiểm tra vé -->
+                <div id="verifyResultArea" style="display: none;" class="mt-3">
+                    <div id="verifyAlertBox" class="alert p-3 rounded-3 mb-0">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i id="verifyIcon" class="fs-4"></i>
+                            <h6 id="verifyTitle" class="fw-bold mb-0"></h6>
+                        </div>
+                        <div id="verifyDetails" class="small"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function checkTicket() {
+            const input = document.getElementById('ticketCodeInput');
+            const code = input.value.trim();
+            if (!code) {
+                alert('Vui lòng nhập mã vé cần kiểm tra!');
+                input.focus();
+                return;
+            }
+
+            const btn = document.getElementById('btnVerifyTicket');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang kiểm tra...';
+
+            try {
+                const response = await fetch('/Driver/VerifyTicket', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ticketCode: code })
+                });
+
+                const data = await response.json();
+                const resultArea = document.getElementById('verifyResultArea');
+                const alertBox = document.getElementById('verifyAlertBox');
+                const icon = document.getElementById('verifyIcon');
+                const title = document.getElementById('verifyTitle');
+                const details = document.getElementById('verifyDetails');
+
+                resultArea.style.display = 'block';
+
+                if (data.success) {
+                    alertBox.className = 'alert alert-success p-3 rounded-3 mb-0';
+                    icon.className = 'bi bi-check-circle-fill text-success fs-4';
+                    title.innerText = 'Vé Hợp Lệ - Cho Phép Lên Xe';
+                    details.innerHTML = `
+                        <div class="fw-semibold text-dark mt-1">Hành khách: ${data.passengerName || 'N/A'}</div>
+                        <div>Số ghế: <span class="badge bg-success fs-6">${data.seatNumber || 'N/A'}</span></div>
+                        <div class="text-muted mt-1">Tuyến: ${data.routeName || 'N/A'}</div>
+                        <div class="text-success fw-bold mt-2"><i class="bi bi-check2"></i> Đã đánh dấu trạng thái [Đã lên xe]</div>
+                    `;
+                    input.value = '';
+                } else {
+                    alertBox.className = 'alert alert-warning p-3 rounded-3 mb-0';
+                    icon.className = 'bi bi-exclamation-triangle-fill text-warning fs-4';
+                    title.innerText = 'Cảnh Báo Kiểm Tra Vé';
+                    details.innerHTML = `
+                        <div class="text-dark">${data.message}</div>
+                        ${data.passengerName ? `<div class="mt-1">Khách: <strong>${data.passengerName}</strong> (Ghế ${data.seatNumber})</div>` : ''}
+                    `;
+                }
+            } catch (err) {
+                alert('Lỗi kết nối tới máy chủ khi soát vé: ' + err);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Kiểm tra';
+            }
+        }
+    </script>
+}

@@ -26,8 +26,9 @@
             <div class="col-md-3">
                 <label class="form-label text-muted small fw-bold mb-1">NGÀY ĐI</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar-event"></i></span>
-                    <input type="date" name="date" value="@Model.DepartureDate.ToString("yyyy-MM-dd")" class="form-control border-start-0 fw-bold" required />
+                    <span class="input-group-text bg-white border-end-0 text-muted sbg-calendar-trigger" title="Mở lịch chọn ngày"><i class="bi bi-calendar-event text-success"></i></span>
+                    <input type="text" name="date" value="@Model.DepartureDate.ToString("yyyy-MM-dd")" class="form-control border-start-0 border-end-0 fw-bold sbg-datepicker" placeholder="dd/mm/yyyy" required />
+                    <span class="input-group-text bg-white border-start-0 text-muted sbg-calendar-trigger" title="Mở lịch chọn ngày"><i class="bi bi-calendar3"></i></span>
                 </div>
             </div>
 
@@ -88,28 +89,28 @@
             <div class="sbg-filter-card">
                 <div class="sbg-filter-title">
                     <span><i class="bi bi-funnel me-1 text-success"></i> Lọc nâng cao</span>
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" class="text-success text-decoration-none small">Xóa lọc</a>
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" class="text-success text-decoration-none small">Xóa lọc</a>
                 </div>
 
                 <h6 class="fw-bold small text-muted text-uppercase mb-2">Khung giờ khởi hành</h6>
                 <div class="d-flex flex-column gap-2 mb-3">
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-timeOfDay="morning" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "morning" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-timeOfDay="morning" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "morning" ? "active text-white bg-success" : "")">
                         🌅 Buổi sáng (06:00 - 12:00)
                     </a>
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-timeOfDay="afternoon" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "afternoon" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-timeOfDay="afternoon" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "afternoon" ? "active text-white bg-success" : "")">
                         ☀️ Buổi chiều (12:00 - 18:00)
                     </a>
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-timeOfDay="evening" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "evening" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-timeOfDay="evening" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.TimeOfDayFilter == "evening" ? "active text-white bg-success" : "")">
                         🌙 Buổi tối (18:00 - 24:00)
                     </a>
                 </div>
 
                 <h6 class="fw-bold small text-muted text-uppercase mb-2">Loại xe</h6>
                 <div class="d-flex flex-column gap-2">
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-busType="Limousine" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.BusTypeFilter == "Limousine" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-busType="Limousine" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.BusTypeFilter == "Limousine" ? "active text-white bg-success" : "")">
                         🚌 Limousine VIP
                     </a>
-                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-busType="Giường Nằm" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.BusTypeFilter == "Giường Nằm" ? "active text-white bg-success" : "")">
+                    <a asp-action="Search" asp-route-from="@Model.From" asp-route-to="@Model.To" asp-route-date="@Model.DepartureDate.ToString("yyyy-MM-dd")" asp-route-busType="Giường Nằm" class="btn btn-outline-secondary btn-sm text-start rounded-3 @(Model.BusTypeFilter == "Giường Nằm" ? "active text-white bg-success" : "")">
                         🛏️ Xe Giường Nằm
                     </a>
                 </div>
@@ -155,7 +156,27 @@
                                     <h5 class="fw-bold text-dark mb-0">@trip.OperatorName</h5>
                                     <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> @trip.Rating (@trip.ReviewCount)</span>
                                 </div>
-                                <div class="text-muted small mb-3">@trip.BusTypeName • Biển số: <strong>@trip.LicensePlate</strong></div>
+                                <div class="text-muted small mb-3 d-flex align-items-center flex-wrap gap-1">
+                                    <span>@trip.BusTypeName • Biển số: <strong class="text-dark">@trip.LicensePlate</strong></span>
+                                    @if (trip.IsMatchingDeparture)
+                                    {
+                                        <span class="badge bg-success text-white" title="Xe biển số tỉnh xuất phát (@trip.ProvinceName)">
+                                            <i class="bi bi-geo-alt-fill"></i> Xe @trip.ProvinceName
+                                        </span>
+                                    }
+                                    else if (trip.IsMatchingDestination)
+                                    {
+                                        <span class="badge bg-info text-dark" title="Xe biển số tỉnh điểm đến (@trip.ProvinceName)">
+                                            <i class="bi bi-geo-fill"></i> Xe @trip.ProvinceName
+                                        </span>
+                                    }
+                                    else if (!string.IsNullOrEmpty(trip.ProvinceName) && trip.ProvinceName != "Toàn quốc")
+                                    {
+                                        <span class="badge bg-light text-secondary border" title="Tỉnh đăng ký biển xe">
+                                            <i class="bi bi-geo-alt"></i> @trip.ProvinceName
+                                        </span>
+                                    }
+                                </div>
 
                                 <div class="position-relative ps-4">
                                     <div class="mb-3">
@@ -198,7 +219,10 @@
                     <div class="sbg-seat-accordion" id="seatAccordion-@trip.TripId">
                         <div class="row">
                             <div class="col-md-6 border-end text-center">
-                                <h6 class="fw-bold text-dark mb-2">Sơ đồ chỗ ngồi (@trip.BusTypeName)</h6>
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                    <h6 class="fw-bold text-dark mb-0">Sơ đồ xe (@trip.BusTypeName)</h6>
+                                    <span class="badge bg-secondary-subtle text-secondary small">@trip.TotalCapacity chỗ</span>
+                                </div>
                                 
                                 <div class="sbg-seat-legend">
                                     <span><span class="badge bg-white border text-dark me-1">⬜</span> Trống</span>
@@ -206,22 +230,143 @@
                                     <span><span class="badge bg-secondary me-1">⬛</span> Đã bán</span>
                                 </div>
 
-                                <div class="sbg-seat-grid-container shadow-xs">
-                                    <div class="w-100 text-center text-muted small mb-2" style="grid-column: span 4;">
-                                        <i class="bi bi-arrow-up-circle"></i> Đầu xe / Bác tài
-                                    </div>
+                                @if (trip.TotalFloors > 1)
+                                {
+                                    <!-- Tab chuyển đổi giữa Tầng 1 và Tầng 2 (Dành cho xe giường nằm 2 tầng) -->
+                                    <ul class="nav nav-pills sbg-floor-pills justify-content-center mb-2 gap-2" id="floorPills-@trip.TripId" role="tablist">
+                                        @for (int f = 0; f < trip.FloorLayouts.Count; f++)
+                                        {
+                                            var floor = trip.FloorLayouts[f];
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link @(f == 0 ? "active" : "")" 
+                                                        id="pill-@trip.TripId-@floor.FloorNumber-tab" 
+                                                        data-bs-toggle="pill" 
+                                                        data-bs-target="#pill-@trip.TripId-@floor.FloorNumber" 
+                                                        type="button" role="tab">
+                                                    <i class="bi @(floor.FloorNumber == 1 ? "bi-layers-half" : "bi-layers-fill") me-1"></i>
+                                                    @floor.FloorName
+                                                </button>
+                                            </li>
+                                        }
+                                    </ul>
 
-                                    @foreach (var seat in trip.Seats)
-                                    {
-                                        <div class="sbg-seat-box @(seat.Status == "BOOKED" ? "booked" : "")" 
-                                             data-code="@seat.SeatCode" 
-                                             data-price="@seat.Price" 
-                                             data-trip-id="@trip.TripId"
-                                             title="Ghế @seat.SeatCode - Giá @seat.Price.ToString("N0")đ">
-                                            <span>@seat.SeatCode</span>
-                                        </div>
-                                    }
-                                </div>
+                                    <div class="tab-content" id="floorTabContent-@trip.TripId">
+                                        @for (int f = 0; f < trip.FloorLayouts.Count; f++)
+                                        {
+                                            var floor = trip.FloorLayouts[f];
+                                            <div class="tab-pane fade @(f == 0 ? "show active" : "")" 
+                                                 id="pill-@trip.TripId-@floor.FloorNumber" 
+                                                 role="tabpanel">
+                                                
+                                                <div class="sbg-seat-grid-container shadow-xs" 
+                                                     style="grid-template-columns: repeat(@floor.TotalCols, 1fr); max-width: @(floor.TotalCols * 60 + 20)px;">
+                                                    
+                                                    @foreach (var pos in floor.Seats)
+                                                    {
+                                                        @if (pos.Type == WebApplication1.Models.BusLayout.SeatType.Driver)
+                                                        {
+                                                            <div class="sbg-driver-position" title="Vị trí Bác tài">
+                                                                <i class="bi bi-person-wheel fs-6 text-primary"></i>
+                                                                <span>Tài xế</span>
+                                                            </div>
+                                                        }
+                                                        else if (pos.Type == WebApplication1.Models.BusLayout.SeatType.Door)
+                                                        {
+                                                            <div class="sbg-door-position" title="Cửa lên xuống xe">
+                                                                <i class="bi bi-door-open fs-6 text-success"></i>
+                                                                <span>Cửa lên</span>
+                                                            </div>
+                                                        }
+                                                        else if (pos.Type == WebApplication1.Models.BusLayout.SeatType.Aisle)
+                                                        {
+                                                            <div class="sbg-aisle-space"></div>
+                                                        }
+                                                        else
+                                                        {
+                                                            var isSleeper = pos.Type == WebApplication1.Models.BusLayout.SeatType.SleeperLower || pos.Type == WebApplication1.Models.BusLayout.SeatType.SleeperUpper;
+                                                            var isVip = pos.Type == WebApplication1.Models.BusLayout.SeatType.VipCabin;
+
+                                                            <div class="sbg-seat-box @(isSleeper ? "sleeper" : "") @(isVip ? "vip-cabin" : "") @(pos.Status == "BOOKED" ? "booked" : "")" 
+                                                                 data-code="@pos.SeatCode" 
+                                                                 data-price="@pos.Price" 
+                                                                 data-trip-id="@trip.TripId"
+                                                                 data-floor="@pos.Floor"
+                                                                 title="@pos.DisplayName - @pos.Description (@pos.Price.ToString("N0")đ)">
+                                                                @if (isSleeper)
+                                                                {
+                                                                    <i class="bi bi-moon-stars" style="font-size: 0.65rem;"></i>
+                                                                }
+                                                                else if (isVip)
+                                                                {
+                                                                    <i class="bi bi-gem text-warning" style="font-size: 0.65rem;"></i>
+                                                                }
+                                                                <span>@pos.SeatCode</span>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <!-- Xe 1 tầng (Xe 29 chỗ hoặc Xe 45 chỗ) -->
+                                    var singleFloor = trip.FloorLayouts.FirstOrDefault() ?? new WebApplication1.Models.BusLayout.BusFloorLayout { TotalCols = 4 };
+                                    
+                                    <div class="sbg-seat-grid-container shadow-xs" 
+                                         style="grid-template-columns: repeat(@singleFloor.TotalCols, 1fr); max-width: @(singleFloor.TotalCols * 60 + 20)px;">
+                                        
+                                        @if (singleFloor.Seats.Any())
+                                        {
+                                            @foreach (var pos in singleFloor.Seats)
+                                            {
+                                                @if (pos.Type == WebApplication1.Models.BusLayout.SeatType.Driver)
+                                                {
+                                                    <div class="sbg-driver-position" title="Vị trí Bác tài">
+                                                        <i class="bi bi-person-wheel fs-6 text-primary"></i>
+                                                        <span>Tài xế</span>
+                                                    </div>
+                                                }
+                                                else if (pos.Type == WebApplication1.Models.BusLayout.SeatType.Door)
+                                                {
+                                                    <div class="sbg-door-position" title="Cửa lên xuống xe">
+                                                        <i class="bi bi-door-open fs-6 text-success"></i>
+                                                        <span>Cửa lên</span>
+                                                    </div>
+                                                }
+                                                else if (pos.Type == WebApplication1.Models.BusLayout.SeatType.Aisle)
+                                                {
+                                                    <div class="sbg-aisle-space"></div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="sbg-seat-box @(pos.Status == "BOOKED" ? "booked" : "")" 
+                                                         data-code="@pos.SeatCode" 
+                                                         data-price="@pos.Price" 
+                                                         data-trip-id="@trip.TripId"
+                                                         data-floor="@pos.Floor"
+                                                         title="Ghế @pos.SeatCode - @pos.Description (@pos.Price.ToString("N0")đ)">
+                                                        <span>@pos.SeatCode</span>
+                                                    </div>
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            @foreach (var seat in trip.Seats)
+                                            {
+                                                <div class="sbg-seat-box @(seat.Status == "BOOKED" ? "booked" : "")" 
+                                                     data-code="@seat.SeatCode" 
+                                                     data-price="@seat.Price" 
+                                                     data-trip-id="@trip.TripId"
+                                                     title="Ghế @seat.SeatCode - Giá @seat.Price.ToString("N0")đ">
+                                                    <span>@seat.SeatCode</span>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                }
                             </div>
 
                             <div class="col-md-6 ps-md-4 mt-3 mt-md-0 d-flex flex-column justify-content-between">
