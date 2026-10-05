@@ -1,64 +1,54 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.Models.ViewModels;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
-using WebApplication1.Services;
-
-namespace WebApplication1.Controllers
+namespace WebApplication1.Controllers;
+// Frontend demo only. Backend will replace the sample login and sample data.
+public class DriverController : Controller
 {
-    public class DriverController : Controller
+    [HttpGet]
+    public IActionResult Login() => View(new DriverLoginViewModel());
+    [HttpPost, ValidateAntiForgeryToken]
+    public IActionResult Login(DriverLoginViewModel model)
     {
-        private readonly DemoStore _demo;
-        public DriverController(DemoStore demo) { _demo=demo; }
-        // GET: /Driver/Login (Cổng đăng nhập riêng biệt cho Tài xế - Cách 2)
-        [HttpGet]
-        public IActionResult Login()
+        if (!ModelState.IsValid) return View(model);
+        var identifier = model.DriverIdentifier.Trim();
+        if ((identifier != "TX-001" && identifier != "0988777999") || model.Password != "Demo123!")
         {
-            return View(new DriverLoginViewModel());
+            ModelState.AddModelError(string.Empty, "Dùng tài khoản demo TX-001 và mật khẩu Demo123!.");
+            return View(model);
         }
-
-        // POST: /Driver/Login
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(DriverLoginViewModel model)
+        return RedirectToAction(nameof(Dashboard));
+    }
+    [HttpGet]
+    public IActionResult Dashboard(int? tripId) => View(Sample(tripId));
+    [HttpGet]
+    public IActionResult Profile() => View(Sample(null));
+    [HttpGet]
+    public IActionResult Scan(int? tripId) => View(Sample(tripId));
+    [HttpGet]
+    public IActionResult Incident(int? tripId) => View(Sample(tripId));
+    [HttpPost, ValidateAntiForgeryToken]
+    public IActionResult Logout() => RedirectToAction(nameof(Login));
+    private static DriverPortalDemoViewModel Sample(int? tripId)
+    {
+        var trip = new DriverPortalTripDemoViewModel
         {
-            if (!ModelState.IsValid)
+            TripId = 1, RouteName = "TN-HN-01", StartPoint = "Thái Nguyên", EndPoint = "Hà Nội",
+            TripDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)),
+            DepartureTime = new TimeOnly(8, 0), ArrivalTime = new TimeOnly(10, 0),
+            LicensePlate = "29B-888.68", BusTypeName = "Xe 29 chỗ", Capacity = 29, BookedSeats = 3,
+            Passengers = new()
             {
-                return View(model);
+                new() { FullName = "Nguyễn Văn An", SeatNumber = "A01", TicketCode = "SBG-001", DropOffStop = "Mỹ Đình" },
+                new() { FullName = "Trần Văn Bình", SeatNumber = "A02", TicketCode = "SBG-002", DropOffStop = "Mỹ Đình" },
+                new() { FullName = "Lê Văn Minh", SeatNumber = "B01", TicketCode = "SBG-003", DropOffStop = "Mỹ Đình" }
             }
-
-            if(_demo.Enabled)
-            {
-                if((model.DriverIdentifier!="TX-001"&&model.DriverIdentifier!="0988777999")||model.Password!="Demo123!") {ModelState.AddModelError(string.Empty,"Tài khoản mẫu: TX-001 / Demo123!");return View(model);}
-                var claims=new[]{new Claim(ClaimTypes.NameIdentifier,"demo-driver"),new Claim(ClaimTypes.Name,"Trần Đình Trọng"),new Claim(ClaimTypes.Role,"ROLE_DRIVER")};
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,new ClaimsPrincipal(new ClaimsIdentity(claims,CookieAuthenticationDefaults.AuthenticationScheme)),new AuthenticationProperties{IsPersistent=model.RememberMe});
-            }
-            TempData["SuccessMessage"] = $"Đăng nhập cổng Tài xế thành công! Chào mừng Bác tài (Mã: {model.DriverIdentifier}).";
-            return RedirectToAction("Dashboard");
-        }
-
-        // GET: /Driver/Dashboard
-        [HttpGet]
-        [Authorize(Roles="ROLE_DRIVER")]
-        public IActionResult Dashboard()
+        };
+        return new DriverPortalDemoViewModel
         {
-            if(_demo.Enabled)return View("DemoDashboard",_demo.DriverDashboard());
-            return View();
-        }
-
-        [Authorize(Roles="ROLE_DRIVER"),HttpPost,ValidateAntiForgeryToken]
-        public IActionResult CheckIn(string ticket,int tripId,DateTime date)
-        {
-            if(!_demo.Enabled)return NotFound();var (valid,message)=_demo.CheckIn((ticket??"").Trim(),tripId,date);
-            TempData[valid?"SuccessMessage":"ErrorMessage"]=message;return RedirectToAction("Dashboard");
-        }
-        [Authorize(Roles="ROLE_DRIVER"),HttpPost,ValidateAntiForgeryToken]
-        public IActionResult Incident(string message)
-        {
-            if(!_demo.Enabled)return NotFound();if(string.IsNullOrWhiteSpace(message)||message.Length>500)TempData["ErrorMessage"]="Nhập nội dung sự cố từ 1 đến 500 ký tự.";
-            else {_demo.Incident(message.Trim());TempData["SuccessMessage"]="Đã gửi báo cáo sự cố demo.";}return RedirectToAction("Dashboard");
-        }
+            DriverId = 1, FullName = "Trần Đình Trọng", Phone = "0988777999",
+            LicenseNo = "010088012345", DateOfBirth = new DateOnly(1988, 8, 15),
+            LicenseExpiryDate = new DateOnly(2030, 8, 15), SelectedTripId = tripId,
+            TodayTripsCount = 1, TotalPassengersCount = 3, AssignedTrips = new() { trip }
+        };
     }
 }

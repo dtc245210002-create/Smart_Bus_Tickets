@@ -1,0 +1,20 @@
+@model WebApplication1.Models.ViewModels.DriverPortalDemoViewModel
+@{ ViewData["Title"] = "Soát vé QR"; var trip = Model.SelectedTrip; }
+<div class="sc-page-heading"><div><div class="sc-eyebrow">SOÁT VÉ HÀNH KHÁCH</div><h1>Soát vé QR</h1><p>Chọn đúng chuyến và ngày chạy trước khi quét hoặc nhập mã vé.</p></div></div>
+<partial name="_PortalError" model="Model" />
+<partial name="_TripPicker" model="Model" />
+@if (trip == null) { <div class="sc-card sc-empty"><h2>Chưa có chuyến để soát vé</h2><p>Vui lòng liên hệ điều hành để được phân công chuyến.</p></div> }
+else
+{
+    <div id="driverScanner" data-trip-id="@trip.TripId" data-trip-date="@trip.TripDate.ToString("yyyy-MM-dd")" class="sc-two-columns">
+        <article class="sc-card"><div class="sc-card-heading"><div><h2>Quét hoặc nhập mã vé</h2><p>@trip.RouteName · @trip.TripDate.ToString("dd/MM/yyyy") · @trip.DepartureTime.ToString("HH:mm")</p></div></div>
+            <div class="sc-scanner"><span class="sc-camera-label" id="cameraStatus" role="status">CAMERA CHƯA BẬT</span><video id="driverCamera" playsinline muted hidden></video><div class="sc-scan-target" id="scanPlaceholder"><span></span><span></span><span></span><span></span><i class="bi bi-qr-code" aria-hidden="true"></i></div><p>Đặt mã QR vào trong khung nhận diện</p></div>
+            <div class="sc-camera-actions"><button type="button" class="sc-button" id="startDriverCamera"><i class="bi bi-camera" aria-hidden="true"></i>Mở camera</button><button type="button" class="sc-button" id="stopDriverCamera" hidden>Tắt camera</button></div>
+            <form id="verifyDriverTicket">@Html.AntiForgeryToken()<label class="sc-label" for="driverTicketCode">Mã vé / nội dung QR</label><div class="sc-input-action"><input id="driverTicketCode" placeholder="Nhập hoặc quét mã vé" required maxlength="2000" autocomplete="off" /><button class="sc-button sc-primary" type="submit">Kiểm tra & check-in</button></div></form><p class="sc-scan-help">Mô phỏng: SBG-001, SBG-002, SBG-003 là vé hợp lệ; SBG-999 là vé sai chuyến. Không cập nhật dữ liệu thật.</p>
+        </article>
+        <article class="sc-card sc-result" aria-live="polite"><div id="ticketResultEmpty" class="sc-result-empty"><span class="sc-result-icon"><i class="bi bi-ticket-perforated" aria-hidden="true"></i></span><h2>Sẵn sàng kiểm tra vé</h2><p>Kết quả xác thực và thông tin hành khách sẽ xuất hiện tại đây.</p></div><div id="ticketResult" class="sc-result-content" hidden><span class="sc-result-badge" id="ticketResultBadge"></span><h2 class="sc-result-name" id="ticketPassenger"></h2><p class="sc-result-desc" id="ticketRoute"></p><div class="sc-result-details"><div><span>Vị trí ghế</span><strong id="ticketSeat"></strong></div><div><span>Mã vé</span><strong id="ticketCodeResult"></strong></div></div><div class="sc-result-message" id="ticketResultMessage"></div><button type="button" class="sc-button sc-primary" id="nextDriverTicket">Quét vé tiếp theo</button><a class="sc-button sc-next" asp-action="Dashboard" asp-route-tripId="@trip.TripId">Xem danh sách hành khách</a></div></article>
+    </div>
+}
+
+
+

@@ -1,0 +1,20 @@
+@model WebApplication1.Models.ViewModels.DriverPortalDemoViewModel
+@{ ViewData["Title"] = "Báo cáo sự cố"; var trip = Model.SelectedTrip; }
+<div class="sc-page-heading"><div><div class="sc-eyebrow">HỖ TRỢ CHUYẾN ĐI</div><h1>Báo cáo sự cố</h1><p>Chuẩn bị thông tin để điều hành hỗ trợ chuyến của bác tài.</p></div></div>
+<partial name="_PortalError" model="Model" />
+<partial name="_TripPicker" model="Model" />
+@if (trip == null) { <div class="sc-card sc-empty"><h2>Chưa có chuyến được phân công</h2><p>Chọn chuyến được phân công trước khi lập báo cáo.</p></div> }
+else
+{
+    <div class="sc-incident-grid"><article class="sc-card"><div class="sc-card-heading"><h2>Thông tin sự cố</h2><span class="sc-form-caption">* Bắt buộc</span></div>
+        <form id="driverIncidentForm" data-trip-id="@trip.TripId">
+            <div class="sc-fields-two"><div><label class="sc-label" for="incidentType">Loại sự cố *</label><select id="incidentType" name="type" required><option value="">Chọn loại sự cố</option><option>Tắc đường</option><option>Trễ chuyến</option><option>Sự cố xe</option><option>Khác</option></select></div><div><label class="sc-label" for="incidentDelay">Thời gian trễ dự kiến</label><select id="incidentDelay" name="delay"><option>Không bị trễ</option><option>15 phút</option><option>30 phút</option><option>60 phút</option><option>Chưa xác định</option></select></div></div>
+            <label class="sc-label" for="incidentLocation">Vị trí xảy ra sự cố *</label><input id="incidentLocation" name="location" placeholder="Nhập vị trí hoặc địa điểm gần nhất" maxlength="250" required />
+            <label class="sc-label" for="incidentDescription">Mô tả sự cố *</label><textarea id="incidentDescription" name="description" rows="4" maxlength="500" placeholder="Mô tả tình trạng và hỗ trợ bác tài cần nhận…" required></textarea><div class="sc-character-count"><span id="incidentChars">0</span>/500 ký tự</div>
+            <label class="sc-label" for="incidentPhoto">Hình ảnh hiện trường · Không bắt buộc</label><input type="file" id="incidentPhoto" accept="image/*" class="sc-file-input" /><img id="incidentPreview" alt="Ảnh hiện trường đã chọn" class="sc-photo-preview" hidden />
+            <div class="sc-note">Bản nháp được lưu trên thiết bị này. Báo cáo chưa được gửi đến điều hành.</div>
+            <div class="sc-form-footer"><a class="sc-button" asp-action="Dashboard" asp-route-tripId="@trip.TripId">Quay lại</a><button class="sc-button sc-primary" type="submit"><i class="bi bi-save" aria-hidden="true"></i>Lưu bản nháp báo cáo</button></div>
+        </form><div class="sc-flash" id="incidentFeedback" role="status" hidden></div>
+    </article><aside><div class="sc-card sc-trip-summary"><div class="sc-eyebrow">CHUYẾN ĐANG PHỤ TRÁCH</div><h2>Chuyến #@trip.TripId</h2><p>@trip.StartPoint → @trip.EndPoint</p><div><i class="bi bi-bus-front" aria-hidden="true"></i>@trip.LicensePlate</div><div><i class="bi bi-calendar" aria-hidden="true"></i>@trip.TripDate.ToString("dd/MM/yyyy") · @trip.DepartureTime.ToString("HH:mm")</div></div><div class="sc-side-note"><p>Kiểm tra vị trí và thời gian trễ trước khi chuyển thông tin cho điều hành.</p></div></aside></div>
+}
+

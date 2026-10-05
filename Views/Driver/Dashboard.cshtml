@@ -1,16 +1,42 @@
+@model WebApplication1.Models.ViewModels.DriverPortalDemoViewModel
 @{
-    ViewData["Title"] = "Bảng điều khiển Bác tài";
+    ViewData["Title"] = "Tổng quan chuyến";
+    var trip = Model.SelectedTrip;
+    var today = DateTime.UtcNow.AddHours(7);
+}
+<div class="sc-page-heading"><div><div class="sc-eyebrow">@today.ToString("dd/MM/yyyy") · SMARTBUS GO DRIVER</div><h1>Xin chào, bác tài @Model.FullName.</h1><p>Thông tin cho các chuyến được phân công của bạn.</p></div><span class="sc-status">@Model.TodayTripsCount chuyến hôm nay</span></div>
+<partial name="_PortalError" model="Model" />
+<partial name="_TripPicker" model="Model" />
+@if (trip == null)
+{
+    <div class="sc-card sc-empty"><i class="bi bi-bus-front" aria-hidden="true"></i><h2>Chưa có chuyến được phân công</h2><p>Chuyến mới sẽ xuất hiện khi điều hành cập nhật lịch chạy.</p><a class="sc-button" asp-action="Profile">Xem hồ sơ bác tài</a></div>
+}
+else
+{
+    <div class="sc-dashboard-grid" id="driverDemoDashboard" data-trip-id="@trip.TripId" data-trip-date="@trip.TripDate.ToString("yyyy-MM-dd")">
+        <article class="sc-trip-card"><div class="sc-trip-top"><span class="sc-light-label">CHUYẾN #@trip.TripId · @trip.TripDate.ToString("dd/MM/yyyy")</span><span class="sc-trip-status">@(trip.Status.Equals("CANCELLED", StringComparison.OrdinalIgnoreCase) ? "Đã hủy" : "Được phân công")</span></div>
+            <div class="sc-trip-time">@trip.DepartureTime.ToString("HH:mm")<span>@trip.RouteName</span></div>
+            <div class="sc-route"><div><span class="sc-route-dot"></span><strong>@trip.StartPoint</strong><small>Điểm xuất phát</small></div><div class="sc-route-line"></div><div><span class="sc-route-dot sc-route-end"></span><strong>@trip.EndPoint</strong><small>Điểm đến</small></div></div>
+            <div class="sc-trip-meta"><span><i class="bi bi-bus-front" aria-hidden="true"></i>@trip.LicensePlate</span><span>@trip.BusTypeName</span></div>
+            <div class="sc-trip-progress"><div><span>Hành khách đã check-in</span><strong>@trip.CheckedInCount / @trip.BookedSeats</strong></div><div class="sc-progress" role="progressbar" aria-label="Hành khách đã check-in" aria-valuemin="0" aria-valuemax="@Math.Max(1, trip.BookedSeats)" aria-valuenow="@trip.CheckedInCount"><span class="sc-progress-fill" style="width:@(trip.BookedSeats == 0 ? 0 : (100 * trip.CheckedInCount / trip.BookedSeats))%"></span></div></div>
+            <a class="sc-button sc-trip-button" asp-action="Scan" asp-route-tripId="@trip.TripId"><i class="bi bi-qr-code-scan" aria-hidden="true"></i>Bắt đầu soát vé<i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            <a class="sc-trip-secondary" asp-action="Incident" asp-route-tripId="@trip.TripId">Báo cáo sự cố chuyến này</a>
+        </article>
+        <article class="sc-card sc-passenger-card"><div class="sc-card-heading"><div><h2>Danh sách hành khách</h2><p>@trip.BookedSeats vé được xác nhận</p></div><i class="bi bi-people" aria-hidden="true"></i></div>
+            @if (trip.Passengers.Count == 0) { <p>Chưa có hành khách trong chuyến này.</p> }
+            else
+            {
+                <div class="sc-table-wrap"><table><thead><tr><th>Hành khách</th><th>Ghế</th><th>Trạm xuống</th></tr></thead><tbody>
+                    @foreach (var passenger in trip.Passengers)
+                    {
+                        <tr data-ticket-code="@passenger.TicketCode"><td><span class="sc-passenger-name">@passenger.FullName</span><span class="sc-person-state @(passenger.CheckedIn ? "sc-checked" : "")">@(passenger.CheckedIn ? "Đã check-in" : "Chưa check-in")</span></td><td><span class="sc-seat">@passenger.SeatNumber</span></td><td>@passenger.DropOffStop</td></tr>
+                    }
+                </tbody></table></div>
+            }
+            <div class="sc-card-bottom"><i class="bi bi-info-circle" aria-hidden="true"></i>Danh sách được cập nhật khi tải lại sau khi soát vé.</div>
+        </article>
+    </div>
+    <div class="sc-bottom-note"><i class="bi bi-shield-check" aria-hidden="true"></i><div><strong>Một chuyến đi an toàn bắt đầu từ sự chuẩn bị.</strong><span>Kiểm tra đúng chuyến và ngày chạy trước khi soát vé.</span></div></div>
 }
 
-<div class="container mt-4">
-    <div class="card rounded-4 border-0 shadow-sm p-4 text-center">
-        <i class="bi bi-truck-front-fill text-success" style="font-size: 3rem;"></i>
-        <h3 class="fw-bold mt-2">Khu Vực Bác Tài Đã Sẵn Sàng!</h3>
-        <p class="text-muted">Đăng nhập tài xế thành công. Từ đây bạn có thể mở máy quét mã QR để kiểm tra vé hành khách lên xe.</p>
-        <div class="mt-3">
-            <a asp-controller="Ticket" asp-action="Detail" class="btn sbg-btn-primary">
-                <i class="bi bi-qr-code-scan me-1"></i> Xem giao diện vé của hành khách
-            </a>
-        </div>
-    </div>
-</div>
+

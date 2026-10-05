@@ -1,0 +1,6 @@
+@model WebApplication1.Models.ViewModels.DriverPortalDemoViewModel
+@if (!string.IsNullOrEmpty(Model.LoadError))
+{
+    <div class="sc-form-error" role="alert">@Model.LoadError <a asp-action="Dashboard">Thử lại</a></div>
+}
+

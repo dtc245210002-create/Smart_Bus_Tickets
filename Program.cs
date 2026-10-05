@@ -36,9 +36,13 @@ namespace WebApplication1
             {
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
+                app.UseHttpsRedirection();
             }
 
-            if (!demoEnabled) app.UseHttpsRedirection();
+            // Serve wwwroot files directly, including when using a copied local runtime.
+            app.UseStaticFiles();
+
+            // Local Development supports the HTTP-only launch profile.
             app.UseRouting();
 
             app.UseAuthentication();
@@ -54,3 +58,5 @@ namespace WebApplication1
         }
     }
 }
+
+

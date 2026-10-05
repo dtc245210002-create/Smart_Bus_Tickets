@@ -1,0 +1,15 @@
+@model WebApplication1.Models.ViewModels.DriverPortalDemoViewModel
+@{
+    ViewData["Title"] = "Hồ sơ bác tài";
+    var initials = string.Concat(Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).Select(part => part[0]));
+    var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+    var licenseStatus = !Model.LicenseExpiryDate.HasValue ? "Chưa có thông tin" : Model.LicenseExpiryDate < today ? "Đã hết hạn" : Model.LicenseExpiryDate <= today.AddDays(30) ? "Sắp hết hạn" : "Còn hạn";
+}
+<div class="sc-page-heading"><div><div class="sc-eyebrow">TÀI KHOẢN BÁC TÀI</div><h1>Hồ sơ của tôi</h1><p>Thông tin cá nhân và giấy phép lái xe.</p></div></div>
+<partial name="_PortalError" model="Model" />
+<div class="sc-card sc-profile-banner"><span class="sc-avatar">@initials</span><div><h2>@Model.FullName</h2><p>Mã tài xế <strong>@(Model.DriverId > 0 ? $"TX-{Model.DriverId:D3}" : "Chưa có thông tin")</strong></p></div><span class="sc-profile-tag">Bác tài SmartBus Go</span></div>
+<div class="sc-two-columns">
+    <article class="sc-card"><div class="sc-card-heading"><h2>Thông tin cá nhân</h2><i class="bi bi-person" aria-hidden="true"></i></div><dl class="sc-info"><div><dt>Họ và tên</dt><dd>@Model.FullName</dd></div><div><dt>Ngày sinh</dt><dd>@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa có thông tin")</dd></div><div><dt>Số điện thoại</dt><dd>@(string.IsNullOrEmpty(Model.Phone) ? "Chưa có thông tin" : Model.Phone)</dd></div></dl></article>
+    <article class="sc-card"><div class="sc-card-heading"><h2>Giấy phép lái xe</h2><i class="bi bi-person-vcard" aria-hidden="true"></i></div><dl class="sc-info"><div><dt>Số giấy phép lái xe</dt><dd>@(string.IsNullOrEmpty(Model.LicenseNo) ? "Chưa có thông tin" : Model.LicenseNo)</dd></div><div><dt>Ngày hết hạn</dt><dd>@(Model.LicenseExpiryDate?.ToString("dd/MM/yyyy") ?? "Chưa có thông tin") <span class="sc-license-valid">@licenseStatus</span></dd></div></dl><div class="sc-note">Vui lòng liên hệ điều hành nếu thông tin giấy phép thay đổi.</div></article>
+</div>
+

@@ -1,0 +1,14 @@
+@model WebApplication1.Models.ViewModels.DriverPortalDemoViewModel
+@if (Model.AssignedTrips.Count > 0)
+{
+    <form method="get" class="sc-trip-picker">
+        <label class="sc-label" for="portalTrip">Chuyến đang phụ trách</label>
+        <div class="sc-input-action"><select name="tripId" id="portalTrip">
+            @foreach (var trip in Model.AssignedTrips)
+            {
+                <option value="@trip.TripId" selected="@(trip.TripId == Model.SelectedTrip?.TripId)">@trip.StartPoint → @trip.EndPoint · @trip.TripDate.ToString("dd/MM/yyyy") · @trip.DepartureTime.ToString("HH:mm")</option>
+            }
+        </select><button class="sc-button" type="submit">Xem chuyến</button></div>
+    </form>
+}
+
