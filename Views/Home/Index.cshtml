@@ -10,28 +10,61 @@
             <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
             <span>CÔNG NGHỆ ĐẶT CHỖ THỜI GIAN THỰC 4.0</span>
             <span>|</span>
-            <span><i class="bi bi-lightning-charge-fill text-warning"></i> Đội xe Limousine & Green Express</span>
+            <span><i class="bi bi-lightning-charge-fill text-warning"></i> Đội xe Limousine & Green Express Toàn Quốc</span>
         </div>
 
         <!-- Heading -->
         <h1 class="display-5 fw-bolder mb-3" style="color: #0f172a; letter-spacing: -0.5px;">
             Đặt Vé Xe Buýt Thông Minh<br />
-            <span style="color: var(--sbg-primary);">An Toàn, Đúng Giờ & Tiện Nghi</span>
+            <span style="color: var(--sbg-primary);">Hơn 24+ Tuyến Đường Bắc - Trung - Nam - Tây Nguyên</span>
         </h1>
         <p class="text-muted mx-auto mb-4" style="max-width: 680px; font-size: 1.05rem;">
-            Hơn 3,000+ tuyến xe liên tỉnh & nội đô toàn quốc. Định vị GPS trực tiếp, giữ đúng số ghế cam kết 100%, bảo vệ hành trình toàn diện.
+            Kết nối trực tiếp cơ sở dữ liệu thời gian thực. Giữ đúng số ghế cam kết 100%, bảo vệ hành trình toàn diện.
         </p>
 
-        <!-- Recent Searches Pills -->
+        <!-- Quick Suggestions -->
         <div class="d-flex flex-wrap justify-content-center gap-2 mb-4 small text-muted">
-            <span class="d-flex align-items-center gap-1"><i class="bi bi-clock-history"></i> Tìm gần đây:</span>
-            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-xs">Hà Nội &rarr; Đà Nẵng 24/10</span>
-            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-xs">TP. Hồ Chí Minh &rarr; Đà Lạt Cuối tuần</span>
-            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-xs">Hà Nội &rarr; Hải Phòng Vé ngày</span>
+            <span class="d-flex align-items-center gap-1"><i class="bi bi-clock-history"></i> Tuyến xe nổi bật:</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('Hà Nội', 'Hà Giang')">
+                🌸 Hà Nội &rarr; Hà Giang
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('Hà Nội', 'Ninh Bình')">
+                🛶 Hà Nội &rarr; Ninh Bình
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('TP. Hồ Chí Minh', 'Buôn Ma Thuột')">
+                ☕ Sài Gòn &rarr; Buôn Ma Thuột
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('TP. Hồ Chí Minh', 'Nha Trang')">
+                🌊 Sài Gòn &rarr; Nha Trang
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('TP. Hồ Chí Minh', 'Phan Thiết')">
+                🏖️ Sài Gòn &rarr; Phan Thiết
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('TP. Hồ Chí Minh', 'Cà Mau')">
+                🦀 Sài Gòn &rarr; Cà Mau
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('Hà Nội', 'Đà Nẵng')">
+                🔥 Hà Nội &rarr; Đà Nẵng
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('TP. Hồ Chí Minh', 'Đà Lạt')">
+                🌲 Sài Gòn &rarr; Đà Lạt
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('Hà Nội', 'Sa Pa')">
+                🏔️ Hà Nội &rarr; Sa Pa
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('Đà Nẵng', 'Quy Nhơn')">
+                🌅 Đà Nẵng &rarr; Quy Nhơn
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill bg-white shadow-xs" onclick="quickFill('Cần Thơ', 'Rạch Giá')">
+                🚤 Cần Thơ &rarr; Rạch Giá
+            </button>
+            <button type="button" class="btn btn-sm btn-success rounded-pill shadow-xs text-white" onclick="quickFill('', '')">
+                ✨ Xem tất cả 24 chuyến xe
+            </button>
         </div>
 
         <!-- Search Card -->
-        <div class="card border-0 shadow-lg mx-auto text-start p-3 p-md-4 mb-5" style="max-width: 1050px; border-radius: 20px;">
+        <div class="card border-0 shadow-lg mx-auto text-start p-3 p-md-4 mb-4" style="max-width: 1050px; border-radius: 20px;">
             <!-- Tabs -->
             <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
                 <div class="nav nav-pills gap-2" role="tablist">
@@ -42,11 +75,11 @@
                         &harr; Khứ hồi
                     </button>
                     <button class="nav-link text-dark rounded-pill px-3 py-1 small fw-semibold">
-                        <i class="bi bi-bus-front"></i> Thuê xe hợp đồng / Bao chuyến
+                        <i class="bi bi-bus-front"></i> Thuê xe hợp đồng
                     </button>
                 </div>
                 <div class="text-muted small">
-                    <i class="bi bi-sliders"></i> Tùy chọn nâng cao (Loại xe, Tiện ích, Ghế ngồi)
+                    <i class="bi bi-database-check text-success"></i> Kết nối SQL Server: <strong>24 tuyến xe & 30 bến xe liên tỉnh</strong>
                 </div>
             </div>
 
@@ -57,92 +90,290 @@
                     <label class="form-label text-muted small fw-bold mb-1">ĐIỂM ĐI</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-success"><i class="bi bi-record-circle-fill"></i></span>
-                        <input type="text" class="form-control border-start-0 fw-bold" value="Hà Nội" placeholder="Chọn điểm đi" />
+                        <input type="text" id="txtFrom" list="citiesList" class="form-control border-start-0 fw-bold" value="Hà Nội" placeholder="Gõ hoặc chọn điểm đi..." />
                     </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Bến Mỹ Đình / Giáp Bát / Nước Ngầm</div>
+                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Hà Nội, Sài Gòn, Đà Nẵng, Cần Thơ...</div>
                 </div>
 
                 <!-- Điểm đến -->
                 <div class="col-lg-3 col-md-6">
                     <label class="form-label text-muted small fw-bold mb-1 d-flex justify-content-between">
                         <span>ĐIỂM ĐẾN</span>
-                        <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">Tuyến Hot 4.9</span>
+                        <span class="badge bg-success-subtle text-success" style="font-size: 0.65rem;">Gợi ý 23 tỉnh thành</span>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-danger"><i class="bi bi-geo-alt-fill"></i></span>
-                        <input type="text" class="form-control border-start-0 fw-bold" value="Đà Nẵng" placeholder="Chọn điểm đến" />
+                        <input type="text" id="txtTo" list="citiesList" class="form-control border-start-0 fw-bold" value="Hà Giang" placeholder="Gõ hoặc chọn điểm đến..." />
                     </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Bến xe Trung Tâm / Trả nội thành</div>
+                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Hà Giang, Ninh Bình, Đà Lạt, Nha Trang...</div>
                 </div>
+
+                <!-- Datalist gợi ý tự động từ CSDL -->
+                <datalist id="citiesList">
+                    <option value="Hà Nội" />
+                    <option value="TP. Hồ Chí Minh" />
+                    <option value="Đà Nẵng" />
+                    <option value="Hải Phòng" />
+                    <option value="Sa Pa" />
+                    <option value="Hạ Long" />
+                    <option value="Huế" />
+                    <option value="Đà Lạt" />
+                    <option value="Vũng Tàu" />
+                    <option value="Cần Thơ" />
+                    <option value="Nha Trang" />
+                    <option value="Thái Nguyên" />
+                    <option value="Hà Giang" />
+                    <option value="Ninh Bình" />
+                    <option value="Mộc Châu" />
+                    <option value="Cao Bằng" />
+                    <option value="Quảng Bình" />
+                    <option value="Quy Nhơn" />
+                    <option value="Buôn Ma Thuột" />
+                    <option value="Phan Thiết" />
+                    <option value="Cà Mau" />
+                    <option value="Châu Đốc" />
+                    <option value="Rạch Giá" />
+                </datalist>
 
                 <!-- Ngày đi -->
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label text-muted small fw-bold mb-1">NGÀY & GIỜ ĐI</label>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label text-muted small fw-bold mb-1">NGÀY ĐI</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar3"></i></span>
-                        <input type="text" class="form-control border-start-0 fw-bold" value="24/10/2025" />
+                        <input type="date" id="txtDate" class="form-control border-start-0 fw-bold" value="2026-10-01" />
                     </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Thứ 6 (Cả ngày)</div>
-                </div>
-
-                <!-- Hành khách & Ghế -->
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label text-muted small fw-bold mb-1">HÀNH KHÁCH & GHẾ</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person-fill"></i></span>
-                        <input type="text" class="form-control border-start-0 fw-bold" value="01 Khách" />
-                    </div>
-                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Limousine VIP Cung Điện</div>
+                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Chọn ngày khởi hành</div>
                 </div>
 
                 <!-- Nút Tìm Xe -->
-                <div class="col-lg-2 col-md-12">
+                <div class="col-lg-3 col-md-6">
                     <label class="form-label d-none d-lg-block mb-1">&nbsp;</label>
-                    <a asp-controller="Ticket" asp-action="Detail" class="btn sbg-btn-primary w-100 py-2 d-flex flex-column align-items-center justify-content-center shadow-sm">
-                        <span class="fw-bold"><i class="bi bi-search"></i> TÌM XE</span>
-                        <span style="font-size: 0.7rem; opacity: 0.85;">Thời gian thực</span>
-                    </a>
+                    <button type="button" id="btnSearchTrips" class="btn sbg-btn-primary w-100 py-2 d-flex flex-column align-items-center justify-content-center shadow-sm">
+                        <span class="fw-bold"><i class="bi bi-search"></i> TÌM CHUYẾN XE</span>
+                        <span style="font-size: 0.7rem; opacity: 0.85;">Tra cứu trực tiếp CSDL</span>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Tuyến xe nổi bật -->
+        <!-- Khung kết quả tìm kiếm thời gian thực -->
+        <div id="liveSearchResultsSection" class="mx-auto text-start mb-5" style="max-width: 1050px;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-bus-front-fill text-success"></i> Chuyến xe tìm thấy (<span id="resultsCount">0</span> chuyến)
+                </h5>
+                <span id="searchStatusBadge" class="badge bg-success-subtle text-success px-3 py-2 rounded-pill border border-success-subtle">
+                    <i class="bi bi-check-circle-fill"></i> Dữ liệu trực tiếp từ SQL Server
+                </span>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="searchLoadingSpinner" class="text-center py-4" style="display: none;">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Đang tải...</span>
+                </div>
+                <div class="text-muted mt-2 small">Đang truy vấn các chuyến xe phù hợp từ CSDL...</div>
+            </div>
+
+            <!-- Danh sách chuyến xe -->
+            <div id="tripsListContainer" class="d-flex flex-column gap-3">
+                <!-- Nội dung các thẻ chuyến xe sẽ được JS đổ vào đây -->
+            </div>
+        </div>
+
+        <!-- Tuyến xe nổi bật theo vùng miền -->
         <div class="mt-4 text-start">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-graph-up-arrow text-success"></i> Tuyến xe nổi bật & Giá tốt hôm nay</h5>
-                <a href="#" class="text-success text-decoration-none small fw-semibold">Xem tất cả hơn 3,000 tuyến &rarr;</a>
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-map-fill text-success"></i> Tuyến xe nổi bật toàn quốc (Bắc - Trung - Nam)</h5>
+                <span class="badge bg-light text-muted border px-3 py-2 rounded-pill">10 tuyến đường huyết mạch</span>
             </div>
 
             <div class="row g-3">
                 <div class="col-md-3 col-sm-6">
-                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
-                        <span class="badge bg-success-subtle text-success w-auto align-self-start mb-2">Giảm 15% mùa lúa chín</span>
-                        <h6 class="fw-bold mb-1">Hà Nội &rarr; Sa Pa</h6>
-                        <span class="text-muted small">Thời gian: 5h30p • 32 chuyến/ngày</span>
+                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white cursor-pointer" onclick="quickFill('Hà Nội', 'Đà Nẵng')" style="cursor: pointer;">
+                        <span class="badge bg-success-subtle text-success w-auto align-self-start mb-2">Tuyến Hot Bắc - Nam</span>
+                        <h6 class="fw-bold mb-1">Hà Nội &rarr; Đà Nẵng</h6>
+                        <span class="text-muted small">760 km • Limousine VIP 22 Phòng</span>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
-                        <span class="badge bg-primary-subtle text-primary w-auto align-self-start mb-2">Limousine VIP Cung điện</span>
+                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white cursor-pointer" onclick="quickFill('TP. Hồ Chí Minh', 'Đà Lạt')" style="cursor: pointer;">
+                        <span class="badge bg-primary-subtle text-primary w-auto align-self-start mb-2">Cung Điện VIP</span>
                         <h6 class="fw-bold mb-1">Sài Gòn &rarr; Đà Lạt</h6>
-                        <span class="text-muted small">Thời gian: 6h30p • Có chuyến mỗi 45p</span>
+                        <span class="text-muted small">305 km • Giường Nằm 34 Phòng</span>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
-                        <span class="badge bg-info-subtle text-info w-auto align-self-start mb-2">Qua hầm Hải Vân siêu tốc</span>
-                        <h6 class="fw-bold mb-1">Đà Nẵng &rarr; Huế</h6>
-                        <span class="text-muted small">Thời gian: 1h45p • Xe chạy liên tục</span>
+                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white cursor-pointer" onclick="quickFill('Hà Nội', 'Sa Pa')" style="cursor: pointer;">
+                        <span class="badge bg-info-subtle text-info w-auto align-self-start mb-2">Cao tốc Lào Cai</span>
+                        <h6 class="fw-bold mb-1">Hà Nội &rarr; Sa Pa</h6>
+                        <span class="text-muted small">320 km • Giường nằm cao cấp</span>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white">
-                        <span class="badge bg-warning-subtle text-warning w-auto align-self-start mb-2">Đón & Trả tận nhà</span>
+                    <div class="card h-100 border p-3 rounded-4 shadow-xs bg-white cursor-pointer" onclick="quickFill('TP. Hồ Chí Minh', 'Vũng Tàu')" style="cursor: pointer;">
+                        <span class="badge bg-warning-subtle text-warning w-auto align-self-start mb-2">Đón trả tận nơi</span>
                         <h6 class="fw-bold mb-1">Sài Gòn &rarr; Vũng Tàu</h6>
-                        <span class="text-muted small">Thời gian: 2h00p • Cao tốc Long Thành</span>
+                        <span class="text-muted small">100 km • Xe Limousine 29 chỗ</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Tự động load danh sách tỉnh thành vào datalist từ CSDL
+        async function loadCities() {
+            try {
+                const res = await fetch('/api/tripsapi/cities');
+                const data = await res.json();
+                if (data.success && data.cities && data.cities.length > 0) {
+                    const datalist = document.getElementById('citiesList');
+                    datalist.innerHTML = data.cities.map(c => `<option value="${c}">`).join('');
+                }
+            } catch(e) {
+                console.error("Lỗi tải danh mục tỉnh thành:", e);
+            }
+        }
+
+        // Hàm điền nhanh từ gợi ý
+        function quickFill(from, to) {
+            document.getElementById('txtFrom').value = from;
+            document.getElementById('txtTo').value = to;
+            fetchTrips();
+        }
+
+        // Hàm chính gọi API tìm kiếm chuyến xe từ Backend
+        async function fetchTrips() {
+            const from = document.getElementById('txtFrom').value.trim();
+            const to = document.getElementById('txtTo').value.trim();
+            const date = document.getElementById('txtDate').value.trim();
+
+            const spinner = document.getElementById('searchLoadingSpinner');
+            const container = document.getElementById('tripsListContainer');
+            const countLabel = document.getElementById('resultsCount');
+
+            spinner.style.display = 'block';
+            container.innerHTML = '';
+
+            try {
+                const params = new URLSearchParams();
+                if (from) params.append('from', from);
+                if (to) params.append('to', to);
+                if (date) params.append('date', date);
+
+                const response = await fetch(`/api/tripsapi/search?${params.toString()}`);
+                if (!response.ok) {
+                    throw new Error('Lỗi phản hồi máy chủ!');
+                }
+
+                const result = await response.json();
+                spinner.style.display = 'none';
+
+                if (!result.success || result.data.length === 0) {
+                    countLabel.innerText = '0';
+                    container.innerHTML = `
+                        <div class="card border-0 shadow-sm p-4 text-center rounded-4 bg-light">
+                            <i class="bi bi-info-circle fs-2 text-warning mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1">Không tìm thấy chuyến xe nào phù hợp</h6>
+                            <p class="text-muted small mb-3">Thử xóa bộ lọc điểm đến hoặc chọn ngày khác để xem toàn bộ danh sách chuyến xe.</p>
+                            <div>
+                                <button class="btn btn-outline-success btn-sm rounded-pill px-3" onclick="quickFill('', '')">
+                                    Xem tất cả chuyến xe có sẵn
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                countLabel.innerText = result.data.length;
+
+                // Render danh sách chuyến xe
+                result.data.forEach(trip => {
+                    const priceFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(trip.price);
+                    
+                    const cardHtml = `
+                        <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white transition-all hover-shadow">
+                            <div class="row align-items-center g-3">
+                                <!-- Cột 1: Giờ & Tuyến xe -->
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge bg-success-subtle text-success px-2 py-1 rounded-pill small fw-semibold">
+                                            Mã: ${trip.routeCode}
+                                        </span>
+                                        <span class="badge bg-light text-muted border px-2 py-1 rounded-pill small">
+                                            ${trip.distanceKm} km
+                                        </span>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-1">${trip.routeName}</h5>
+                                    <div class="d-flex align-items-center gap-2 text-muted small mt-2">
+                                        <div class="text-success fw-bold fs-6">${trip.departureTime}</div>
+                                        <div>&rarr;</div>
+                                        <div class="text-primary fw-bold fs-6">${trip.arrivalTime}</div>
+                                        <span class="text-muted">(${trip.tripDate})</span>
+                                    </div>
+                                    <div class="text-muted small mt-1">
+                                        <i class="bi bi-geo-alt text-danger"></i> Xuất phát: <strong>${trip.startPoint}</strong> &rarr; Đến: <strong>${trip.endPoint}</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Cột 2: Thông tin xe & Tài xế -->
+                                <div class="col-lg-4 col-md-6 border-start-md ps-md-4">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="bi bi-bus-front text-success fs-5"></i>
+                                        <div>
+                                            <div class="fw-semibold text-dark">${trip.bus.busTypeName}</div>
+                                            <div class="text-muted small">Biển số: <strong>${trip.bus.licensePlate}</strong></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-2 small text-muted">
+                                        <i class="bi bi-person-badge"></i> Bác tài: <strong>${trip.driverName}</strong>
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-success px-3 py-1 rounded-pill small">
+                                            <i class="bi bi-check2-circle"></i> Còn ${trip.availableSeats} / ${trip.bus.capacity} ghế trống
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Cột 3: Giá vé & Đặt chỗ -->
+                                <div class="col-lg-4 col-md-12 text-lg-end border-start-lg ps-lg-4">
+                                    <div class="text-muted small">Giá vé tiêu chuẩn</div>
+                                    <div class="fs-4 fw-bolder text-success mb-2">${priceFormatted}</div>
+                                    <div class="d-flex gap-2 justify-content-lg-end">
+                                        <a href="/Ticket/Detail?id=SBG-${trip.routeCode}-${trip.tripId}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                            <i class="bi bi-qr-code"></i> Xem vé mẫu
+                                        </a>
+                                        <a href="/Ticket/Detail?id=SBG-${trip.routeCode}-${trip.tripId}" class="btn sbg-btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                                            Đặt Vé Ngay &rarr;
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', cardHtml);
+                });
+
+            } catch (error) {
+                spinner.style.display = 'none';
+                container.innerHTML = `
+                    <div class="alert alert-danger rounded-4">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Không thể kết nối với máy chủ API: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Tự động tìm kiếm ngay khi mở trang
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCities();
+            document.getElementById('btnSearchTrips').addEventListener('click', fetchTrips);
+            // Kích hoạt tìm kiếm mặc định ban đầu
+            fetchTrips();
+        });
+    </script>
+}

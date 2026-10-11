@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using WebApplication1.Data;
+
 namespace WebApplication1
 {
     public class Program
@@ -8,6 +11,10 @@ namespace WebApplication1
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            // Configure SmartBusDbContext with SQL Server
+            builder.Services.AddDbContext<SmartBusDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             var app = builder.Build();
 
@@ -25,6 +32,7 @@ namespace WebApplication1
             app.UseAuthorization();
 
             app.MapStaticAssets();
+            app.MapControllers();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")
