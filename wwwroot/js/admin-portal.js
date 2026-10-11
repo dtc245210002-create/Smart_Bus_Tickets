@@ -29,7 +29,7 @@
     const dateText = date => date ? date.split('-').reverse().join('/') : '—';
     const options = (values, value, placeholder) => (placeholder ? `<option value="">${esc(placeholder)}</option>` : '') + values.map(v => { const [id,label] = Array.isArray(v) ? v : [v,v]; return `<option value="${esc(id)}"${String(value)===String(id)?' selected':''}>${esc(label)}</option>`; }).join('');
     const routeOptions = value => options(state.routes.map(r=>[r.id,r.name]),value);
-    const input = (name,label,value='',type='text',extra='') => `<div class="ad-field"><label for="ad-${esc(name)}">${label}</label><input id="ad-${esc(name)}" name="${esc(name)}" type="${type}" value="${esc(value)}" ${extra}></div>`;
+    const input = (name,label,value='',type='text',extra='',id=`ad-${name}`) => `<div class="ad-field"><label for="${esc(id)}">${label}</label><input id="${esc(id)}" name="${esc(name)}" type="${type}" value="${esc(value)}" ${extra}></div>`;
     const select = (name,label,values,value,placeholder) => `<div class="ad-field"><label for="ad-${name}">${label}</label><select id="ad-${name}" name="${name}">${options(values,value,placeholder)}</select></div>`;
     const primary = (text, attrs='') => `<button class="ad-button primary" ${attrs}>${text}</button>`;
     const table = (headers,rows) => `<div class="ad-card ad-table-wrap"><table><thead><tr>${headers.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.length ? rows.map(row=>`<tr>${row.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('') : `<tr><td class="ad-empty" colspan="${headers.length}">Không có dữ liệu phù hợp.</td></tr>`}</tbody></table></div>`;
@@ -149,7 +149,7 @@
         if(action==='new-schedule'){selected.schedules=null;render();}
         if(action==='new-voucher'){selected.vouchers=null;render();document.getElementById('ad-id').focus();}
         if(action==='new-account'){selected.accounts=null;render();document.getElementById('ad-name').focus();}
-        if(action==='new-stop')openDialog('Thêm trạm',`<form data-form="station">${input('name','Tên trạm','','text','required maxlength="100"')}<div class="ad-actions">${primary('Lưu trạm mẫu','type="submit"')}</div></form>`);
+        if(action==='new-stop')openDialog('Thêm trạm',`<form data-form="station">${input('name','Tên trạm','','text','required maxlength="100"','ad-station-name')}<div class="ad-actions">${primary('Lưu trạm mẫu','type="submit"')}</div></form>`);
         if(action==='attachment'){const item=get('approvals');openDialog('Tệp đính kèm · '+item.name,`<div class="ad-preview-sheet"><strong>HỒ SƠ MINH HỌA</strong>Họ tên: ${esc(item.name)}<br>Đối tượng: ${esc(item.category)}<br>${esc(item.school)}</div><p class="ad-details">Chưa có tài liệu cá nhân thật. Khi tích hợp backend, vị trí này sẽ hiển thị tệp do hành khách tải lên.</p>`);}
         if(action==='print')window.print();
         if(action==='export'){

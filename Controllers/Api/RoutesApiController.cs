@@ -15,10 +15,12 @@ namespace WebApplication1.Controllers.Api
     public class RoutesApiController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<RoutesApiController> _logger;
 
-        public RoutesApiController(ApplicationDbContext context)
+        public RoutesApiController(ApplicationDbContext context, ILogger<RoutesApiController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         /// <summary>
@@ -160,18 +162,14 @@ namespace WebApplication1.Controllers.Api
                     });
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Nếu DB chưa có cấu hình connection string hoặc bảng tạm thời trống, giữ tripDtos rỗng
+                _logger.LogError(ex, "Failed to search trips for {Origin} to {Destination} on {SearchDate}", cleanOrigin, cleanDest, searchDate);
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    ApiResponse<RouteSearchResultDto>.Fail("Không thể tải chuyến xe lúc này. Vui lòng thử lại sau."));
             }
 
-            // 3. Fallback dữ liệu phong phú nếu DB chưa có chuyến nào cho ngày/tuyến tìm kiếm
-            if (!tripDtos.Any())
-            {
-                tripDtos = GenerateMockTrips(cleanOrigin, cleanDest, searchDate);
-            }
-
-            // 4. Lọc & Sắp xếp
+            // 3. Lọc & Sắp xếp
             if (!string.IsNullOrEmpty(busType))
             {
                 tripDtos = tripDtos.Where(t => t.BusTypeName.Contains(busType, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -198,80 +196,5 @@ namespace WebApplication1.Controllers.Api
             return Ok(ApiResponse<RouteSearchResultDto>.Ok(result, $"Tìm thấy {tripDtos.Count} chuyến xe phù hợp."));
         }
 
-        private static List<TripSummaryDto> GenerateMockTrips(string origin, string dest, DateTime date)
-        {
-            var formattedDate = date.ToString("yyyy-MM-dd");
-            return new List<TripSummaryDto>
-            {
-                new()
-                {
-                    TripId = 101,
-                    RouteId = 1,
-                    RouteName = $"{origin} - {dest} (Cao tốc Express)",
-                    Origin = origin,
-                    Destination = dest,
-                    TripDate = formattedDate,
-                    DepartureTime = "08:00",
-                    ArrivalTime = "10:30",
-                    DurationText = "2h 30m",
-                    BusTypeName = "Limousine VIP 16 Chỗ",
-                    LicensePlate = "29B-888.68",
-                    OperatorName = "SmartBus VIP Express",
-                    Price = 160000m,
-                    OriginalPrice = 190000m,
-                    AvailableSeats = 12,
-                    TotalSeats = 16,
-                    IsFlashSale = true,
-                    FlashSaleText = "GIẢM 15% HÔM NAY",
-                    BoardingPoints = new() { $"{origin} (Bến xe Trung Tâm)", $"{origin} (Văn phòng đại diện)" },
-                    DropOffPoints = new() { $"{dest} (Ngã ba Trung Tâm)", $"{dest} (Bến xe cuối)" }
-                },
-                new()
-                {
-                    TripId = 102,
-                    RouteId = 2,
-                    RouteName = $"{origin} - {dest} (Phòng Nằm Cung Điện)",
-                    Origin = origin,
-                    Destination = dest,
-                    TripDate = formattedDate,
-                    DepartureTime = "13:30",
-                    ArrivalTime = "16:00",
-                    DurationText = "2h 30m",
-                    BusTypeName = "Limousine VIP 22 Phòng Đơn Cung Điện",
-                    LicensePlate = "15B-668.99",
-                    OperatorName = "SmartBus Royal Travel",
-                    Price = 220000m,
-                    OriginalPrice = 250000m,
-                    AvailableSeats = 8,
-                    TotalSeats = 22,
-                    IsFlashSale = false,
-                    BoardingPoints = new() { $"{origin} (Cột 05 Bến xe)", $"{origin} (Trạm thu phí ngoại ô)" },
-                    DropOffPoints = new() { $"{dest} (Trạm dừng chân VIP)", $"{dest} (Bến xe trung tâm)" }
-                },
-                new()
-                {
-                    TripId = 103,
-                    RouteId = 3,
-                    RouteName = $"{origin} - {dest} (Chuyến Đêm Eco)",
-                    Origin = origin,
-                    Destination = dest,
-                    TripDate = formattedDate,
-                    DepartureTime = "19:00",
-                    ArrivalTime = "21:45",
-                    DurationText = "2h 45m",
-                    BusTypeName = "Xe Giường Nằm 34 Chỗ Cao Cấp",
-                    LicensePlate = "29B-999.11",
-                    OperatorName = "SmartBus Eco Line",
-                    Price = 135000m,
-                    OriginalPrice = 150000m,
-                    AvailableSeats = 18,
-                    TotalSeats = 34,
-                    IsFlashSale = true,
-                    FlashSaleText = "TIẾT KIỆM",
-                    BoardingPoints = new() { $"{origin} (Bến xe phía Nam)" },
-                    DropOffPoints = new() { $"{dest} (Bến xe chính)" }
-                }
-            };
-        }
     }
 }
