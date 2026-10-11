@@ -7,7 +7,7 @@
             <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
             <div asp-validation-summary="All" class="sc-validation" role="alert"></div>
             <label class="sc-label" asp-for="DriverIdentifier">Mã tài xế / Số điện thoại</label><input asp-for="DriverIdentifier" autocomplete="username" placeholder="Nhập mã tài xế hoặc số điện thoại" />
-            <label class="sc-label" asp-for="Password">Mật khẩu</label><div class="sc-password-wrap"><input asp-for="Password" autocomplete="current-password" placeholder="Nhập mật khẩu" id="driverPassword" /><button type="button" class="sc-eye" id="toggleDriverPassword" aria-label="Hiện mật khẩu" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button></div>
+            <label class="sc-label" for="driverPassword">Mật khẩu</label><div class="sc-password-wrap"><input asp-for="Password" autocomplete="current-password" placeholder="Nhập mật khẩu" id="driverPassword" /><button type="button" class="sc-eye" id="toggleDriverPassword" aria-label="Hiện mật khẩu" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button></div>
             <button type="submit" class="sc-button sc-primary">Đăng nhập<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
         </form>
         <div class="sc-login-help">Cần hỗ trợ tài khoản? <a href="tel:19006868">Liên hệ điều hành</a></div>
