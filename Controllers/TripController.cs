@@ -226,7 +226,7 @@ namespace WebApplication1.Controllers
                             .Include(t => t.Bus).ThenInclude(b => b.BusType)
                             .Include(t => t.Driver).ThenInclude(d => d.User)
                             .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
-                            .Where(t => t.RouteId == route.RouteId && t.TripDate == tripDateOnly && (t.Status == null || !t.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)))
+                            .Where(t => t.RouteId == route.RouteId && t.TripDate == tripDateOnly && (t.Status == null || t.Status.ToUpper() != "CANCELLED"))
                             .ToListAsync();
                     }
 
