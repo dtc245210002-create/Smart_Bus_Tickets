@@ -1,0 +1,49 @@
+@{
+    Layout = null;
+    var adminPage = ViewData["AdminPage"]?.ToString() ?? "dashboard";
+    var links = new[] {
+        ("dashboard", "Dashboard", "Tổng quan"), ("routes", "Routes", "Tuyến & trạm"),
+        ("schedules", "Schedules", "Lịch trình"), ("dispatch", "Dispatch", "Điều xe"),
+        ("vouchers", "Vouchers", "Voucher"), ("approvals", "Approvals", "Hồ sơ ưu đãi"),
+        ("support", "Support", "Chăm sóc khách hàng"), ("accounts", "Accounts", "Tài khoản"),
+        ("activity", "Activity", "Nhật ký hoạt động")
+    };
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · SmartBus Go Admin</title>
+    <link rel="stylesheet" href="~/css/admin-portal.css" asp-append-version="true" />
+</head>
+<body class="admin-portal" data-admin-page="@adminPage">
+    <aside class="ad-sidebar" id="adminSidebar">
+        <a class="ad-brand" asp-controller="Admin" asp-action="Dashboard">SmartBusGo</a>
+        <div class="ad-nav-caption">CỔNG QUẢN TRỊ</div>
+        <nav aria-label="Điều hướng quản trị">
+            @foreach (var link in links)
+            {
+                <a asp-controller="Admin" asp-action="@link.Item2" aria-current="@(adminPage == link.Item1 ? "page" : null)">@link.Item3</a>
+            }
+        </nav>
+        <a class="ad-home" asp-controller="Home" asp-action="Index">← Về trang chủ</a>
+    </aside>
+    <main class="ad-main">
+        <header class="ad-topbar">
+            <button class="ad-menu" type="button" aria-controls="adminSidebar" aria-expanded="false" aria-label="Mở menu">☰</button>
+            <span>Vận hành SmartBus Go</span><span>Nguyễn Văn An · Quản lý</span>
+            <span class="ad-demo">DEMO GIAO DIỆN</span>
+        </header>
+        <h1>@ViewData["Title"]</h1>
+        <p class="ad-subtitle" id="adminSubtitle"></p>
+        <div id="adminContent"></div>
+        <footer class="ad-footer">Dữ liệu minh họa · Thao tác chỉ lưu trên trình duyệt, chưa kết nối backend.</footer>
+    </main>
+    <div class="ad-toast" id="adminFeedback" role="status" aria-live="polite" hidden></div>
+    <dialog id="adminDialog" aria-labelledby="adminDialogTitle"><div class="ad-dialog-heading"><h2 id="adminDialogTitle"></h2><button type="button" data-close-dialog aria-label="Đóng">×</button></div><div id="adminDialogBody"></div></dialog>
+    <noscript><p class="ad-no-script">Vui lòng bật JavaScript để xem và thao tác giao diện admin demo.</p></noscript>
+    <script src="~/js/admin-portal.js" asp-append-version="true"></script>
+</body>
+</html>
+
