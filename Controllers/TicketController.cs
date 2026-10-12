@@ -358,10 +358,19 @@ namespace WebApplication1.Controllers
             else
             {
                 // Sinh mã vé ngẫu nhiên duy nhất dạng SBG-XXXXXX (6 chữ số ngẫu nhiên)
-                do
+                cleanTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
+                try
                 {
-                    cleanTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
-                } while (await _context.Tickets.AnyAsync(t => t.TicketCode == cleanTicketCode));
+                    int retries = 5;
+                    while (retries-- > 0 && await _context.Tickets.AnyAsync(t => t.TicketCode == cleanTicketCode))
+                    {
+                        cleanTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
+                    }
+                }
+                catch
+                {
+                    // Cơ sở dữ liệu chưa sẵn sàng kết nối, giữ nguyên mã vé đã sinh
+                }
 
                 cleanBookingCode = $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
                 finalTicketStatus = !string.IsNullOrWhiteSpace(status) ? status.ToUpper() : "ACTIVE";
@@ -561,24 +570,31 @@ namespace WebApplication1.Controllers
 
             if (!string.IsNullOrEmpty(ticketCode) || !string.IsNullOrEmpty(bookingCode))
             {
-                var ticket = await _context.Tickets
-                    .Include(t => t.Booking).ThenInclude(b => b.User)
-                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
-                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
-                    .FirstOrDefaultAsync(t => (!string.IsNullOrEmpty(ticketCode) && t.TicketCode == ticketCode) ||
-                                              (!string.IsNullOrEmpty(bookingCode) && t.Booking.BookingCode == bookingCode));
-
-                if (ticket != null)
+                try
                 {
-                    ViewBag.TicketCode = ticket.TicketCode;
-                    ViewBag.BookingCode = ticket.Booking?.BookingCode;
-                    ViewBag.TotalAmount = ticket.Booking?.TotalAmount ?? ticket.Price;
-                    ViewBag.SeatNumber = ticket.SeatNumber;
-                    ViewBag.RouteName = ticket.Booking?.Trip?.Route?.RouteName ?? $"{effFrom} ➔ {effTo}";
-                    ViewBag.DepartureTime = ticket.Booking?.Trip?.DepartureTime.ToString(@"hh\:mm");
-                    ViewBag.TripDate = ticket.Booking?.Trip?.TripDate.ToString("dd/MM/yyyy");
-                    ViewBag.PassengerName = ticket.Booking?.User?.FullName ?? ViewBag.PassengerName;
-                    ViewBag.PassengerPhone = ticket.Booking?.User?.Phone ?? ViewBag.PassengerPhone;
+                    var ticket = await _context.Tickets
+                        .Include(t => t.Booking).ThenInclude(b => b.User)
+                        .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
+                        .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
+                        .FirstOrDefaultAsync(t => (!string.IsNullOrEmpty(ticketCode) && t.TicketCode == ticketCode) ||
+                                                  (!string.IsNullOrEmpty(bookingCode) && t.Booking.BookingCode == bookingCode));
+
+                    if (ticket != null)
+                    {
+                        ViewBag.TicketCode = ticket.TicketCode;
+                        ViewBag.BookingCode = ticket.Booking?.BookingCode;
+                        ViewBag.TotalAmount = ticket.Booking?.TotalAmount ?? ticket.Price;
+                        ViewBag.SeatNumber = ticket.SeatNumber;
+                        ViewBag.RouteName = ticket.Booking?.Trip?.Route?.RouteName ?? $"{effFrom} ➔ {effTo}";
+                        ViewBag.DepartureTime = ticket.Booking?.Trip?.DepartureTime.ToString(@"hh\:mm");
+                        ViewBag.TripDate = ticket.Booking?.Trip?.TripDate.ToString("dd/MM/yyyy");
+                        ViewBag.PassengerName = ticket.Booking?.User?.FullName ?? ViewBag.PassengerName;
+                        ViewBag.PassengerPhone = ticket.Booking?.User?.Phone ?? ViewBag.PassengerPhone;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể tải thông tin vé từ DB cho Payment: {Message}", ex.Message);
                 }
             }
 
@@ -903,14 +919,22 @@ namespace WebApplication1.Controllers
             var effectiveTicketCode = string.IsNullOrEmpty(ticketCode) ? "SBG-HN-DN-20251024-008" : ticketCode;
 
             // 1. Lấy thông tin vé hiện tại từ Database thật
-            var dbTicket = await _context.Tickets
-                .Include(t => t.Booking).ThenInclude(b => b.User)
-                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
-                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
-                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
-                .Include(t => t.BoardingStop)
-                .Include(t => t.DropOffStop)
-                .FirstOrDefaultAsync(t => t.TicketCode == effectiveTicketCode || t.TicketId.ToString() == effectiveTicketCode);
+            Ticket? dbTicket = null;
+            try
+            {
+                dbTicket = await _context.Tickets
+                    .Include(t => t.Booking).ThenInclude(b => b.User)
+                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
+                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
+                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
+                    .Include(t => t.BoardingStop)
+                    .Include(t => t.DropOffStop)
+                    .FirstOrDefaultAsync(t => t.TicketCode == effectiveTicketCode || t.TicketId.ToString() == effectiveTicketCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Không thể tải vé từ DB cho Reschedule: {Message}", ex.Message);
+            }
 
             TicketDetailViewModel oldTicket;
             if (dbTicket != null)
@@ -1094,16 +1118,25 @@ namespace WebApplication1.Controllers
         {
             var effectiveCode = !string.IsNullOrEmpty(ticketCode) ? ticketCode : (!string.IsNullOrEmpty(id) ? id : "SBG-HN-HP-001");
             var ticketCodeToSearch = effectiveCode;
-            var dbTicket = await _context.Tickets
-                .Include(t => t.Booking).ThenInclude(b => b.User)
-                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
-                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
-                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
-                .Include(t => t.BoardingStop)
-                .FirstOrDefaultAsync(t => t.TicketCode == ticketCodeToSearch 
-                                       || t.TicketCode.StartsWith(ticketCodeToSearch + "-") 
-                                       || (t.Booking != null && t.Booking.BookingCode == ticketCodeToSearch) 
-                                       || t.TicketId.ToString() == ticketCodeToSearch);
+            Ticket? dbTicket = null;
+            try
+            {
+                dbTicket = await _context.Tickets
+                    .Include(t => t.Booking).ThenInclude(b => b.User)
+                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
+                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
+                    .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
+                    .Include(t => t.BoardingStop)
+                    .Include(t => t.DropOffStop)
+                    .FirstOrDefaultAsync(t => t.TicketCode == ticketCodeToSearch 
+                                           || t.TicketCode.StartsWith(ticketCodeToSearch + "-") 
+                                           || (t.Booking != null && t.Booking.BookingCode == ticketCodeToSearch) 
+                                           || t.TicketId.ToString() == ticketCodeToSearch);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Không thể tải vé từ DB cho Cancel: {Message}", ex.Message);
+            }
 
             TicketDetailViewModel model;
             if (dbTicket != null)
