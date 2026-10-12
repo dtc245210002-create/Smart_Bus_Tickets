@@ -114,11 +114,15 @@ namespace WebApplication1.Controllers
                 effectiveEstMinutes = cEst;
             }
 
+<<<<<<< Updated upstream
             decimal? effectiveDistance = distance;
             if (!effectiveDistance.HasValue && decimal.TryParse(Request.Cookies["sbg_last_distance"], out var cDist))
             {
                 effectiveDistance = cDist;
             }
+=======
+               
+>>>>>>> Stashed changes
 
             var fromCode = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(effectiveFrom).FirstOrDefault() ?? "TN";
             var toCode = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(effectiveTo).FirstOrDefault() ?? "CB";
@@ -170,6 +174,7 @@ namespace WebApplication1.Controllers
                 catch { }
             }
 
+<<<<<<< Updated upstream
             // Xác định ngày khởi hành thực tế
             DateTime parsedTripDate = DateTime.Today;
             if (!string.IsNullOrWhiteSpace(effectiveDate))
@@ -199,6 +204,9 @@ namespace WebApplication1.Controllers
                         .FirstOrDefaultAsync(t => t.TripDate == targetTripDateOnly &&
                                                   ((t.Route.StartPoint.Contains(effectiveFrom) || effectiveFrom.Contains(t.Route.StartPoint)) &&
                                                    (t.Route.EndPoint.Contains(effectiveTo) || effectiveTo.Contains(t.Route.EndPoint))));
+=======
+                
+>>>>>>> Stashed changes
 
                     // 2. Nếu chưa có chuyến cho ngày này, tự động tạo chuyến mới chuẩn xác và lưu vào DB
                     if (dbTrip == null)
@@ -211,7 +219,11 @@ namespace WebApplication1.Controllers
                         var matchBus = await _context.Buses.Include(b => b.BusType).FirstOrDefaultAsync(b => b.Status == "Active" || b.Status == "ACTIVE")
                             ?? await _context.Buses.Include(b => b.BusType).FirstOrDefaultAsync();
 
+<<<<<<< Updated upstream
                         var sampleDriver = await _context.Drivers.Include(d => d.User).FirstOrDefaultAsync();
+=======
+                
+>>>>>>> Stashed changes
 
                         if (matchRoute != null && matchBus != null)
                         {
