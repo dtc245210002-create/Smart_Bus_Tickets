@@ -131,8 +131,12 @@ namespace WebApplication1.Services.TicketValidation
                 };
             }
 
-            // Truy vấn thông tin vé chi tiết từ cơ sở dữ liệu
-            var ticket = await _context.Tickets
+            var cleanCode = ticketCode.Trim().ToUpper();
+
+            // Truy vấn danh sách vé phù hợp từ cơ sở dữ liệu:
+            // Khớp chính xác TicketCode, hoặc TicketCode bắt đầu bằng tiền tố cleanCode + "-" (khi đặt nhiều ghế như SBG-158727-VIP-T1-03)
+            // hoặc khớp BookingCode hoặc TicketId
+            var matchingTickets = await _context.Tickets
                 .Include(t => t.Booking)
                     .ThenInclude(b => b.User)
                 .Include(t => t.Booking)
@@ -148,9 +152,15 @@ namespace WebApplication1.Services.TicketValidation
                             .ThenInclude(d => d.User)
                 .Include(t => t.BoardingStop)
                 .Include(t => t.DropOffStop)
-                .FirstOrDefaultAsync(t => t.TicketCode == ticketCode || t.TicketId.ToString() == ticketCode);
+                .Where(t => t.TicketCode == cleanCode 
+                         || t.TicketCode.StartsWith(cleanCode + "-")
+                         || t.TicketCode.StartsWith(cleanCode + "_")
+                         || (cleanCode.Length >= 6 && t.TicketCode.Contains(cleanCode))
+                         || (t.Booking != null && (t.Booking.BookingCode == cleanCode || t.Booking.BookingCode.Contains(cleanCode)))
+                         || t.TicketId.ToString() == cleanCode)
+                .ToListAsync();
 
-            if (ticket == null)
+            if (!matchingTickets.Any())
             {
                 _logger.LogWarning("Soát vé thất bại: Không tìm thấy vé [{TicketCode}] trong hệ thống", ticketCode);
                 return new ValidateQrResponse
@@ -161,13 +171,19 @@ namespace WebApplication1.Services.TicketValidation
                 };
             }
 
+            var ticket = matchingTickets.First();
             var trip = ticket.Booking?.Trip;
             var route = trip?.Route;
             var bus = trip?.Bus;
             var driver = trip?.Driver;
             var passenger = ticket.Booking?.User;
 
+            var allSeatsList = matchingTickets.Select(t => t.SeatNumber).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
+            var allSeats = allSeatsList.Any() ? string.Join(", ", allSeatsList) : (ticket.SeatNumber ?? "N/A");
+
             var ticketData = MapToValidationData(ticket);
+            ticketData.SeatNumber = allSeats;
+            ticketData.TicketCode = cleanCode;
 
             // Kiểm tra ràng buộc đối soát chuyến xe hiện tại: Mua xe nào chuyến nào thì chỉ đúng xe đó chuyến đó mới nhận
             if (request.CurrentTripId.HasValue && trip != null && trip.TripId != request.CurrentTripId.Value)
@@ -186,45 +202,53 @@ namespace WebApplication1.Services.TicketValidation
                 var boughtTime = $"{trip.DepartureTime:hh\\:mm} ngày {trip.TripDate:dd/MM/yyyy}";
 
                 _logger.LogWarning("Soát vé sai chuyến: Vé [{TicketCode}] mua cho Xe {BoughtPlate} ({BoughtRoute}), nhưng đang soát trên Xe {CurPlate} ({CurRoute})",
-                    ticket.TicketCode, boughtPlate, boughtRoute, curPlate, curRoute);
+                    cleanCode, boughtPlate, boughtRoute, curPlate, curRoute);
 
                 return new ValidateQrResponse
                 {
                     Success = false,
                     Code = TicketValidationCodes.TripMismatch,
-                    Message = $"MÃ VÉ KHÔNG HỢP LỆ CHO CHUYẾN XE NÀY!\n• Vé [{ticket.TicketCode}] được mua cho Xe [{boughtPlate}] - Tuyến [{boughtRoute}] (Khởi hành {boughtTime}).\n• Chuyến xe đang soát: Xe [{curPlate}] - Tuyến [{curRoute}] (Khởi hành {curTime}).\n➡ Hành khách mua xe nào chuyến nào thì chỉ đúng xe đó chuyến đó mới nhận vé!",
+                    Message = $"MÃ VÉ KHÔNG HỢP LỆ CHO CHUYẾN XE NÀY!\n• Vé [{cleanCode}] được mua cho Xe [{boughtPlate}] - Tuyến [{boughtRoute}] (Khởi hành {boughtTime}).\n• Chuyến xe đang soát: Xe [{curPlate}] - Tuyến [{curRoute}] (Khởi hành {curTime}).\n➡ Hành khách mua xe nào chuyến nào thì chỉ đúng xe đó chuyến đó mới nhận vé!",
                     Data = ticketData
                 };
             }
 
             // Kiểm tra trạng thái hiện tại của vé
-            var currentStatus = (ticket.Status ?? "").Trim().ToUpperInvariant();
-
             // 1. Vé đã sử dụng trước đó (Used / Checked-in)
-            if (currentStatus == "USED" || currentStatus == "CHECKED_IN" || currentStatus == "CHECKEDIN")
+            bool allUsed = matchingTickets.All(t => 
+                string.Equals(t.Status, "USED", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(t.Status, "CHECKED_IN", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(t.Status, "CHECKEDIN", StringComparison.OrdinalIgnoreCase));
+
+            if (allUsed)
             {
                 _logger.LogWarning("Soát vé trùng lặp: Vé [{TicketCode}] của khách {Customer} đã được quét trước đó",
-                    ticket.TicketCode, passenger?.FullName);
+                    cleanCode, passenger?.FullName);
 
                 return new ValidateQrResponse
                 {
                     Success = false,
                     Code = TicketValidationCodes.AlreadyUsed,
-                    Message = $"CẢNH BÁO: Vé [{ticket.TicketCode}] này đã được quét lên xe trước đó! Vui lòng kiểm tra lại với hành khách.",
+                    Message = $"CẢNH BÁO: Vé [{cleanCode}] (Ghế: {allSeats}) này đã được quét lên xe trước đó! Vui lòng kiểm tra lại với hành khách.",
                     Data = ticketData
                 };
             }
 
             // 2. Vé đã bị hủy hoặc hoàn tiền
-            if (currentStatus == "CANCELLED" || currentStatus == "CANCELED" || currentStatus == "REFUNDED")
+            bool allCancelled = matchingTickets.All(t => 
+                string.Equals(t.Status, "CANCELLED", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(t.Status, "CANCELED", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(t.Status, "REFUNDED", StringComparison.OrdinalIgnoreCase));
+
+            if (allCancelled)
             {
-                _logger.LogWarning("Soát vé bị hủy: Vé [{TicketCode}] có trạng thái {Status}", ticket.TicketCode, currentStatus);
+                _logger.LogWarning("Soát vé bị hủy: Vé [{TicketCode}]", cleanCode);
 
                 return new ValidateQrResponse
                 {
                     Success = false,
                     Code = TicketValidationCodes.TicketCancelled,
-                    Message = $"Vé [{ticket.TicketCode}] đã bị hủy hoặc hoàn tiền (Trạng thái: {ticket.Status}). Không được phép lên xe!",
+                    Message = $"Vé [{cleanCode}] (Ghế: {allSeats}) đã bị hủy hoặc hoàn tiền. Không được phép lên xe!",
                     Data = ticketData
                 };
             }
@@ -235,14 +259,19 @@ namespace WebApplication1.Services.TicketValidation
                 "ACTIVE", "CONFIRMED", "ISSUED", "PAID"
             };
 
-            if (validStatuses.Contains(currentStatus))
+            var validTickets = matchingTickets.Where(t => validStatuses.Contains((t.Status ?? "").Trim())).ToList();
+
+            if (validTickets.Any())
             {
-                // Cập nhật trạng thái vé thành ĐÃ LÊN XE (USED)
-                ticket.Status = "USED";
+                // Cập nhật tất cả các vé hợp lệ trong booking thành ĐÃ LÊN XE (USED)
+                foreach (var vt in validTickets)
+                {
+                    vt.Status = "USED";
+                }
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Soát vé thành công: Vé [{TicketCode}] - Ghế {Seat} - Khách: {Customer} (StaffId: {StaffId})",
-                    ticket.TicketCode, ticket.SeatNumber, passenger?.FullName, staffUserId);
+                    cleanCode, allSeats, passenger?.FullName, staffUserId);
 
                 ticketData.Status = "USED";
                 ticketData.CheckInTime = DateTime.Now;
@@ -251,18 +280,18 @@ namespace WebApplication1.Services.TicketValidation
                 {
                     Success = true,
                     Code = TicketValidationCodes.Success,
-                    Message = $"Xác thực thành công! Mời hành khách {passenger?.FullName ?? ""} (Ghế: {ticket.SeatNumber ?? "N/A"}) lên xe.",
+                    Message = $"Xác thực thành công! Mời hành khách {passenger?.FullName ?? ""} (Ghế: {allSeats}) lên xe.",
                     Data = ticketData
                 };
             }
 
             // 4. Các trạng thái bất thường khác (ví dụ: PENDING_PAYMENT, EXPIRED,...)
-            _logger.LogWarning("Soát vé không hợp lệ: Vé [{TicketCode}] có trạng thái không hợp lệ: {Status}", ticket.TicketCode, currentStatus);
+            _logger.LogWarning("Soát vé không hợp lệ: Vé [{TicketCode}]", cleanCode);
             return new ValidateQrResponse
             {
                 Success = false,
                 Code = TicketValidationCodes.InvalidStatus,
-                Message = $"Vé [{ticket.TicketCode}] chưa hợp lệ để lên xe (Trạng thái hiện tại: {ticket.Status ?? "Chưa rõ"}).",
+                Message = $"Vé [{cleanCode}] chưa hợp lệ để lên xe (Trạng thái hiện tại: {ticket.Status ?? "Chưa rõ"}).",
                 Data = ticketData
             };
         }
