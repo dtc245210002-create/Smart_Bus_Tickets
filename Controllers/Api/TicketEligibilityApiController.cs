@@ -65,10 +65,11 @@ namespace WebApplication1.Controllers.Api
                     .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
                     .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(b => b.BusType)
                     .Include(t => t.BoardingStop)
-                    .Include(t => t.DropOffStop)
                     .FirstOrDefaultAsync(t => 
                         (parsedTicketId > 0 && t.TicketId == parsedTicketId) ||
-                        t.TicketCode.ToLower() == cleanId.ToLower());
+                        t.TicketCode.ToLower() == cleanId.ToLower() ||
+                        t.TicketCode.ToLower().StartsWith(cleanId.ToLower() + "-") ||
+                        (t.Booking != null && t.Booking.BookingCode.ToLower() == cleanId.ToLower()));
             }
             catch (Exception ex)
             {

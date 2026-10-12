@@ -139,9 +139,10 @@ namespace WebApplication1.Controllers
                         .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
                         .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
                         .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
-                        .Include(t => t.BoardingStop)
-                        .Include(t => t.DropOffStop)
-                        .FirstOrDefaultAsync(t => t.TicketCode == effectiveId || t.TicketId.ToString() == effectiveId);
+                        .FirstOrDefaultAsync(t => t.TicketCode == effectiveId 
+                                               || t.TicketCode.StartsWith(effectiveId + "-") 
+                                               || (t.Booking != null && t.Booking.BookingCode == effectiveId) 
+                                               || t.TicketId.ToString() == effectiveId);
                 }
                 catch { }
             }
@@ -335,8 +336,24 @@ namespace WebApplication1.Controllers
             if (existingTicket != null)
             {
                 cleanTicketCode = existingTicket.TicketCode;
+                if (!string.IsNullOrEmpty(effectiveId) && existingTicket.TicketCode.StartsWith(effectiveId + "-"))
+                {
+                    cleanTicketCode = effectiveId;
+                }
                 cleanBookingCode = existingTicket.Booking?.BookingCode ?? $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
                 finalTicketStatus = !string.IsNullOrWhiteSpace(existingTicket.Status) ? existingTicket.Status.ToUpper() : "ACTIVE";
+
+                if (existingTicket.BookingId > 0)
+                {
+                    var allSeats = await _context.Tickets
+                        .Where(t => t.BookingId == existingTicket.BookingId)
+                        .Select(t => t.SeatNumber)
+                        .ToListAsync();
+                    if (allSeats.Any())
+                    {
+                        effectiveSeats = string.Join(", ", allSeats);
+                    }
+                }
             }
             else
             {
@@ -400,21 +417,24 @@ namespace WebApplication1.Controllers
                         _context.Bookings.Add(newBooking);
                         await _context.SaveChangesAsync();
 
-                        var seatStr = effectiveSeats ?? "A01";
-                        if (seatStr.Length > 10) seatStr = seatStr.Substring(0, 10);
+                        var seatList = (effectiveSeats ?? "A01").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        decimal pricePerSeat = seatList.Length > 0 ? Math.Round(effectiveTotal / seatList.Length, 0) : effectiveTotal;
 
-                        var newTicket = new Ticket
+                        foreach (var singleSeat in seatList)
                         {
-                            BookingId = newBooking.BookingId,
-                            TicketCode = cleanTicketCode,
-                            SeatNumber = seatStr,
-                            Price = effectiveTotal,
-                            Status = finalTicketStatus
-                        };
-                        _context.Tickets.Add(newTicket);
+                            var newTicket = new Ticket
+                            {
+                                BookingId = newBooking.BookingId,
+                                TicketCode = seatList.Length > 1 ? $"{cleanTicketCode}-{singleSeat}" : cleanTicketCode,
+                                SeatNumber = singleSeat,
+                                Price = pricePerSeat,
+                                Status = finalTicketStatus
+                            };
+                            _context.Tickets.Add(newTicket);
+                        }
                         await _context.SaveChangesAsync();
 
-                        _logger.LogInformation("Đã lưu vé ngẫu nhiên vào Database thành công: Mã vé [{TicketCode}] - Ghế [{Seat}] - Booking [{BookingCode}]", cleanTicketCode, seatStr, cleanBookingCode);
+                        _logger.LogInformation("Đã lưu vé vào Database thành công: Mã vé [{TicketCode}] - Ghế [{Seat}] - Booking [{BookingCode}]", cleanTicketCode, effectiveSeats, cleanBookingCode);
                     }
                 }
                 catch (Exception ex)
@@ -832,6 +852,7 @@ namespace WebApplication1.Controllers
                 var ticket = await _context.Tickets
                     .Include(t => t.Booking).ThenInclude(b => b.Payments)
                     .FirstOrDefaultAsync(t => t.TicketCode.ToLower() == cleanCode ||
+                                              t.TicketCode.ToLower().StartsWith(cleanCode + "-") ||
                                               (t.Booking != null && t.Booking.BookingCode.ToLower() == cleanCode));
 
                 if (ticket != null)
@@ -1107,7 +1128,10 @@ namespace WebApplication1.Controllers
                     .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
                     .Include(t => t.BoardingStop)
                     .Include(t => t.DropOffStop)
-                    .FirstOrDefaultAsync(t => t.TicketCode == ticketCodeToSearch || t.TicketId.ToString() == ticketCodeToSearch);
+                    .FirstOrDefaultAsync(t => t.TicketCode == ticketCodeToSearch 
+                                           || t.TicketCode.StartsWith(ticketCodeToSearch + "-") 
+                                           || (t.Booking != null && t.Booking.BookingCode == ticketCodeToSearch) 
+                                           || t.TicketId.ToString() == ticketCodeToSearch);
             }
             catch (Exception ex)
             {

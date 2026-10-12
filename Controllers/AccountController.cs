@@ -135,6 +135,15 @@ namespace WebApplication1.Controllers
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
 
+                // Khởi tạo phiên làm việc mới độc lập cho tài khoản vừa đăng nhập
+                var newSessionId = "sess_" + Guid.NewGuid().ToString("N");
+                Response.Cookies.Append("sbg_session_id", newSessionId, new CookieOptions
+                {
+                    Expires = DateTimeOffset.Now.AddDays(7),
+                    Path = "/",
+                    SameSite = SameSiteMode.Lax
+                });
+
                 TempData["SuccessMessage"] = $"Đăng nhập thành công! Chào mừng {user.FullName} quay lại SmartBus Go.";
 
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -480,6 +489,14 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            // Dọn dẹp sạch sẽ session và các cookie giữ chỗ tạm thời khi đăng xuất
+            Response.Cookies.Delete("sbg_session_id");
+            Response.Cookies.Delete("sbg_last_seats");
+            Response.Cookies.Delete("sbg_last_tripid");
+            Response.Cookies.Delete("sbg_last_total");
+            Response.Cookies.Delete("sbg_last_ticket_code");
+
             TempData["InfoMessage"] = "Bạn đã đăng xuất an toàn khỏi hệ thống SmartBus Go.";
             return RedirectToAction("Index", "Home");
         }
