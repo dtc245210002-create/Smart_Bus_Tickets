@@ -17,18 +17,21 @@ namespace WebApplication1.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ISeatHoldService _seatHoldService;
         private readonly IBusLayoutService _busLayoutService;
+        private readonly WebApplication1.Services.Email.IEmailService? _emailService;
         private readonly ILogger<TicketController> _logger;
 
         public TicketController(
             ApplicationDbContext context,
             ISeatHoldService seatHoldService,
             IBusLayoutService busLayoutService,
-            ILogger<TicketController> logger)
+            ILogger<TicketController> logger,
+            WebApplication1.Services.Email.IEmailService? emailService = null)
         {
             _context = context;
             _seatHoldService = seatHoldService;
             _busLayoutService = busLayoutService;
             _logger = logger;
+            _emailService = emailService;
         }
 
         // =========================================================================
@@ -598,6 +601,14 @@ namespace WebApplication1.Controllers
                 }
             }
 
+            var finalQrAmount = (decimal)(ViewBag.TotalAmount ?? effTotal);
+            var finalQrBookingCode = (string)(ViewBag.BookingCode ?? $"BK-{fromCode}{toCode}-{DateTime.Now:MMddHHmm}");
+            ViewBag.BankName = "MB Bank (Ngân hàng Quân Đội)";
+            ViewBag.AccountNumber = "0988777999";
+            ViewBag.AccountName = "CONG TY SMARTBUS GO VIET NAM";
+            ViewBag.TransferContent = finalQrBookingCode.Replace("-", "");
+            ViewBag.VietQrUrl = $"https://img.vietqr.io/image/MB-0988777999-compact2.png?amount={(long)finalQrAmount}&addInfo={Uri.EscapeDataString(finalQrBookingCode)}&accountName=SMARTBUS%20GO";
+
             return View();
         }
 
@@ -629,6 +640,11 @@ namespace WebApplication1.Controllers
                 // Tìm vé và đơn đặt vé trong Database
                 var ticket = await _context.Tickets
                     .Include(t => t.Booking)
+                        .ThenInclude(b => b.User)
+                    .Include(t => t.Booking)
+                        .ThenInclude(b => b.Trip)
+                            .ThenInclude(tr => tr.Route)
+                    .Include(t => t.Booking)
                         .ThenInclude(b => b.Tickets)
                     .Include(t => t.Booking)
                         .ThenInclude(b => b.Payments)
@@ -647,30 +663,67 @@ namespace WebApplication1.Controllers
                             t.Status = "CONFIRMED";
                         }
 
-                        // Ghi nhận bản ghi thanh toán thật vào bảng Payment
-                        var payment = new Payment
+                        // Kiểm tra Idempotency: Tránh ghi nhận bản ghi trùng lặp
+                        var existingPaid = ticket.Booking.Payments.FirstOrDefault(p => p.Status == "Paid");
+                        if (existingPaid == null)
                         {
-                            BookingId = ticket.Booking.BookingId,
-                            Amount = amount ?? ticket.Booking.TotalAmount,
-                            PaymentMethod = effectiveMethod,
-                            Status = "Paid",
-                            PaymentTime = DateTime.Now,
-                            TransactionCode = effectiveTxn
-                        };
-                        _context.Payments.Add(payment);
+                            var payment = new Payment
+                            {
+                                BookingId = ticket.Booking.BookingId,
+                                Amount = amount ?? ticket.Booking.TotalAmount,
+                                PaymentMethod = effectiveMethod,
+                                Status = "Paid",
+                                PaymentTime = DateTime.Now,
+                                TransactionCode = effectiveTxn
+                            };
+                            _context.Payments.Add(payment);
+                        }
+                        else
+                        {
+                            effectiveTxn = existingPaid.TransactionCode ?? effectiveTxn;
+                            effectiveMethod = existingPaid.PaymentMethod ?? effectiveMethod;
+                        }
 
-                        // Giải phóng giữ chỗ ghế tạm thời
-                        if (ticket.Booking.TripId > 0 && !string.IsNullOrEmpty(ticket.SeatNumber))
+                        // Giải phóng giữ chỗ ghế bắt buộc trong cache In-Memory
+                        if (ticket.Booking.TripId > 0)
                         {
-                            await _seatHoldService.ReleaseSeatsAsync(
-                                ticket.Booking.TripId,
-                                new List<string> { ticket.SeatNumber },
-                                "payment_completed",
-                                null);
+                            var allSeatsToRelease = ticket.Booking.Tickets
+                                .Where(t => !string.IsNullOrEmpty(t.SeatNumber))
+                                .Select(t => t.SeatNumber!)
+                                .ToList();
+                            if (allSeatsToRelease.Any())
+                            {
+                                await _seatHoldService.ForceReleaseSeatsAsync(ticket.Booking.TripId, allSeatsToRelease);
+                            }
                         }
                     }
 
                     await _context.SaveChangesAsync();
+
+                    // Kích hoạt gửi email xác nhận nền (Background task)
+                    var customerEmail = ticket.Booking?.User?.Email;
+                    var customerName = ticket.Booking?.User?.FullName ?? "Quý khách";
+                    var routeName = ticket.Booking?.Trip?.Route?.RouteName ?? $"{searchFrom} ➔ Đích đến";
+                    var depTime = ticket.Booking?.Trip?.DepartureTime.ToString(@"hh\:mm") ?? "08:00";
+                    var tripDate = ticket.Booking?.Trip?.TripDate.ToString("dd/MM/yyyy") ?? DateTime.Today.ToString("dd/MM/yyyy");
+                    var seatText = ticket.Booking?.Tickets != null && ticket.Booking.Tickets.Any()
+                        ? string.Join(", ", ticket.Booking.Tickets.Select(t => t.SeatNumber).Where(s => !string.IsNullOrEmpty(s)))
+                        : (ticket.SeatNumber ?? "A01");
+
+                    if (!string.IsNullOrWhiteSpace(customerEmail) && _emailService != null)
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _emailService.SendTicketConfirmationAsync(
+                                    customerEmail, customerName, ticket.TicketCode, ticket.Booking?.BookingCode ?? effectiveBookingCode,
+                                    routeName, seatText, effectiveAmount, depTime, tripDate);
+                            }
+                            catch { }
+                        });
+                    }
+
                     TempData["SuccessMessage"] = $"Xác nhận thanh toán thành công #{effectiveTxn} với số tiền {effectiveAmount:N0} đ qua {effectiveMethod}! Vé điện tử đã được kích hoạt.";
                     return RedirectToAction("Detail", new { id = ticket.TicketCode, status = "CONFIRMED" });
                 }
@@ -882,19 +935,19 @@ namespace WebApplication1.Controllers
                 _logger.LogWarning(ex, "Lỗi kiểm tra trạng thái thanh toán: {Message}", ex.Message);
             }
 
-            // Demo mock fallback
+            // Khi đơn hàng đang trong trạng thái chờ người dùng chuyển khoản quét mã VietQR:
             return Ok(new
             {
                 success = true,
-                isPaid = true,
-                status = "SUCCESS",
+                isPaid = false,
+                status = "PENDING",
                 ticketCode = searchCode.ToUpperInvariant(),
-                bookingCode = "BK-84920",
-                amount = 530000m,
+                bookingCode = "BK-PENDING",
+                amount = 0m,
                 paymentMethod = "VietQR",
-                transactionNo = $"TXN{DateTime.Now:yyyyMMddHHmmss}",
-                paymentTime = DateTime.Now,
-                message = "Giao dịch thanh toán đã được đối soát thành công."
+                transactionNo = (string?)null,
+                paymentTime = (DateTime?)null,
+                message = "Đang chờ đối soát từ cổng thanh toán hoặc ngân hàng..."
             });
         }
 

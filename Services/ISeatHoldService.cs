@@ -40,6 +40,11 @@ namespace WebApplication1.Services
         Task<bool> ReleaseSeatsAsync(int tripId, IEnumerable<string> seatNumbers, string sessionId, int? userId);
 
         /// <summary>
+        /// Giải phóng bắt buộc các ghế khi vé đã thanh toán thành công hoặc bị quản trị viên hủy
+        /// </summary>
+        Task<bool> ForceReleaseSeatsAsync(int tripId, IEnumerable<string> seatNumbers);
+
+        /// <summary>
         /// Lấy toàn bộ danh sách ghế đang được giữ (chưa hết hạn) của một chuyến xe
         /// </summary>
         Task<IReadOnlyDictionary<string, SeatHoldItem>> GetActiveHoldsForTripAsync(int tripId);

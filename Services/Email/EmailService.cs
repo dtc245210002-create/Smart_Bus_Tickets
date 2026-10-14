@@ -218,5 +218,102 @@ namespace WebApplication1.Services.Email
 
             return await SendEmailAsync(toEmail, subject, htmlBody);
         }
+
+        public async Task<bool> SendTicketConfirmationAsync(
+            string toEmail,
+            string recipientName,
+            string ticketCode,
+            string bookingCode,
+            string routeName,
+            string seatNumber,
+            decimal amount,
+            string departureTime,
+            string tripDate)
+        {
+            var subject = $"[SmartBus Go] Xác nhận vé xe điện tử thành công - Mã vé #{ticketCode}";
+            var htmlBody = $@"
+<!DOCTYPE html>
+<html lang=""vi"">
+<head>
+    <meta charset=""UTF-8"">
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; }}
+        .email-container {{ max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }}
+        .header {{ background: linear-gradient(135deg, #0A4D46, #10B981); color: #ffffff; padding: 30px 24px; text-align: center; }}
+        .header h1 {{ margin: 0; font-size: 24px; font-weight: 700; }}
+        .header p {{ margin: 8px 0 0; font-size: 14px; opacity: 0.9; }}
+        .content {{ padding: 28px 24px; color: #1e293b; }}
+        .greeting {{ font-size: 16px; font-weight: 600; margin-bottom: 12px; }}
+        .ticket-card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 20px 0; }}
+        .ticket-row {{ display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #cbd5e1; font-size: 14px; }}
+        .ticket-row:last-child {{ border-bottom: none; }}
+        .ticket-label {{ color: #64748b; }}
+        .ticket-value {{ font-weight: 600; color: #0f172a; text-align: right; }}
+        .total-amount {{ font-size: 18px; color: #008378; font-weight: 700; }}
+        .qr-note {{ text-align: center; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 14px; margin: 20px 0; color: #065f46; font-size: 14px; }}
+        .footer {{ background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }}
+    </style>
+</head>
+<body>
+    <div class=""email-container"">
+        <div class=""header"">
+            <h1>SmartBus Go</h1>
+            <p>Vé Điện Tử / Boarding Pass Điện Tử</p>
+        </div>
+        <div class=""content"">
+            <div class=""greeting"">Xin chào {recipientName},</div>
+            <p style=""font-size: 14px; color: #475569; line-height: 1.6;"">
+                Chúc mừng bạn đã thanh toán thành công đơn đặt vé xe trên hệ thống <strong>SmartBus Go</strong>. Dưới đây là thông tin chi tiết vé điện tử của bạn:
+            </p>
+
+            <div class=""ticket-card"">
+                <div class=""ticket-row"">
+                    <span class=""ticket-label"">Mã vé điện tử:</span>
+                    <span class=""ticket-value"">#{ticketCode}</span>
+                </div>
+                <div class=""ticket-row"">
+                    <span class=""ticket-label"">Mã đơn đặt (Booking):</span>
+                    <span class=""ticket-value"">{bookingCode}</span>
+                </div>
+                <div class=""ticket-row"">
+                    <span class=""ticket-label"">Tuyến xe:</span>
+                    <span class=""ticket-value"">{routeName}</span>
+                </div>
+                <div class=""ticket-row"">
+                    <span class=""ticket-label"">Ngày khởi hành:</span>
+                    <span class=""ticket-value"">{tripDate}</span>
+                </div>
+                <div class=""ticket-row"">
+                    <span class=""ticket-label"">Giờ xuất bến:</span>
+                    <span class=""ticket-value"">{departureTime}</span>
+                </div>
+                <div class=""ticket-row"">
+                    <span class=""ticket-label"">Vị trí ghế:</span>
+                    <span class=""ticket-value"">{seatNumber}</span>
+                </div>
+                <div class=""ticket-row"">
+                    <span class=""ticket-label"">Tổng tiền đã thanh toán:</span>
+                    <span class=""ticket-value total-amount"">{amount:N0} VNĐ</span>
+                </div>
+            </div>
+
+            <div class=""qr-note"">
+                <strong>Lên xe dễ dàng:</strong> Quý khách chỉ cần mở vé điện tử trên điện thoại hoặc xuất trình mã vé <strong>#{ticketCode}</strong> cho tài xế/phụ xe khi lên xe buýt.
+            </div>
+
+            <p style=""font-size: 13px; color: #94a3b8; margin-top: 16px;"">
+                Nếu cần hỗ trợ dời chuyến hoặc thay đổi thông tin, vui lòng liên hệ tổng đài của chúng tôi trước 24 giờ khởi hành.
+            </p>
+        </div>
+        <div class=""footer"">
+            <p style=""margin: 0 0 6px;"">Tổng đài hỗ trợ 24/7: <strong>1900 6868</strong> | Email: <strong>hotro@smartbusgo.vn</strong></p>
+            <p style=""margin: 0;"">&copy; 2026 SmartBus Go. Bảo lưu mọi quyền.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            return await SendEmailAsync(toEmail, subject, htmlBody);
+        }
     }
 }

@@ -18,11 +18,16 @@ namespace WebApplication1.Controllers.Api
     {
         private readonly ApplicationDbContext _context;
         private readonly ISeatHoldService _seatHoldService;
+        private readonly WebApplication1.Services.Email.IEmailService? _emailService;
 
-        public BookingsApiController(ApplicationDbContext context, ISeatHoldService seatHoldService)
+        public BookingsApiController(
+            ApplicationDbContext context, 
+            ISeatHoldService seatHoldService,
+            WebApplication1.Services.Email.IEmailService? emailService = null)
         {
             _context = context;
             _seatHoldService = seatHoldService;
+            _emailService = emailService;
         }
 
         /// <summary>
@@ -471,10 +476,14 @@ namespace WebApplication1.Controllers.Api
                 // 1. Tìm đơn đặt vé và vé trong Database
                 var ticket = await _context.Tickets
                     .Include(t => t.Booking)
+                        .ThenInclude(b => b.User)
+                    .Include(t => t.Booking)
                         .ThenInclude(b => b.Trip)
                             .ThenInclude(tr => tr.Route)
                     .Include(t => t.Booking)
                         .ThenInclude(b => b.Tickets)
+                    .Include(t => t.Booking)
+                        .ThenInclude(b => b.Payments)
                     .FirstOrDefaultAsync(t => 
                         (!string.IsNullOrEmpty(request.TicketCode) && t.TicketCode == request.TicketCode) ||
                         (!string.IsNullOrEmpty(request.BookingCode) && t.Booking.BookingCode == request.BookingCode));
@@ -492,32 +501,67 @@ namespace WebApplication1.Controllers.Api
                             t.Status = "CONFIRMED";
                         }
 
-                        // Ghi nhận bản ghi giao dịch trong CSDL
-                        var payment = new Models.Entities.Payment
+                        // Kiểm tra Idempotency: Tránh ghi nhận bản ghi trùng lặp
+                        var existingPaidPayment = ticket.Booking.Payments.FirstOrDefault(p => p.Status == "Paid");
+                        if (existingPaidPayment == null)
                         {
-                            BookingId = ticket.Booking.BookingId,
-                            Amount = effectiveAmount,
-                            PaymentMethod = effectiveMethod,
-                            Status = "Paid",
-                            PaymentTime = DateTime.Now,
-                            TransactionCode = txnCode
-                        };
-                        _context.Payments.Add(payment);
+                            var payment = new Models.Entities.Payment
+                            {
+                                BookingId = ticket.Booking.BookingId,
+                                Amount = effectiveAmount,
+                                PaymentMethod = effectiveMethod,
+                                Status = "Paid",
+                                PaymentTime = DateTime.Now,
+                                TransactionCode = txnCode
+                            };
+                            _context.Payments.Add(payment);
+                        }
+                        else
+                        {
+                            txnCode = existingPaidPayment.TransactionCode ?? txnCode;
+                            effectiveMethod = existingPaidPayment.PaymentMethod ?? effectiveMethod;
+                        }
 
-                        // Giải phóng giữ chỗ ghế
-                        if (ticket.Booking.TripId > 0 && !string.IsNullOrEmpty(ticket.SeatNumber))
+                        // Giải phóng giữ chỗ ghế bắt buộc trong cache In-Memory
+                        if (ticket.Booking.TripId > 0)
                         {
-                            await _seatHoldService.ReleaseSeatsAsync(
-                                ticket.Booking.TripId, 
-                                new List<string> { ticket.SeatNumber }, 
-                                "payment_verified",
-                                null);
+                            var seatsToRelease = ticket.Booking.Tickets
+                                .Where(t => !string.IsNullOrEmpty(t.SeatNumber))
+                                .Select(t => t.SeatNumber!)
+                                .ToList();
+                            if (seatsToRelease.Any())
+                            {
+                                await _seatHoldService.ForceReleaseSeatsAsync(ticket.Booking.TripId, seatsToRelease);
+                            }
                         }
                     }
 
                     await _context.SaveChangesAsync();
 
                     var routeName = ticket.Booking?.Trip?.Route?.RouteName ?? "Hà Nội - Đà Nẵng";
+                    var depTime = ticket.Booking?.Trip?.DepartureTime.ToString(@"hh\:mm") ?? "08:00";
+                    var tripDate = ticket.Booking?.Trip?.TripDate.ToString("dd/MM/yyyy") ?? DateTime.Today.ToString("dd/MM/yyyy");
+                    var allSeats = ticket.Booking?.Tickets != null && ticket.Booking.Tickets.Any()
+                        ? string.Join(", ", ticket.Booking.Tickets.Select(t => t.SeatNumber).Where(s => !string.IsNullOrEmpty(s)))
+                        : (ticket.SeatNumber ?? "A01");
+
+                    // Gửi email xác nhận vé nền (Background non-blocking)
+                    var customerEmail = ticket.Booking?.User?.Email;
+                    var customerName = ticket.Booking?.User?.FullName ?? "Quý khách";
+                    if (!string.IsNullOrWhiteSpace(customerEmail) && _emailService != null)
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _emailService.SendTicketConfirmationAsync(
+                                    customerEmail, customerName, ticket.TicketCode, ticket.Booking?.BookingCode ?? "BK-0001",
+                                    routeName, allSeats, effectiveAmount, depTime, tripDate);
+                            }
+                            catch { }
+                        });
+                    }
+
                     var resp = new VerifyPaymentResponse
                     {
                         Success = true,
@@ -529,8 +573,8 @@ namespace WebApplication1.Controllers.Api
                         Status = "Paid",
                         PaymentTime = DateTime.Now,
                         RouteName = routeName,
-                        SeatNumber = ticket.SeatNumber ?? "VIP",
-                        QrPayload = $"SMARTBUS|TICKET:{ticket.TicketCode}|BOOKING:{ticket.Booking?.BookingCode}|SEAT:{ticket.SeatNumber}|HASH:paid"
+                        SeatNumber = allSeats,
+                        QrPayload = $"SMARTBUS|TICKET:{ticket.TicketCode}|BOOKING:{ticket.Booking?.BookingCode}|SEAT:{allSeats}|DATE:{tripDate}|STATUS:CONFIRMED"
                     };
 
                     return Ok(ApiResponse<VerifyPaymentResponse>.Ok(resp, "Giao dịch thanh toán đã được xác nhận và ghi nhận thành công vào hệ thống."));

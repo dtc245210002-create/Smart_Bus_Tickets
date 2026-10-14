@@ -148,6 +148,25 @@ namespace WebApplication1.Services
             return Task.FromResult(true);
         }
 
+        public Task<bool> ForceReleaseSeatsAsync(int tripId, IEnumerable<string> seatNumbers)
+        {
+            var cleanSeats = seatNumbers
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim().ToUpper())
+                .ToList();
+
+            lock (_lockObject)
+            {
+                foreach (var seat in cleanSeats)
+                {
+                    var key = GetKey(tripId, seat);
+                    _holds.TryRemove(key, out _);
+                }
+            }
+
+            return Task.FromResult(true);
+        }
+
         public Task<IReadOnlyDictionary<string, SeatHoldItem>> GetActiveHoldsForTripAsync(int tripId)
         {
             lock (_lockObject)

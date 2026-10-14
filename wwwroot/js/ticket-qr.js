@@ -26,31 +26,60 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const qrContainer = document.getElementById("ticketQrCanvas");
     const qrPayload = document.getElementById("qrPayloadData")?.value || "SMARTBUS_DEFAULT";
-    const qrImage = document.getElementById("ticketQrImage");
 
-    if (qrContainer && typeof QRCode !== 'undefined') {
-        try {
-            // Tạo phần tử tạm để thử vẽ QR bằng QRCodeJS
-            const tempDiv = document.createElement("div");
-            new QRCode(tempDiv, {
-                text: qrPayload,
-                width: 170,
-                height: 170,
-                colorDark: "#0A4D46",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.M
-            });
+    function renderFallbackQr() {
+        if (!qrContainer) return;
+        const encoded = encodeURIComponent(qrPayload);
+        qrContainer.innerHTML = `
+            <img id="ticketQrImage"
+                 src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encoded}&color=0A4D46" 
+                 alt="Mã QR Vé Xe" 
+                 class="img-fluid rounded" 
+                 style="width: 170px; height: 170px; object-fit: contain; display: block; margin: 0 auto;" 
+                 onerror="this.onerror=null; this.src='https://quickchart.io/qr?text=${encoded}&size=170';" />
+        `;
+    }
 
-            // Nếu vẽ thành công, thay thế nội dung của qrContainer
-            setTimeout(() => {
-                if (tempDiv.querySelector("canvas") || tempDiv.querySelector("img")) {
-                    qrContainer.innerHTML = "";
-                    qrContainer.appendChild(tempDiv.firstChild);
-                }
-            }, 50);
-        } catch (e) {
-            console.warn("QRCodeJS fallback to API image:", e);
-            // Giữ nguyên qrImage fallback
+    if (qrContainer) {
+        if (typeof QRCode !== 'undefined') {
+            try {
+                // Xóa nội dung chờ và sinh mã QR trực tiếp vào container
+                qrContainer.innerHTML = "";
+                new QRCode(qrContainer, {
+                    text: qrPayload,
+                    width: 170,
+                    height: 170,
+                    colorDark: "#0A4D46",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+                // QRCodeJS sinh ra cả 2 thẻ: <canvas> và <img>.
+                // Chỉ giữ lại DUY NHẤT 1 thẻ để tránh bị hiển thị 2 mã QR cạnh nhau!
+                setTimeout(() => {
+                    const canvas = qrContainer.querySelector("canvas");
+                    const img = qrContainer.querySelector("img");
+                    
+                    if (img && img.src && img.src.length > 50) {
+                        img.style.display = "block";
+                        img.style.margin = "0 auto";
+                        img.style.borderRadius = "8px";
+                        if (canvas) canvas.remove(); // Xóa thẻ canvas thừa, chỉ giữ duy nhất 1 thẻ ảnh QR
+                    } else if (canvas) {
+                        canvas.style.display = "block";
+                        canvas.style.margin = "0 auto";
+                        canvas.style.borderRadius = "8px";
+                        if (img) img.remove(); // Xóa thẻ ảnh thừa nếu canvas đang hiển thị
+                    } else {
+                        renderFallbackQr();
+                    }
+                }, 60);
+            } catch (e) {
+                console.warn("QRCodeJS gặp lỗi, chuyển sang fallback API:", e);
+                renderFallbackQr();
+            }
+        } else {
+            renderFallbackQr();
         }
     }
 
