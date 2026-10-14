@@ -1,64 +1,129 @@
 @model WebApplication1.Models.ViewModels.DriverLoginViewModel
 @{
-    ViewData["Title"] = "Cổng đăng nhập Bác tài";
+    ViewData["Title"] = "Cổng đăng nhập Bác tài - SmartBus Go Driver";
 }
 
-<div class="container">
-    <div class="sbg-auth-card" style="border-top: 5px solid var(--sbg-primary);">
+<div class="container py-4">
+    <div class="sbg-auth-card" style="max-width: 500px; border-top: 5px solid var(--sbg-primary);">
         <div class="text-center mb-4">
-            <div class="d-inline-flex p-3 rounded-circle mb-2" style="background-color: #f1f5f9;">
-                <i class="bi bi-person-badge-fill text-primary" style="font-size: 2.2rem; color: var(--sbg-primary) !important;"></i>
+            <div class="d-inline-flex p-3 rounded-circle mb-2" style="background-color: var(--sbg-primary-light);">
+                <i class="bi bi-person-badge-fill text-success" style="font-size: 2.5rem;"></i>
             </div>
-            <h2 class="sbg-auth-title" style="font-size: 1.5rem;">Cổng Đăng Nhập Bác Tài</h2>
-            <span class="badge bg-secondary mb-2">Hệ thống điều hành SmartBus Go Driver</span>
-            <p class="text-muted small">Khu vực dành riêng cho Đội ngũ Tài xế và Phụ xe nhận ca chạy & soát vé</p>
+            <h2 class="sbg-auth-title mb-1" style="font-size: 1.6rem;">Cổng Đăng Nhập Bác Tài</h2>
+            <div class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 mb-2">
+                <i class="bi bi-truck-front-fill me-1"></i> SmartBus Go Driver Portal
+            </div>
+            <p class="text-muted small">Khu vực dành riêng cho Đội ngũ Bác tài nhận ca chạy & soát vé hành khách lên xe</p>
         </div>
 
-        <div class="alert alert-warning py-2 px-3 small rounded-3 d-flex align-items-center gap-2 mb-4">
-            <i class="bi bi-shield-exclamation text-warning fs-5"></i>
-            <div>Tài khoản tài xế do quản trị viên bến xe cấp. Không chia sẻ mật khẩu cho người khác.</div>
-        </div>
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success small py-2 px-3 rounded-3 mb-3">
+                <i class="bi bi-check-circle-fill me-1"></i> @TempData["SuccessMessage"]
+            </div>
+        }
 
         <form asp-action="Login" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3 alert alert-danger p-2"></div>
 
             <div class="mb-3">
                 <label asp-for="DriverIdentifier" class="form-label fw-semibold text-dark small"></label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-card-text text-muted"></i></span>
-                    <input asp-for="DriverIdentifier" class="form-control border-start-0 ps-0" placeholder="vd: TX-001 hoặc 0988..." />
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-card-heading"></i></span>
+                    <input asp-for="DriverIdentifier" id="driverIdentifierInput" class="form-control border-start-0 ps-0" placeholder="vd: TX-001, B123456789 hoặc 0987654321" />
                 </div>
-                <span asp-validation-for="DriverIdentifier" class="text-danger small"></span>
+                <span asp-validation-for="DriverIdentifier" class="text-danger small d-block mt-1"></span>
             </div>
 
             <div class="mb-3">
                 <label asp-for="Password" class="form-label fw-semibold text-dark small"></label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
-                    <input asp-for="Password" type="password" class="form-control border-start-0 ps-0" placeholder="Mật khẩu được cấp" />
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-key"></i></span>
+                    <input asp-for="Password" type="password" id="driverPasswordInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="Nhập mật khẩu nội bộ" />
+                    <button class="btn btn-outline-light border border-start-0 text-muted sbg-toggle-pwd" type="button" onclick="togglePassword('driverPasswordInput', this)" title="Hiển thị mật khẩu" aria-label="Hiển thị mật khẩu">
+                        <i class="bi bi-eye"></i>
+                    </button>
                 </div>
-                <span asp-validation-for="Password" class="text-danger small"></span>
+                <span asp-validation-for="Password" class="text-danger small d-block mt-1"></span>
             </div>
 
-            <div class="mb-3 form-check">
-                <input asp-for="RememberMe" class="form-check-input" />
-                <label asp-for="RememberMe" class="form-check-label text-muted small"></label>
+            <div class="mb-4 form-check">
+                <input asp-for="RememberMe" class="form-check-input" id="driverRememberCheck" />
+                <label asp-for="RememberMe" class="form-check-label text-muted small" for="driverRememberCheck">
+                    Ghi nhớ ca làm việc trên thiết bị này
+                </label>
             </div>
 
-            <button type="submit" class="btn sbg-btn-primary w-100 py-2 mb-3">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Vào ca làm việc
+            <button type="submit" class="btn sbg-btn-primary w-100 py-2 mb-3 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-box-arrow-in-right"></i>
+                <span>Vào ca làm việc</span>
             </button>
         </form>
 
+        <!-- Hộp hỗ trợ đăng nhập mẫu nhanh cho Test / Demo -->
+        <div class="card bg-light border-0 rounded-3 p-3 mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fw-semibold text-dark small"><i class="bi bi-info-circle text-primary me-1"></i> Tài khoản mẫu Bác tài:</span>
+                <span class="badge bg-secondary small">Demo</span>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 py-1 small" onclick="fillDriver('TX-001', '123456')">
+                    <i class="bi bi-person-fill"></i> Bác tài An (TX-001)
+                </button>
+                <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 py-1 small" onclick="fillDriver('0988777999', '123456')">
+                    <i class="bi bi-person-fill"></i> Bác tài Trọng (SĐT)
+                </button>
+            </div>
+            <div class="text-muted mt-2" style="font-size: 0.75rem;">Mật khẩu mẫu chung: <code>123456</code></div>
+        </div>
+
         <div class="text-center mt-3 pt-3 border-top">
-            <span class="text-muted small">Bạn là Hành khách đặt vé?</span><br />
+            <span class="text-muted small">Bạn là Hành khách muốn đặt vé hoặc tra cứu chuyến?</span><br />
             <a asp-controller="Account" asp-action="Login" class="text-decoration-none fw-semibold small text-success">
-                &larr; Quay về trang đăng nhập Hành khách
+                &larr; Chuyển sang Cổng Đăng nhập Hành khách
             </a>
         </div>
     </div>
 </div>
 
+<style>
+    .input-group:focus-within {
+        box-shadow: 0 0 0 3px rgba(10, 77, 70, 0.15);
+        border-radius: 0.375rem;
+    }
+    .input-group:focus-within .input-group-text,
+    .input-group:focus-within .form-control,
+    .input-group:focus-within .sbg-toggle-pwd {
+        border-color: var(--sbg-primary) !important;
+    }
+    .sbg-toggle-pwd:hover {
+        background-color: #f8fafc !important;
+        color: var(--sbg-primary) !important;
+    }
+</style>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+                btn.setAttribute('title', 'Ẩn mật khẩu');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+                btn.setAttribute('title', 'Hiển thị mật khẩu');
+            }
+        }
+
+        function fillDriver(identifier, password) {
+            document.getElementById('driverIdentifierInput').value = identifier;
+            document.getElementById('driverPasswordInput').value = password;
+        }
+    </script>
 }

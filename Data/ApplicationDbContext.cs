@@ -139,6 +139,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.LicenseNo)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.Gender).HasMaxLength(10);
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
                 .IsUnicode(false);

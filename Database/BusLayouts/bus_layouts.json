@@ -1,0 +1,92 @@
+{
+  "Version": "1.0",
+  "LastUpdated": "2026-09-30",
+  "BusLayouts": [
+    {
+      "BusTypeCode": "SEAT_29",
+      "TypeName": "Xe ghế ngồi 29 chỗ",
+      "TotalFloors": 1,
+      "Capacity": 29,
+      "Description": "Ghế ngả cao cấp 29 chỗ, điều hòa mát lạnh, rèm che nắng, cổng sạc USB thoải mái.",
+      "IconClass": "bi-bus-front",
+      "Floors": [
+        {
+          "FloorNumber": 1,
+          "FloorName": "Sơ đồ xe 29 chỗ",
+          "TotalRows": 8,
+          "TotalCols": 4,
+          "AisleColumns": [3]
+        }
+      ]
+    },
+    {
+      "BusTypeCode": "SEAT_45",
+      "TypeName": "Xe ghế ngồi 45 chỗ",
+      "TotalFloors": 1,
+      "Capacity": 45,
+      "Description": "Xe khách chất lượng cao 45 chỗ Hyundai Universe, ghế nỉ êm ái, wifi tốc độ cao.",
+      "IconClass": "bi-bus-front",
+      "Floors": [
+        {
+          "FloorNumber": 1,
+          "FloorName": "Sơ đồ xe 45 chỗ",
+          "TotalRows": 11,
+          "TotalCols": 5,
+          "AisleColumns": [3]
+        }
+      ]
+    },
+    {
+      "BusTypeCode": "SLEEPER_34",
+      "TypeName": "Xe giường nằm 2 tầng 34 chỗ",
+      "TotalFloors": 2,
+      "Capacity": 34,
+      "Description": "Giường nằm cao cấp 2 tầng Green Express, sạc điện thoại, chăn gối thơm tho, màn rèm riêng tư.",
+      "IconClass": "bi-moon-stars",
+      "Floors": [
+        {
+          "FloorNumber": 1,
+          "FloorName": "Tầng dưới (Tầng 1)",
+          "Capacity": 17,
+          "TotalRows": 6,
+          "TotalCols": 5,
+          "AisleColumns": [2, 4]
+        },
+        {
+          "FloorNumber": 2,
+          "FloorName": "Tầng trên (Tầng 2)",
+          "Capacity": 17,
+          "TotalRows": 6,
+          "TotalCols": 5,
+          "AisleColumns": [2, 4]
+        }
+      ]
+    },
+    {
+      "BusTypeCode": "LIMOUSINE_22",
+      "TypeName": "Limousine VIP 22 Phòng",
+      "TotalFloors": 2,
+      "Capacity": 22,
+      "Description": "Khoang cung điện VIP riêng tư, massage đa điểm, màn hình Android, tai nghe chống ồn.",
+      "IconClass": "bi-gem",
+      "Floors": [
+        {
+          "FloorNumber": 1,
+          "FloorName": "Tầng 1 (11 Phòng)",
+          "Capacity": 11,
+          "TotalRows": 6,
+          "TotalCols": 3,
+          "AisleColumns": [2]
+        },
+        {
+          "FloorNumber": 2,
+          "FloorName": "Tầng 2 (11 Phòng)",
+          "Capacity": 11,
+          "TotalRows": 6,
+          "TotalCols": 3,
+          "AisleColumns": [2]
+        }
+      ]
+    }
+  ]
+}
