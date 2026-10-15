@@ -40,9 +40,17 @@ namespace WebApplication1.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
-            // Nếu đã đăng nhập rồi thì chuyển hướng về trang chủ
+            // Nếu đã đăng nhập rồi thì chuyển hướng theo phân quyền
             if (User.Identity?.IsAuthenticated == true)
             {
+                if (User.IsInRole("Quản trị viên") || User.IsInRole("Admin") || (User.FindFirst(ClaimTypes.Email)?.Value?.Contains("admin", StringComparison.OrdinalIgnoreCase) == true))
+                {
+                    return RedirectToAction("Dashboard", "Admin");
+                }
+                if (User.IsInRole("Tài xế"))
+                {
+                    return RedirectToAction("Index", "Driver");
+                }
                 return RedirectToAction("Index", "Home");
             }
 
@@ -103,6 +111,7 @@ namespace WebApplication1.Controllers
 
                 // Bổ sung role từ UserRole
                 bool hasDriverRole = false;
+                bool hasAdminRole = false;
                 foreach (var role in user.Roles)
                 {
                     claims.Add(new Claim(ClaimTypes.Role, role.RoleName));
@@ -110,10 +119,27 @@ namespace WebApplication1.Controllers
                     {
                         hasDriverRole = true;
                     }
+                    if (role.RoleName.Equals("Quản trị viên", StringComparison.OrdinalIgnoreCase) || role.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasAdminRole = true;
+                    }
+                }
+
+                // Nếu tài khoản là Admin (theo email chứa admin hoặc có role Quản trị viên/Admin)
+                if (user.Email.Contains("admin", StringComparison.OrdinalIgnoreCase) || hasAdminRole)
+                {
+                    if (!claims.Any(c => c.Type == ClaimTypes.Role && c.Value == "Quản trị viên"))
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, "Quản trị viên"));
+                    }
+                    if (!claims.Any(c => c.Type == ClaimTypes.Role && c.Value == "Admin"))
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+                    }
                 }
 
                 // Nếu tài khoản này có liên kết với bảng Driver -> tự động bổ sung Claim Role Tài xế
-                if (user.Driver != null || user.Email.Contains("driver", StringComparison.OrdinalIgnoreCase))
+                if ((user.Driver != null || user.Email.Contains("driver", StringComparison.OrdinalIgnoreCase)) && !user.Email.Contains("admin", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!hasDriverRole)
                     {
@@ -150,6 +176,26 @@ namespace WebApplication1.Controllers
                 {
                     return Redirect(returnUrl);
                 }
+
+                // ===== PHÂN QUYỀN CHUYỂN HƯỚNG SAU ĐĂNG NHẬP =====
+                // Kiểm tra Role của tài khoản để chuyển hướng đến trang phù hợp
+                var userRoles = user.Roles.Select(r => r.RoleName).ToList();
+                bool isUserAdmin = userRoles.Any(r => r.Equals("Quản trị viên", StringComparison.OrdinalIgnoreCase) || r.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                                   || user.Email.Contains("admin", StringComparison.OrdinalIgnoreCase);
+
+                if (isUserAdmin)
+                {
+                    // Tài khoản Admin → Chuyển đến trang Quản trị
+                    return RedirectToAction("Dashboard", "Admin");
+                }
+
+                if (userRoles.Any(r => r.Equals("Tài xế", StringComparison.OrdinalIgnoreCase)) || user.Driver != null)
+                {
+                    // Tài khoản Tài xế → Chuyển đến trang Tài xế
+                    return RedirectToAction("Index", "Driver");
+                }
+
+                // Tài khoản Khách hàng → Chuyển đến trang chủ
                 return RedirectToAction("Index", "Home");
             }
             catch (Exception ex)
@@ -157,15 +203,25 @@ namespace WebApplication1.Controllers
                 // Fallback nếu kết nối SQL gián đoạn
                 if (model.Password == "123456" && (username.Contains("@") || username.Length >= 9))
                 {
+                    bool isFallbackAdmin = username.Contains("admin", StringComparison.OrdinalIgnoreCase);
                     var fallbackClaims = new List<Claim>
                     {
-                        new Claim(ClaimTypes.NameIdentifier, "1"),
+                        new Claim(ClaimTypes.NameIdentifier, isFallbackAdmin ? "3" : "1"),
                         new Claim(ClaimTypes.Name, username.Split('@')[0]),
                         new Claim(ClaimTypes.Email, username.Contains("@") ? username : $"{username}@smartbus.vn"),
-                        new Claim(ClaimTypes.Role, "Khách hàng")
+                        new Claim(ClaimTypes.Role, isFallbackAdmin ? "Quản trị viên" : "Khách hàng")
                     };
+                    if (isFallbackAdmin)
+                    {
+                        fallbackClaims.Add(new Claim(ClaimTypes.Role, "Admin"));
+                    }
                     var identity = new ClaimsIdentity(fallbackClaims, CookieAuthenticationDefaults.AuthenticationScheme);
                     await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+
+                    if (isFallbackAdmin)
+                    {
+                        return RedirectToAction("Dashboard", "Admin");
+                    }
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -499,6 +555,17 @@ namespace WebApplication1.Controllers
 
             TempData["InfoMessage"] = "Bạn đã đăng xuất an toàn khỏi hệ thống SmartBus Go.";
             return RedirectToAction("Index", "Home");
+        }
+
+        // =========================================================================
+        // 6. TỪ CHỐI TRUY CẬP (ACCESS DENIED - 403)
+        // =========================================================================
+
+        // GET: /Account/AccessDenied
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
     }
 }

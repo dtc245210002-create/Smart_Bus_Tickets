@@ -70,19 +70,19 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // 2. Xử lý sự kiện click chọn / hủy chọn ghế & Gọi API lưu Database
+    // 2. Xử lý sự kiện click chọn / hủy chọn ghế trực tiếp và mượt mà
     const seatBoxes = document.querySelectorAll(".sbg-seat-box");
     seatBoxes.forEach(seat => {
         if (seat.classList.contains("booked")) {
             seat.style.pointerEvents = "none";
         }
-        seat.addEventListener("click", async function () {
+        seat.addEventListener("click", function () {
             const tripId = this.getAttribute("data-trip-id");
             const seatCode = this.getAttribute("data-code");
 
-            // Nếu ghế đã bán hoặc đang được tài khoản khác giữ -> Không cho chọn
+            // Nếu ghế đã bán -> Không cho chọn
             if (this.classList.contains("booked")) {
-                showSeatAlert(tripId, `Ghế ${seatCode} đang được tài khoản khác giữ chỗ hoặc đã bán. Vui lòng chọn ghế khác!`, "warning");
+                showSeatAlert(tripId, `Ghế ${seatCode} đã bán hoặc đang được người khác giữ. Vui lòng chọn ghế khác!`, "warning");
                 return;
             }
 
@@ -98,86 +98,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            // Gọi API giữ hoặc hủy giữ ghế lưu vào CSDL SQL Server
-            await toggleSeatHold(tripId, seatCode, isSelecting, this);
+            // Chọn hoặc bỏ chọn ghế ngay lập tức, giữ nguyên trạng thái không bị tắt
+            if (isSelecting) {
+                this.classList.add("selected");
+                this.classList.remove("booked");
+            } else {
+                this.classList.remove("selected");
+            }
+
+            updateSeatSummary(tripId);
         });
     });
 
-    // Hàm gọi API giữ chỗ / hủy giữ ghế đồng bộ CSDL
-    async function toggleSeatHold(tripId, seatCode, isSelecting, seatEl) {
-        const sessionId = getOrCreateSessionId();
-        const userId = window.sbgCurrentUserId || null;
-
-        // Tạm thời vô hiệu hóa tương tác tránh double click
-        seatEl.style.pointerEvents = "none";
-
-        try {
-            if (isSelecting) {
-                // CHỌN GHẾ -> GỬI API GIỮ CHỖ
-                const res = await fetch("/api/bookings/hold-seats", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        tripId: parseInt(tripId),
-                        seatNumbers: [seatCode],
-                        sessionId: sessionId,
-                        userId: userId,
-                        holdDurationMinutes: 10
-                    })
-                });
-
-                const data = await res.json();
-
-                if (!res.ok || !data.success) {
-                    // GHẾ BỊ XUNG ĐỘT (Tài khoản khác đã chọn trước)
-                    seatEl.classList.remove("selected");
-                    seatEl.classList.add("booked");
-                    showSeatAlert(tripId, data.message || `Ghế ${seatCode} vừa có tài khoản khác chọn. Vui lòng chọn ghế khác!`, "warning");
-                    updateSeatSummary(tripId);
-                    return;
-                }
-
-                // Thành công: Đánh dấu ghế Đang chọn
-                seatEl.classList.add("selected");
-                seatEl.classList.remove("booked");
-                showSeatAlert(tripId, `Đã chọn và giữ ghế ${seatCode} vào hệ thống (giữ 10 phút)!`, "success");
-            } else {
-                // HỦY CHỌN GHẾ -> GỬI API HỦY GIỮ CHỖ
-                await fetch("/api/bookings/release-seats", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        tripId: parseInt(tripId),
-                        seatNumbers: [seatCode],
-                        sessionId: sessionId,
-                        userId: userId
-                    })
-                });
-
-                seatEl.classList.remove("selected");
-                showSeatAlert(tripId, `Đã hủy giữ ghế ${seatCode}.`, "info");
-            }
-
-            updateSeatSummary(tripId);
-        } catch (err) {
-            console.error("Lỗi khi kết nối API giữ ghế:", err);
-            // Fallback giao diện người dùng
-            if (isSelecting) {
-                seatEl.classList.add("selected");
-            } else {
-                seatEl.classList.remove("selected");
-            }
-            updateSeatSummary(tripId);
-        } finally {
-            seatEl.style.pointerEvents = "auto";
-        }
-    }
-
-    // 3. Cơ chế Polling thời gian thực: Cập nhật trạng thái ghế giữa các tài khoản
+    // 3. Cơ chế Polling thời gian thực: Cập nhật trạng thái ghế đã bán từ CSDL
     function startSeatPolling(tripId) {
         stopSeatPolling();
         activePollingTripId = tripId;
@@ -186,7 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (activePollingTripId) {
                 syncSeatStatuses(activePollingTripId);
             }
-        }, 4000); // 4 giây đồng bộ 1 lần
+        }, 5000); // 5 giây đồng bộ 1 lần
     }
 
     function stopSeatPolling() {
@@ -201,41 +134,27 @@ document.addEventListener("DOMContentLoaded", function () {
         const accordion = document.getElementById("seatAccordion-" + tripId);
         if (!accordion || !accordion.classList.contains("show")) return;
 
-        const sessionId = getOrCreateSessionId();
-        const userId = window.sbgCurrentUserId || "";
-
         try {
-            const res = await fetch(`/api/bookings/trip-seat-status?tripId=${tripId}&sessionId=${encodeURIComponent(sessionId)}&userId=${userId}`);
+            const res = await fetch(`/api/bookings/trip-seat-status?tripId=${tripId}`);
             if (!res.ok) return;
             const data = await res.json();
             if (!data.success) return;
 
             const booked = new Set((data.bookedSeats || []).map(s => s.toUpperCase()));
-            const myHeld = new Set((data.myHeldSeats || []).map(s => s.toUpperCase()));
 
             const seatBoxes = accordion.querySelectorAll(".sbg-seat-box");
             seatBoxes.forEach(seat => {
                 const code = (seat.getAttribute("data-code") || "").toUpperCase();
 
                 if (booked.has(code)) {
-                    // Ghế đã bán hoặc đang được tài khoản khác giữ -> Khóa không cho chọn
+                    // Ghế đã bán thật trong CSDL
                     seat.classList.add("booked");
-                    seat.classList.remove("selected");
-                    seat.style.pointerEvents = "none";
-                    seat.setAttribute("title", `Ghế ${code} - Đã bán hoặc đang được tài khoản khác giữ`);
-                } else if (myHeld.has(code)) {
-                    // Ghế do chính tài khoản này đang giữ
-                    seat.classList.add("selected");
-                    seat.classList.remove("booked");
-                    seat.style.pointerEvents = "auto";
-                    seat.setAttribute("title", `Ghế ${code} - Bạn đang giữ chỗ`);
-                } else {
-                    // Ghế trống: Nếu client chưa click chọn thì mở khóa
-                    if (!seat.classList.contains("selected")) {
-                        seat.classList.remove("booked");
-                        seat.style.pointerEvents = "auto";
-                        seat.setAttribute("title", `Ghế ${code} - Còn trống, bấm để chọn`);
+                    if (seat.classList.contains("selected")) {
+                        seat.classList.remove("selected");
+                        showSeatAlert(tripId, `Ghế ${code} vừa được người khác hoàn tất đặt. Vui lòng chọn ghế khác!`, "warning");
                     }
+                    seat.style.pointerEvents = "none";
+                    seat.setAttribute("title", `Ghế ${code} - Đã bán`);
                 }
             });
 
@@ -274,7 +193,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // Kích hoạt nút tiếp tục
             if (btnContinue) {
                 btnContinue.classList.remove("disabled");
-                btnContinue.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Tiếp tục đặt ${count} vé (${totalPrice.toLocaleString("vi-VN")} đ) &rarr;`;
+                btnContinue.innerHTML = `<i class="bi bi-credit-card-2-front-fill me-1"></i> Tiếp tục thanh toán ${count} vé (${totalPrice.toLocaleString("vi-VN")} đ) &rarr;`;
                 
                 // Đọc thông tin hành trình từ data attribute & dropdowns
                 const from = btnContinue.getAttribute("data-from") || "";
@@ -295,29 +214,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 const dropoffSelect = accordion.querySelector(".select-dropoff-point");
                 const boarding = boardingSelect ? boardingSelect.value : "";
                 const dropoff = dropoffSelect ? dropoffSelect.value : "";
-
-                // Tạo URL với đầy đủ thông tin chuyến xe khách hàng đã chọn
-                const params = new URLSearchParams();
-                params.set("tripId", tripId);
-                params.set("seats", seatCodes.join(","));
-                params.set("total", totalPrice);
-                if (from) params.set("from", from);
-                if (to) params.set("to", to);
-                if (date) params.set("date", date);
-                if (boarding) params.set("boarding", boarding);
-                if (dropoff) params.set("dropoff", dropoff);
-                if (depTime) params.set("depTime", depTime);
-                if (arrTime) params.set("arrTime", arrTime);
-                if (busType) params.set("busType", busType);
-                if (licensePlate) params.set("licensePlate", licensePlate);
-                if (routeName) params.set("routeName", routeName);
-                if (routeCode) params.set("routeCode", routeCode);
-                if (driverName) params.set("driverName", driverName);
-                if (driverPhone) params.set("driverPhone", driverPhone);
-                if (estMinutes) params.set("estMinutes", estMinutes);
-                if (distance) params.set("distance", distance);
-
-                btnContinue.setAttribute("href", `/Ticket/Detail?${params.toString()}`);
 
                 // Lưu Cookie & localStorage để giữ trạng thái
                 try {
@@ -358,6 +254,135 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
     }
+
+    // 4b. Xử lý sự kiện bấm "Tiếp tục thanh toán" -> Truy vấn CSDL kiểm tra ai đặt trước
+    document.querySelectorAll(".btn-continue-booking").forEach(btn => {
+        btn.addEventListener("click", async function (e) {
+            e.preventDefault();
+            if (this.classList.contains("disabled")) return;
+
+            const tripId = this.getAttribute("data-trip-id");
+            const accordion = document.getElementById("seatAccordion-" + tripId);
+            if (!accordion) return;
+
+            const selectedSeats = accordion.querySelectorAll(".sbg-seat-box.selected");
+            const seatCodes = Array.from(selectedSeats).map(s => s.getAttribute("data-code"));
+
+            if (seatCodes.length === 0) {
+                showSeatAlert(tripId, "Vui lòng chọn ít nhất 1 ghế trước khi thanh toán!", "warning");
+                return;
+            }
+
+            const originalHtml = this.innerHTML;
+            this.classList.add("disabled");
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Đang kiểm tra ghế trong CSDL...';
+
+            const from = this.getAttribute("data-from") || "";
+            const to = this.getAttribute("data-to") || "";
+            const date = this.getAttribute("data-date") || "";
+            const depTime = this.getAttribute("data-deptime") || "";
+            const arrTime = this.getAttribute("data-arrtime") || "";
+            const busType = this.getAttribute("data-bustype") || "";
+            const licensePlate = this.getAttribute("data-licenseplate") || "";
+            const routeName = this.getAttribute("data-routename") || "";
+            const routeCode = this.getAttribute("data-routecode") || "";
+            const driverName = this.getAttribute("data-drivername") || "";
+            const driverPhone = this.getAttribute("data-driverphone") || "";
+            const estMinutes = this.getAttribute("data-estminutes") || "";
+            const distance = this.getAttribute("data-distance") || "";
+
+            const boardingSelect = accordion.querySelector(".select-boarding-point");
+            const dropoffSelect = accordion.querySelector(".select-dropoff-point");
+            const boarding = boardingSelect ? boardingSelect.value : "";
+            const dropoff = dropoffSelect ? dropoffSelect.value : "";
+
+            let totalPrice = 0;
+            selectedSeats.forEach(s => {
+                totalPrice += parseFloat(s.getAttribute("data-price") || 150000);
+            });
+
+            const sessionId = getOrCreateSessionId();
+            const userId = window.sbgCurrentUserId || null;
+
+            try {
+                // Truy vấn trực tiếp xuống CSDL SQL Server kiểm tra ai đặt trước
+                const res = await fetch("/api/bookings/create-booking", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        tripId: parseInt(tripId),
+                        seatNumbers: seatCodes,
+                        totalPrice: totalPrice,
+                        sessionId: sessionId,
+                        userId: userId,
+                        from: from,
+                        to: to,
+                        date: date,
+                        boarding: boarding,
+                        dropoff: dropoff,
+                        depTime: depTime,
+                        arrTime: arrTime,
+                        busType: busType,
+                        licensePlate: licensePlate,
+                        routeName: routeName,
+                        routeCode: routeCode,
+                        driverName: driverName,
+                        driverPhone: driverPhone,
+                        estMinutes: estMinutes,
+                        distance: distance
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    // GHẾ ĐÃ BỊ NGƯỜI KHÁC ĐẶT TRƯỚC -> THÔNG BÁO NGAY CHO NGƯỜI ĐẶT SAU
+                    const conflicted = data.conflictedSeats || [];
+                    const msg = data.message || `Ghế ${seatCodes.join(", ")} đã bị người khác đặt trước. Vui lòng chọn ghế khác!`;
+                    showSeatAlert(tripId, msg, "danger");
+
+                    // Đánh dấu các ghế bị trùng thành booked
+                    conflicted.forEach(code => {
+                        const seatEl = accordion.querySelector(`.sbg-seat-box[data-code="${code}"]`);
+                        if (seatEl) {
+                            seatEl.classList.remove("selected");
+                            seatEl.classList.add("booked");
+                            seatEl.style.pointerEvents = "none";
+                            seatEl.setAttribute("title", `Ghế ${code} - Đã bị người khác đặt trước`);
+                        }
+                    });
+
+                    updateSeatSummary(tripId);
+                    this.innerHTML = originalHtml;
+                    this.classList.remove("disabled");
+                    return;
+                }
+
+                // GHẾ CÒN TRỐNG -> ĐẶT THÀNH CÔNG, HIỆN RA CỔNG THANH TOÁN
+                showSeatAlert(tripId, "Đặt chỗ thành công! Đang chuyển đến cổng thanh toán...", "success");
+                setTimeout(() => {
+                    window.location.href = data.redirectUrl || `/Ticket/Payment?tripId=${tripId}&seats=${encodeURIComponent(seatCodes.join(","))}&total=${totalPrice}`;
+                }, 350);
+
+            } catch (err) {
+                console.error("Lỗi khi kiểm tra ghế và tạo đơn:", err);
+                showSeatAlert(tripId, "Đang chuyển đến cổng thanh toán...", "info");
+                const params = new URLSearchParams();
+                params.set("tripId", tripId);
+                params.set("seats", seatCodes.join(","));
+                params.set("total", totalPrice);
+                if (from) params.set("from", from);
+                if (to) params.set("to", to);
+                if (date) params.set("date", date);
+                if (boarding) params.set("boarding", boarding);
+                if (dropoff) params.set("dropoff", dropoff);
+                if (depTime) params.set("depTime", depTime);
+                if (busType) params.set("busType", busType);
+                if (licensePlate) params.set("licensePlate", licensePlate);
+                window.location.href = `/Ticket/Payment?${params.toString()}`;
+            }
+        });
+    });
 
     // Lắng nghe sự kiện thay đổi trạm đón / trả để cập nhật ngay vào nút đặt vé
     document.querySelectorAll(".select-boarding-point, .select-dropoff-point").forEach(select => {

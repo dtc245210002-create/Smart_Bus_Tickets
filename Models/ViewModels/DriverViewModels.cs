@@ -33,6 +33,11 @@ namespace WebApplication1.Models.ViewModels
         public string LicenseNo { get; set; } = string.Empty;
         public string Status { get; set; } = "Active";
 
+        // Thông tin xe được phân công cố định (do Admin gán)
+        public string AssignedBusLicensePlate { get; set; } = string.Empty;
+        public string AssignedBusTypeName { get; set; } = string.Empty;
+        public int AssignedBusCapacity { get; set; }
+
         // Thống kê ca làm việc
         public int TodayTripsCount { get; set; }
         public int TotalPassengersCount { get; set; }

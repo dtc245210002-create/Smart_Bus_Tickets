@@ -17,6 +17,11 @@ public partial class Driver
 
     public string? Gender { get; set; }
 
+    // Xe buýt cố định do Admin phân công
+    public int? AssignedBusId { get; set; }
+
+    public virtual Bus? AssignedBus { get; set; }
+
     public string? Status { get; set; }
 
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();

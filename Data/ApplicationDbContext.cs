@@ -148,6 +148,13 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey<Driver>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Driver_User");
+
+            entity.Property(e => e.AssignedBusId).HasColumnName("AssignedBusId");
+
+            entity.HasOne(d => d.AssignedBus).WithOne(p => p.AssignedDriver)
+                .HasForeignKey<Driver>(d => d.AssignedBusId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_Driver_AssignedBus");
         });
 
         modelBuilder.Entity<Notification>(entity =>
