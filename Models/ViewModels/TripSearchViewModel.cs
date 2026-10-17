@@ -55,6 +55,8 @@ namespace WebApplication1.Models.ViewModels
         public string DriverPhone { get; set; } = "0988 777 999";
         public string RouteCode { get; set; } = string.Empty;
         public string RouteName { get; set; } = string.Empty;
+        public string RouteStartPoint { get; set; } = string.Empty;
+        public string RouteEndPoint { get; set; } = string.Empty;
         public int EstimatedDuration { get; set; } = 180;
         public decimal Distance { get; set; } = 220;
 

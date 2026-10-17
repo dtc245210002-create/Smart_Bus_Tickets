@@ -138,14 +138,7 @@ namespace WebApplication1.Controllers
                         .ThenInclude(t => t.Bookings)
                             .ThenInclude(bk => bk.Tickets)
                     .AsEnumerable()
-                    .Where(r => 
-                        fromAliases.Any(fa => WebApplication1.Services.LocationHelper.Matches(r.StartPoint, fa) || 
-                                              WebApplication1.Services.LocationHelper.Matches(r.RouteName, fa) ||
-                                              r.RouteStops.Any(rs => WebApplication1.Services.LocationHelper.Matches(rs.Stop.StopName, fa))) &&
-                        toAliases.Any(ta => WebApplication1.Services.LocationHelper.Matches(r.EndPoint, ta) || 
-                                            WebApplication1.Services.LocationHelper.Matches(r.RouteName, ta) ||
-                                            r.RouteStops.Any(rs => WebApplication1.Services.LocationHelper.Matches(rs.Stop.StopName, ta)))
-                    )
+                    .Where(r => IsRouteMatchingSearch(r, model.From, model.To))
                     .ToList();
 
                 // Nếu chưa có tuyến đường nào phù hợp trong DB, tự động tạo Tuyến đường mới và lưu cố định vào SQL Server
@@ -257,23 +250,19 @@ namespace WebApplication1.Controllers
                             }
                             else if (st == "HELD" || st == "PENDING")
                             {
-                                bool isExpired = tk.Booking == null || tk.Booking.BookingTime.AddMinutes(10) < now;
-                                if (!isExpired)
+                                bool isMine = false;
+                                if (currentUserId.HasValue && tk.Booking != null)
                                 {
-                                    bool isMine = false;
-                                    if (currentUserId.HasValue && tk.Booking != null)
-                                    {
-                                        isMine = (tk.Booking.UserId == currentUserId.Value);
-                                    }
-                                    else if (!string.IsNullOrEmpty(currentSessionId) && tk.Booking != null)
-                                    {
-                                        isMine = (tk.Booking.UserId <= 0) && tk.Booking.BookingCode.Contains(currentSessionId);
-                                    }
+                                    isMine = (tk.Booking.UserId == currentUserId.Value);
+                                }
+                                else if (!string.IsNullOrEmpty(currentSessionId) && tk.Booking != null)
+                                {
+                                    isMine = (tk.Booking.UserId <= 0) && tk.Booking.BookingCode.Contains(currentSessionId);
+                                }
 
-                                    if (!isMine)
-                                    {
-                                        foreach (var s in seats) bookedSeatNumbers.Add(s.Trim().ToUpper());
-                                    }
+                                if (!isMine)
+                                {
+                                    foreach (var s in seats) bookedSeatNumbers.Add(s.Trim().ToUpper());
                                 }
                             }
                         }
@@ -311,20 +300,8 @@ namespace WebApplication1.Controllers
 
                         if (availableSeats <= 0) continue;
 
-                        var boardingStops = route.RouteStops
-                            .OrderBy(rs => rs.StopOrder)
-                            .Take(3)
-                            .Select(rs => $"{rs.Stop.StopName} ({(rs.DepartureTime.HasValue ? rs.DepartureTime.Value.ToString(@"hh\:mm") : trip.DepartureTime.ToString(@"hh\:mm"))})")
-                            .ToList();
-
-                        var dropOffStops = route.RouteStops
-                            .OrderBy(rs => rs.StopOrder)
-                            .Skip(Math.Max(0, route.RouteStops.Count - 2))
-                            .Select(rs => $"{rs.Stop.StopName} ({(rs.ArrivalTime.HasValue ? rs.ArrivalTime.Value.ToString(@"hh\:mm") : (trip.ArrivalTime.HasValue ? trip.ArrivalTime.Value.ToString(@"hh\:mm") : "11:00"))})")
-                            .ToList();
-
-                        if (!boardingStops.Any()) boardingStops.Add($"{route.StartPoint} ({trip.DepartureTime:hh\\:mm})");
-                        if (!dropOffStops.Any()) dropOffStops.Add($"{route.EndPoint} ({(trip.ArrivalTime.HasValue ? trip.ArrivalTime.Value.ToString(@"hh\:mm") : "10:30")})");
+                        var sortedStops = route.RouteStops?.OrderBy(rs => rs.StopOrder).ToList() ?? new List<RouteStop>();
+                        var firstStopDepTime = sortedStops.FirstOrDefault()?.DepartureTime;
 
                         var depTimeSpan = trip.DepartureTime.ToTimeSpan();
                         var effectiveDistance = route.Distance ?? WebApplication1.Services.RoutePricingService.GetRouteMetrics(route.StartPoint, route.EndPoint).Distance;
@@ -332,6 +309,45 @@ namespace WebApplication1.Controllers
                         var duration = arrTimeSpan - depTimeSpan;
                         if (duration < TimeSpan.Zero) duration = duration.Add(TimeSpan.FromHours(24));
                         var durationText = $"{(int)duration.TotalHours}h {duration.Minutes}m";
+
+                        var boardingStops = sortedStops
+                            .Take(3)
+                            .Select(rs => {
+                                var timeStr = trip.DepartureTime.ToString(@"hh\:mm");
+                                if (firstStopDepTime.HasValue && rs.DepartureTime.HasValue)
+                                {
+                                    var diff = rs.DepartureTime.Value - firstStopDepTime.Value;
+                                    var calculated = trip.DepartureTime.Add(diff);
+                                    timeStr = calculated.ToString(@"hh\:mm");
+                                }
+                                return $"{rs.Stop?.StopName ?? route.StartPoint} ({timeStr})";
+                            })
+                            .ToList();
+
+                        var dropOffStops = sortedStops
+                            .Skip(Math.Max(0, sortedStops.Count - 2))
+                            .Select(rs => {
+                                var timeStr = (trip.ArrivalTime.HasValue ? trip.ArrivalTime.Value.ToString(@"hh\:mm") : arrTimeSpan.ToString(@"hh\:mm"));
+                                if (firstStopDepTime.HasValue && rs.ArrivalTime.HasValue)
+                                {
+                                    var diff = rs.ArrivalTime.Value - firstStopDepTime.Value;
+                                    var calculated = trip.DepartureTime.Add(diff);
+                                    timeStr = calculated.ToString(@"hh\:mm");
+                                }
+                                return $"{rs.Stop?.StopName ?? route.EndPoint} ({timeStr})";
+                            })
+                            .ToList();
+
+                        if (!boardingStops.Any()) boardingStops.Add($"{route.StartPoint} ({trip.DepartureTime:hh\\:mm})");
+                        if (!dropOffStops.Any()) dropOffStops.Add($"{route.EndPoint} ({(trip.ArrivalTime.HasValue ? trip.ArrivalTime.Value.ToString(@"hh\:mm") : arrTimeSpan.ToString(@"hh\:mm"))})");
+
+                        var depStopName = sortedStops.FirstOrDefault(rs => rs.Stop != null && WebApplication1.Services.LocationHelper.Matches(rs.Stop.StopName, model.From))?.Stop?.StopName 
+                            ?? sortedStops.FirstOrDefault()?.Stop?.StopName 
+                            ?? route.StartPoint;
+
+                        var arrStopName = sortedStops.LastOrDefault(rs => rs.Stop != null && WebApplication1.Services.LocationHelper.Matches(rs.Stop.StopName, model.To))?.Stop?.StopName 
+                            ?? sortedStops.LastOrDefault()?.Stop?.StopName 
+                            ?? route.EndPoint;
 
                         var busTypeName = trip.Bus?.BusType?.TypeName ?? "Xe Limousine Cao Cấp";
                         int tripIndex = activeTrips.IndexOf(trip);
@@ -367,9 +383,9 @@ namespace WebApplication1.Controllers
                             IsMatchingDeparture = fromCodes.Any(c => plate.StartsWith(c)),
                             IsMatchingDestination = toCodes.Any(c => plate.StartsWith(c)),
                             DepartureTime = depTimeSpan,
-                            DeparturePoint = boardingStops.FirstOrDefault() ?? route.StartPoint,
+                            DeparturePoint = depStopName,
                             ArrivalTime = arrTimeSpan,
-                            ArrivalPoint = dropOffStops.LastOrDefault() ?? route.EndPoint,
+                            ArrivalPoint = arrStopName,
                             DurationText = durationText,
                             Price = price,
                             OriginalPrice = originalPrice,
@@ -387,6 +403,8 @@ namespace WebApplication1.Controllers
                             DriverPhone = trip.Driver?.User?.Phone ?? "0988 777 999",
                             RouteCode = route.RouteCode,
                             RouteName = route.RouteName,
+                            RouteStartPoint = route.StartPoint,
+                            RouteEndPoint = route.EndPoint,
                             EstimatedDuration = route.EstimatedDuration ?? (int)(arrTimeSpan - depTimeSpan).TotalMinutes,
                             Distance = effectiveDistance
                         });
@@ -424,6 +442,12 @@ namespace WebApplication1.Controllers
                 "time_latest" => tripViewModels.OrderByDescending(t => t.DepartureTime).ToList(),
                 _ => tripViewModels
             };
+
+            // Đảm bảo tuyệt đối: Không hiển thị chuyến của tuyến khác, chỉ giữ lại chuyến xe trùng khớp với điểm đi và điểm đến tìm kiếm
+            tripViewModels = tripViewModels.Where(t => 
+                (WebApplication1.Services.LocationHelper.Matches(t.RouteStartPoint, model.From) || WebApplication1.Services.LocationHelper.Matches(t.DeparturePoint, model.From)) &&
+                (WebApplication1.Services.LocationHelper.Matches(t.RouteEndPoint, model.To) || WebApplication1.Services.LocationHelper.Matches(t.ArrivalPoint, model.To))
+            ).ToList();
 
             model.Trips = tripViewModels;
             return View(model);
@@ -497,6 +521,73 @@ namespace WebApplication1.Controllers
             if (string.IsNullOrWhiteSpace(text)) return string.Empty;
             var textInfo = new System.Globalization.CultureInfo("vi-VN", false).TextInfo;
             return textInfo.ToTitleCase(text.Trim().ToLower());
+        }
+
+        private static bool IsRouteMatchingSearch(WebApplication1.Models.Entities.Route route, string searchFrom, string searchTo)
+        {
+            if (route == null || string.IsNullOrWhiteSpace(searchFrom) || string.IsNullOrWhiteSpace(searchTo))
+                return false;
+
+            // 1. Kiểm tra điểm xuất phát (Departure)
+            bool matchDeparture = false;
+            int pickupStopOrder = -1;
+
+            if (WebApplication1.Services.LocationHelper.Matches(route.StartPoint, searchFrom))
+            {
+                matchDeparture = true;
+                pickupStopOrder = 0;
+            }
+            else if (route.RouteStops != null && route.RouteStops.Any())
+            {
+                var matchingStop = route.RouteStops
+                    .OrderBy(rs => rs.StopOrder)
+                    .FirstOrDefault(rs => rs.Stop != null && WebApplication1.Services.LocationHelper.Matches(rs.Stop.StopName, searchFrom));
+
+                if (matchingStop != null)
+                {
+                    matchDeparture = true;
+                    pickupStopOrder = matchingStop.StopOrder;
+                }
+            }
+
+            if (!matchDeparture) return false;
+
+            // 2. Kiểm tra điểm đến (Destination)
+            bool matchDestination = false;
+            int dropoffStopOrder = int.MaxValue;
+
+            if (WebApplication1.Services.LocationHelper.Matches(route.EndPoint, searchTo))
+            {
+                matchDestination = true;
+                dropoffStopOrder = int.MaxValue;
+            }
+            else if (route.RouteStops != null && route.RouteStops.Any())
+            {
+                var matchingStop = route.RouteStops
+                    .OrderByDescending(rs => rs.StopOrder)
+                    .FirstOrDefault(rs => rs.Stop != null && WebApplication1.Services.LocationHelper.Matches(rs.Stop.StopName, searchTo));
+
+                if (matchingStop != null)
+                {
+                    matchDestination = true;
+                    dropoffStopOrder = matchingStop.StopOrder;
+                }
+            }
+
+            if (!matchDestination) return false;
+
+            // 3. Thứ tự trạm đón phải diễn ra trước trạm trả
+            if (pickupStopOrder >= dropoffStopOrder)
+                return false;
+
+            // 4. Tuyệt đối không để điểm đến trùng với điểm xuất phát của tuyến
+            if (WebApplication1.Services.LocationHelper.Matches(route.StartPoint, searchTo) &&
+                !WebApplication1.Services.LocationHelper.Matches(route.EndPoint, searchTo))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
