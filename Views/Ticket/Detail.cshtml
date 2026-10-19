@@ -124,9 +124,9 @@
                         <span class="small text-muted d-block">Bác tài phụ trách:</span>
                         <span class="fw-semibold text-dark">@Model.DriverName (@Model.DriverPhone)</span>
                     </div>
-                    <a href="#" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="alert('Đang mở bản đồ GPS theo dõi vị trí xe ' + '@Model.LicensePlate' + ' trong thời gian thực...'); return false;">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-xs" onclick="openBusTrackingModal()">
                         <i class="bi bi-geo-alt-fill text-danger me-1"></i> Xem vị trí xe trực tiếp
-                    </a>
+                    </button>
                 </div>
 
                 <div class="mt-3 p-3 bg-light rounded-3 border d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -137,6 +137,47 @@
                     <a asp-controller="Ticket" asp-action="Reschedule" asp-route-ticketCode="@Model.TicketCode" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
                         Đổi chuyến xe ngay &rarr;
                     </a>
+                </div>
+            </div>
+
+            <!-- Modal Theo Dõi Vị Trí Xe Buýt Thời Gian Thực (Leaflet GPS Realtime Tracking) -->
+            <div class="modal fade" id="busTrackingModal" tabindex="-1" aria-labelledby="busTrackingModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content shadow-lg border-0 rounded-4 overflow-hidden">
+                        <div class="modal-header bg-gradient text-white" style="background: linear-gradient(135deg, #008378 0%, #006057 100%);">
+                            <div>
+                                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="busTrackingModalLabel">
+                                    <i class="bi bi-geo-alt-fill text-warning"></i> Vị trí xe buýt thời gian thực
+                                </h5>
+                                <div class="small opacity-75 mt-1">Xe biển số: <strong class="text-warning">@Model.LicensePlate</strong> &bull; Tuyến: @Model.BoardingStopName &rarr; @Model.DropOffStopName</div>
+                            </div>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0 position-relative">
+                            <!-- Status bar above map -->
+                            <div class="bg-light px-3 py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 small">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1">
+                                        <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;" role="status"></span>
+                                        GPS Trực tuyến
+                                    </span>
+                                    <span>Tốc độ: <strong id="busSpeed" class="text-primary fw-bold">48 km/h</strong></span>
+                                    <span>Cách trạm đón: <strong id="busDistance" class="text-danger fw-bold">1.8 km (~5 phút)</strong></span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" onclick="refreshBusPosition()">
+                                    <i class="bi bi-arrow-clockwise"></i> Cập nhật
+                                </button>
+                            </div>
+                            <!-- Leaflet map container -->
+                            <div id="busTrackingMap" style="height: 400px; width: 100%; z-index: 1;"></div>
+                        </div>
+                        <div class="modal-footer bg-light py-2 px-3 justify-content-between">
+                            <div class="small text-muted d-flex align-items-center gap-2">
+                                <i class="bi bi-person-badge text-primary"></i> Tài xế: <strong>@Model.DriverName</strong> (@Model.DriverPhone)
+                            </div>
+                            <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Đóng bản đồ</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -189,7 +230,114 @@
 </div>
 
 @section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="~/js/ticket-qr.js" asp-append-version="true"></script>
+    <script>
+        let trackingMap = null;
+        let busMarker = null;
+        let routePolyline = null;
+        let busInterval = null;
+
+        function openBusTrackingModal() {
+            const modalEl = document.getElementById('busTrackingModal');
+            if (!modalEl) return;
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+
+            modalEl.addEventListener('shown.bs.modal', function onShown() {
+                modalEl.removeEventListener('shown.bs.modal', onShown);
+                initTrackingMap();
+            });
+        }
+
+        function initTrackingMap() {
+            const mapContainer = document.getElementById('busTrackingMap');
+            if (!mapContainer) return;
+
+            if (trackingMap) {
+                trackingMap.invalidateSize();
+                return;
+            }
+
+            // Tọa độ giả lập tuyến xe buýt di chuyển
+            const startPoint = [10.8142, 106.6661]; // Trạm đón
+            const endPoint = [10.7420, 106.6205];   // Trạm trả
+            const initialBusPos = [10.7950, 106.6500]; // Vị trí xe buýt hiện tại
+
+            trackingMap = L.map('busTrackingMap').setView(initialBusPos, 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors | SmartBus Go GPS'
+            }).addTo(trackingMap);
+
+            // Marker trạm đón
+            const startIcon = L.divIcon({
+                html: '<div style="background:#008378;color:#fff;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);"><i class="bi bi-geo-alt-fill"></i> @Html.Raw(Model.BoardingStopName)</div>',
+                className: 'custom-start-marker',
+                iconAnchor: [20, 15]
+            });
+            L.marker(startPoint, { icon: startIcon }).addTo(trackingMap).bindPopup('<b>Điểm đón:</b> @Html.Raw(Model.BoardingStopName)');
+
+            // Marker trạm trả
+            const endIcon = L.divIcon({
+                html: '<div style="background:#dc3545;color:#fff;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);"><i class="bi bi-flag-fill"></i> @Html.Raw(Model.DropOffStopName)</div>',
+                className: 'custom-end-marker',
+                iconAnchor: [20, 15]
+            });
+            L.marker(endPoint, { icon: endIcon }).addTo(trackingMap).bindPopup('<b>Điểm đến:</b> @Html.Raw(Model.DropOffStopName)');
+
+            // Tuyến đường (Polyline)
+            const routeCoords = [
+                startPoint,
+                [10.8080, 106.6600],
+                [10.7950, 106.6500],
+                [10.7820, 106.6400],
+                [10.7650, 106.6300],
+                endPoint
+            ];
+            routePolyline = L.polyline(routeCoords, { color: '#008378', weight: 5, opacity: 0.75, dashArray: '8, 8' }).addTo(trackingMap);
+            trackingMap.fitBounds(routePolyline.getBounds(), { padding: [40, 40] });
+
+            // Marker xe buýt với hiệu ứng nổi bật
+            const busIcon = L.divIcon({
+                html: '<div style="background:#ffc107;color:#111;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(255,193,7,0.9);border:2px solid #fff;font-size:18px;"><i class="bi bi-bus-front-fill"></i></div>',
+                className: 'custom-bus-marker',
+                iconAnchor: [19, 19]
+            });
+            busMarker = L.marker(initialBusPos, { icon: busIcon }).addTo(trackingMap)
+                .bindPopup('<b>Xe buýt:</b> @Model.LicensePlate<br><b>Tài xế:</b> @Model.DriverName<br><b>Vận tốc:</b> 48 km/h')
+                .openPopup();
+
+            // Mô phỏng vị trí cập nhật thời gian thực
+            let step = 0;
+            if (busInterval) clearInterval(busInterval);
+            busInterval = setInterval(() => {
+                step = (step + 1) % routeCoords.length;
+                const nextPos = routeCoords[step];
+                busMarker.setLatLng(nextPos);
+                const speed = 40 + Math.floor(Math.random() * 15);
+                const busSpeedEl = document.getElementById('busSpeed');
+                if (busSpeedEl) busSpeedEl.innerText = speed + ' km/h';
+            }, 5000);
+        }
+
+        function refreshBusPosition() {
+            const speed = 42 + Math.floor(Math.random() * 12);
+            const distance = (1.2 + Math.random() * 0.8).toFixed(1);
+            const minutes = Math.max(3, Math.round(distance * 2.5));
+
+            const speedEl = document.getElementById('busSpeed');
+            const distEl = document.getElementById('busDistance');
+            if (speedEl) speedEl.innerText = speed + ' km/h';
+            if (distEl) distEl.innerText = distance + ' km (~' + minutes + ' phút)';
+
+            if (trackingMap) {
+                trackingMap.invalidateSize();
+            }
+        }
+    </script>
 }

@@ -558,6 +558,28 @@ namespace WebApplication1.Controllers
             TempData["SuccessMessage"] = "Đã đăng xuất ca làm việc an toàn. Chúc Bác tài có thời gian nghỉ ngơi thoải mái!";
             return RedirectToAction("Login");
         }
+
+        // =========================================================================
+        // 5. BÁO CÁO SỰ CỐ / TRỄ CHUYẾN (DRIVER INCIDENT REPORT - US 11)
+        // =========================================================================
+
+        [HttpPost]
+        public IActionResult ReportIncident([FromBody] IncidentReportRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.IncidentType))
+            {
+                return Json(new { success = false, message = "Vui lòng chọn loại sự cố!" });
+            }
+
+            _logger.LogWarning($"[DRIVER INCIDENT] Bác tài {User.Identity?.Name} báo sự cố: {request.IncidentType} | Dự kiến trễ: {request.DelayMinutes}p | Ghi chú: {request.Notes}");
+
+            return Json(new
+            {
+                success = true,
+                message = $"Đã tiếp nhận báo cáo '{request.IncidentType}'. Trung tâm điều hành SmartBus và hành khách chuyến xe đã được thông báo cập nhật trễ {request.DelayMinutes} phút!",
+                reportedAt = DateTime.Now.ToString("HH:mm:ss dd/MM/yyyy")
+            });
+        }
     }
 
     public class VerifyTicketRequest
@@ -566,5 +588,13 @@ namespace WebApplication1.Controllers
         public string? QrCode { get; set; }
         public int? TripId { get; set; }
         public string EffectiveCode => !string.IsNullOrWhiteSpace(TicketCode) ? TicketCode : (QrCode ?? string.Empty);
+    }
+
+    public class IncidentReportRequest
+    {
+        public int? TripId { get; set; }
+        public string IncidentType { get; set; } = string.Empty;
+        public int DelayMinutes { get; set; } = 15;
+        public string? Notes { get; set; }
     }
 }

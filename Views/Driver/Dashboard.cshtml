@@ -34,7 +34,11 @@
                     </div>
                 </div>
 
-                <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
+                <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex flex-wrap justify-content-md-end gap-2">
+                    <button type="button" class="btn btn-outline-warning rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#reportIncidentModal" title="Báo cáo xe gặp sự cố hoặc trễ chuyến">
+                        <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                        <span>Báo sự cố</span>
+                    </button>
                     <button type="button" class="btn btn-warning rounded-pill px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#verifyTicketModal">
                         <i class="bi bi-qr-code-scan"></i>
                         <span>Soát vé lên xe</span>
@@ -324,6 +328,71 @@
                         }
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Báo Cáo Sự Cố / Trễ Chuyến (Driver Incident Report - US 11) -->
+<div class="modal fade" id="reportIncidentModal" tabindex="-1" aria-labelledby="reportIncidentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-warning bg-opacity-10 border-0">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="reportIncidentModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i> Báo Cáo Sự Cố / Trễ Chuyến
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="small text-muted mb-3">
+                    Bác tài gửi thông báo sự cố để trung tâm điều phối và hành khách trên chuyến xe nắm được tình trạng kịp thời.
+                </p>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">Loại sự cố gặp phải <span class="text-danger">*</span></label>
+                    <select id="incidentTypeSelect" class="form-select rounded-3 py-2">
+                        <option value="Ùn tắc giao thông nghiêm trọng">🚗 Ùn tắc giao thông nghiêm trọng</option>
+                        <option value="Sự cố kỹ thuật / Hỏng xe dọc đường">🛠️ Sự cố kỹ thuật / Hỏng lốp / Cần cứu hộ</option>
+                        <option value="Thời tiết xấu / Mưa ngập">🌧️ Thời tiết xấu / Tuyến đường ngập nước</option>
+                        <option value="Thay đổi lộ trình tránh tắc">🔄 Thay đổi tạm thời lộ trình di chuyển</option>
+                        <option value="Sự cố sức khỏe hành khách">🚑 Sự cố hành khách cần hỗ trợ y tế</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">Thời gian dự kiến trễ</label>
+                    <div class="d-flex gap-2">
+                        <div class="form-check form-check-inline border rounded-3 px-3 py-2 flex-grow-1 text-center">
+                            <input class="form-check-input" type="radio" name="delayRadio" id="delay15" value="15" checked>
+                            <label class="form-check-label fw-bold" for="delay15">+15 phút</label>
+                        </div>
+                        <div class="form-check form-check-inline border rounded-3 px-3 py-2 flex-grow-1 text-center">
+                            <input class="form-check-input" type="radio" name="delayRadio" id="delay30" value="30">
+                            <label class="form-check-label fw-bold" for="delay30">+30 phút</label>
+                        </div>
+                        <div class="form-check form-check-inline border rounded-3 px-3 py-2 flex-grow-1 text-center">
+                            <input class="form-check-input" type="radio" name="delayRadio" id="delay45" value="45">
+                            <label class="form-check-label fw-bold" for="delay45">+45 phút</label>
+                        </div>
+                        <div class="form-check form-check-inline border rounded-3 px-3 py-2 flex-grow-1 text-center">
+                            <input class="form-check-input" type="radio" name="delayRadio" id="delay60" value="60">
+                            <label class="form-check-label fw-bold" for="delay60">+60 phút</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">Ghi chú chi tiết cho điều hành (nếu có)</label>
+                    <textarea id="incidentNotes" rows="3" class="form-control rounded-3" placeholder="Ví dụ: Đang tắc đường tại cầu Bình Triệu, xe di chuyển chậm 15 phút..."></textarea>
+                </div>
+
+                <div id="incidentAlertResult" class="d-none"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" id="btnSubmitIncident" onclick="submitIncidentReport()" class="btn btn-warning rounded-pill px-4 fw-bold">
+                    <i class="bi bi-send-fill me-1"></i> Gửi thông báo ngay
+                </button>
             </div>
         </div>
     </div>
@@ -621,6 +690,51 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-search me-1"></i> Kiểm tra';
+            }
+        }
+
+        async function submitIncidentReport() {
+            const btn = document.getElementById('btnSubmitIncident');
+            const alertBox = document.getElementById('incidentAlertResult');
+            const incidentType = document.getElementById('incidentTypeSelect').value;
+            const delay = document.querySelector('input[name="delayRadio"]:checked')?.value || 15;
+            const notes = document.getElementById('incidentNotes').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang gửi...';
+
+            try {
+                const response = await fetch('/Driver/ReportIncident', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        incidentType: incidentType,
+                        delayMinutes: parseInt(delay),
+                        notes: notes
+                    })
+                });
+
+                const data = await response.json();
+                alertBox.className = data.success ? 'alert alert-success rounded-3 small mt-3' : 'alert alert-danger rounded-3 small mt-3';
+                alertBox.innerHTML = `<i class="bi ${data.success ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-1"></i> ${data.message}`;
+                alertBox.classList.remove('d-none');
+
+                if (data.success) {
+                    setTimeout(() => {
+                        const modalEl = document.getElementById('reportIncidentModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                        alertBox.classList.add('d-none');
+                        document.getElementById('incidentNotes').value = '';
+                    }, 2500);
+                }
+            } catch (err) {
+                alertBox.className = 'alert alert-danger rounded-3 small mt-3';
+                alertBox.innerText = 'Lỗi kết nối máy chủ: ' + err;
+                alertBox.classList.remove('d-none');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Gửi thông báo ngay';
             }
         }
     </script>

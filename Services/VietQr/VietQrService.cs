@@ -296,7 +296,7 @@ namespace WebApplication1.Services.VietQr
                 }
 
                 // Ghi nhận bản ghi thanh toán vào SQL Server
-                var newPayment = new Payment
+                var newPayment = new WebApplication1.Models.Entities.Payment
                 {
                     BookingId = targetBooking?.BookingId ?? (ticket?.BookingId ?? 0),
                     Amount = dto.Amount,

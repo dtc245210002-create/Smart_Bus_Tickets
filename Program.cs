@@ -32,6 +32,9 @@ namespace WebApplication1
                 builder.Configuration.GetSection(WebApplication1.Models.DTOs.VietQr.VietQrSettings.SectionName));
             builder.Services.AddScoped<WebApplication1.Services.VietQr.IVietQrService, WebApplication1.Services.VietQr.VietQrService>();
 
+            // Đăng ký dịch vụ Cổng thanh toán mã VietQR (Napas 247) tự động
+            builder.Services.AddSingleton<WebApplication1.Services.Payment.IVietQrService, WebApplication1.Services.Payment.VietQrService>();
+
             // Cấu hình Cookie Authentication cho Đăng nhập / Đăng ký
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>

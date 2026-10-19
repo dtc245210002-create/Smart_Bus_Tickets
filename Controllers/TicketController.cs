@@ -17,17 +17,20 @@ namespace WebApplication1.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ISeatHoldService _seatHoldService;
         private readonly IBusLayoutService _busLayoutService;
+        private readonly WebApplication1.Services.Payment.IVietQrService _vietQrService;
         private readonly ILogger<TicketController> _logger;
 
         public TicketController(
             ApplicationDbContext context,
             ISeatHoldService seatHoldService,
             IBusLayoutService busLayoutService,
+            WebApplication1.Services.Payment.IVietQrService vietQrService,
             ILogger<TicketController> logger)
         {
             _context = context;
             _seatHoldService = seatHoldService;
             _busLayoutService = busLayoutService;
+            _vietQrService = vietQrService;
             _logger = logger;
         }
 
@@ -597,6 +600,22 @@ namespace WebApplication1.Controllers
                     _logger.LogWarning("Không thể tải thông tin vé từ DB cho Payment: {Message}", ex.Message);
                 }
             }
+
+            // =========================================================================
+            // CẤU HÌNH TÀI KHOẢN NGÂN HÀNG & SINH MÃ VIETQR (NAPAS 247) THẬT 100%
+            // =========================================================================
+            var bankSettings = _vietQrService.GetBankSettings();
+            var sanitizedMemo = _vietQrService.SanitizeTransferContent(ViewBag.TicketCode);
+            var vietQrUrl = _vietQrService.GenerateVietQrUrl((decimal)ViewBag.TotalAmount, sanitizedMemo);
+
+            ViewBag.BankId = bankSettings.BankId;
+            ViewBag.BankName = bankSettings.BankName;
+            ViewBag.Branch = bankSettings.Branch;
+            ViewBag.AccountNo = bankSettings.AccountNo;
+            ViewBag.AccountName = bankSettings.AccountName;
+            ViewBag.TransferMemo = sanitizedMemo;
+            ViewBag.VietQrUrl = vietQrUrl;
+            ViewBag.SupportedBanks = _vietQrService.GetSupportedBanks();
 
             return View();
         }
