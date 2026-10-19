@@ -24,6 +24,18 @@
         </div>
     </div>
 
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 rounded-4 mb-3 d-flex align-items-center p-3" role="alert" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-left: 5px solid #10b981 !important;">
+            <i class="bi bi-check-circle-fill fs-3 text-success me-3"></i>
+            <div class="flex-grow-1">
+                <h6 class="mb-1 fw-bold text-success">Cập nhật vé thành công!</h6>
+                <div class="text-dark small">@TempData["SuccessMessage"]</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="sbg-wakelock-banner shadow-sm mb-3">
         <i class="bi bi-brightness-high-fill fs-5 text-warning"></i>
         <div class="flex-grow-1">

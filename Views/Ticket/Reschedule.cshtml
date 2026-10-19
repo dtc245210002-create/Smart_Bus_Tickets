@@ -3,12 +3,12 @@
     Layout = null;
     var old = Model?.OldTicket;
     var startCity = old?.StartPoint ?? "Hà Nội";
-    var endCity = old?.EndPoint ?? "Đà Nẵng";
-    var currentTicketCode = old?.TicketCode ?? "SBG-84920";
-    var oldTicketPrice = (int)(old?.Price ?? 530000m);
-    var oldSeatsText = old?.SeatNumber ?? "VIP 05, VIP 06";
-    var targetDateStr = Model?.NewDepartureDate.ToString("dd/MM/yyyy") ?? "25/10/2026";
-    var newDateIso = Model?.NewDepartureDate.ToString("yyyy-MM-dd") ?? "2026-10-25";
+    var endCity = old?.EndPoint ?? "Vĩnh Phúc";
+    var currentTicketCode = old?.TicketCode ?? "SBG-29-88-20261019-6834-1";
+    var oldTicketPrice = (int)(old?.Price ?? 65000m);
+    var oldSeatsText = old?.SeatNumber ?? "A06";
+    var targetDateStr = Model?.NewDepartureDate.ToString("dd/MM/yyyy") ?? "20/10/2026";
+    var newDateIso = Model?.NewDepartureDate.ToString("yyyy-MM-dd") ?? "2026-10-20";
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -238,9 +238,9 @@
                                 <span class="font-bold text-gray-800">VIP 03</span>
                                 <span class="text-[11px] text-gray-500">290k</span>
                             </button>
-                            <button type="button" class="seat-btn p-2.5 rounded-lg bg-white border border-gray-300 hover:border-primary flex items-center justify-between text-xs cursor-pointer shadow-xs" data-seat="VIP 04" onclick="toggleSeat(this, 'VIP 04')">
-                                <span class="font-bold text-gray-800">VIP 04</span>
-                                <span class="text-[11px] text-gray-500">290k</span>
+                            <button type="button" class="seat-btn selected p-2.5 rounded-lg bg-primary text-white border border-primary flex items-center justify-between text-xs cursor-pointer shadow-sm ring-2 ring-primary/30" data-seat="VIP 04" onclick="toggleSeat(this, 'VIP 04')">
+                                <span class="font-bold">VIP 04</span>
+                                <span class="text-[11px]">Đã chọn</span>
                             </button>
 
                             <!-- Hàng 3 (Ghế cũ) -->
@@ -258,9 +258,9 @@
                                 <span class="font-bold">VIP 08</span>
                                 <span class="text-[11px]">Đã chọn</span>
                             </button>
-                            <button type="button" class="seat-btn selected p-2.5 rounded-lg bg-primary text-white border border-primary flex items-center justify-between text-xs cursor-pointer shadow-sm ring-2 ring-primary/30" data-seat="VIP 09" onclick="toggleSeat(this, 'VIP 09')">
-                                <span class="font-bold">VIP 09</span>
-                                <span class="text-[11px]">Đã chọn</span>
+                            <button type="button" class="seat-btn p-2.5 rounded-lg bg-white border border-gray-300 hover:border-primary flex items-center justify-between text-xs cursor-pointer shadow-xs" data-seat="VIP 09" onclick="toggleSeat(this, 'VIP 09')">
+                                <span class="font-bold text-gray-800">VIP 09</span>
+                                <span class="text-[11px] text-gray-500">290k</span>
                             </button>
 
                             <!-- Hàng 5 -->
@@ -296,7 +296,7 @@
 
                         <!-- Dải thông báo ghế đang chọn (Không tràn lề) -->
                         <div class="w-full max-w-full overflow-hidden break-words p-2.5 rounded-lg bg-gray-50 border border-gray-200 text-xs flex items-center justify-between gap-2">
-                            <span class="truncate">Ghế đang chọn: <strong class="text-primary" id="selectedSeatsLabel">VIP 08, VIP 09</strong></span>
+                            <span class="truncate">Ghế đang chọn: <strong class="text-primary" id="selectedSeatsLabel">VIP 04, VIP 08</strong></span>
                             <span class="text-gray-500 shrink-0">Số lượng: <strong class="text-gray-900" id="selectedCountLabel">2</strong>/2 ghế</span>
                         </div>
                     </div>
@@ -341,16 +341,23 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="OldTicket.TicketCode" value="@currentTicketCode" />
                             <input type="hidden" name="OldTicket.TicketId" value="@(old?.TicketId ?? 1024)" />
+                            <input type="hidden" name="OldTicket.Price" value="@oldTicketPrice" />
+                            <input type="hidden" name="OldTicket.StartPoint" value="@startCity" />
+                            <input type="hidden" name="OldTicket.EndPoint" value="@endCity" />
+                            <input type="hidden" name="OldTicket.SeatNumber" value="@oldSeatsText" />
                             <input type="hidden" name="NewDepartureDate" id="formNewDepartureDate" value="@newDateIso" />
                             <input type="hidden" name="SelectedTripId" id="formTripId" value="202" />
-                            <input type="hidden" name="SelectedNewSeat" id="formSelectedSeat" value="VIP 08, VIP 09" />
+                            <input type="hidden" name="SelectedNewSeat" id="formSelectedSeat" value="VIP 04, VIP 08" />
                             <input type="hidden" name="NewSeatPrice" id="formNewPrice" value="580000" />
                             <input type="hidden" name="SelectedBoardingPoint" value="@startCity" />
                             <input type="hidden" name="SelectedDropOffPoint" value="@endCity" />
+                            <input type="hidden" name="RefundBankName" id="formRefundBank" value="" />
+                            <input type="hidden" name="RefundAccountNumber" id="formRefundAccount" value="" />
+                            <input type="hidden" name="RefundAccountHolder" id="formRefundHolder" value="" />
 
-                            <button type="submit" id="btnSubmit" class="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <button type="button" onclick="handleSubmitAction()" id="btnSubmit" class="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
                                 <span class="material-symbols-outlined text-[19px]">check_circle</span>
-                                <span id="btnSubmitText">Xác nhận đổi chuyến (Trả thêm 50.000 đ)</span>
+                                <span id="btnSubmitText">Xác nhận đổi chuyến (Trả thêm 515.000 đ)</span>
                             </button>
 
                             <a href="/Ticket/Detail" class="w-full py-2.5 px-4 rounded-xl border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 font-semibold text-xs text-center transition-colors">
@@ -368,6 +375,106 @@
         </div>
     </main>
 
+    <!-- MODAL THANH TOÁN CHÊNH LỆCH ĐỔI CHUYẾN (VIETQR DEMO) -->
+    <div id="modalPayment" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm sm:max-w-md w-full p-6 text-center shadow-2xl border border-gray-100 transform transition-all scale-95 duration-200" id="modalPaymentBox">
+            <div class="w-12 h-12 rounded-full bg-emerald-50 text-primary flex items-center justify-center mx-auto mb-3 shadow-inner">
+                <span class="material-symbols-outlined text-[28px]">qr_code_scanner</span>
+            </div>
+            <h3 class="text-lg font-black text-gray-900 mb-1">Thanh toán chênh lệch đổi vé</h3>
+            <p class="text-xs text-gray-500 mb-3">Quét mã VietQR hoặc bấm nút bên dưới để hoàn tất nâng hạng chuyến xe</p>
+            
+            <!-- Chi tiết quyết toán -->
+            <div class="bg-gray-50 rounded-xl p-3 text-left text-xs space-y-1.5 mb-3 border border-gray-200">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Mã vé hiện tại:</span>
+                    <span class="font-mono font-bold text-gray-900">#@currentTicketCode</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Chuyến mới:</span>
+                    <span class="font-bold text-gray-800" id="modalTripText">21:00 • Limousine VIP</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Ghế mới:</span>
+                    <span class="font-bold text-primary" id="modalSeatsText">VIP 04, VIP 08</span>
+                </div>
+                <div class="flex justify-between pt-1.5 border-t border-gray-200 text-sm">
+                    <span class="font-bold text-gray-800">Cần thanh toán thêm:</span>
+                    <span class="font-bold text-primary font-mono text-base" id="modalDeltaAmount">+ 515.000 đ</span>
+                </div>
+            </div>
+
+            <!-- Mã QR VietQR Demo -->
+            <div class="p-2 bg-white rounded-xl border border-gray-200 shadow-xs mb-2 inline-block">
+                <img id="modalQrImg" src="https://img.vietqr.io/image/vietcombank-1029384756-compact2.png?amount=515000&addInfo=SBG2988RE&accountName=CONG%20TY%20CO%20PHAN%20SMARTBUS%20GO" class="w-48 h-48 mx-auto object-contain rounded-lg" alt="VietQR" />
+            </div>
+            <div class="text-[11px] text-gray-500 mb-4">
+                Dùng Camera / Zalo / App Ngân hàng quét mã hoặc xác nhận ngay
+            </div>
+
+            <!-- Nút hành động -->
+            <div class="space-y-2">
+                <button type="button" onclick="confirmPaymentAndSubmit()" id="btnModalPay" class="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span class="material-symbols-outlined text-[20px]">verified</span>
+                    <span id="btnModalPayText">⚡ Xác nhận thanh toán chênh lệch (Demo)</span>
+                </button>
+                <button type="button" onclick="closePaymentModal()" class="w-full py-2 px-3 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 text-xs font-semibold transition-colors cursor-pointer">
+                    Đóng / Quay lại chỉnh sửa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL HOÀN TIỀN CHÊNH LỆCH -->
+    <div id="modalRefund" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm sm:max-w-md w-full p-6 text-center shadow-2xl border border-gray-100 transform transition-all scale-95 duration-200" id="modalRefundBox">
+            <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-inner">
+                <span class="material-symbols-outlined text-[28px]">currency_exchange</span>
+            </div>
+            <h3 class="text-lg font-black text-gray-900 mb-1">Xác nhận nhận tiền hoàn lại</h3>
+            <p class="text-xs text-gray-500 mb-3">Vé mới có giá thấp hơn. Hệ thống sẽ hoàn tiền chênh lệch vào tài khoản ngân hàng của bạn.</p>
+
+            <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 mb-4 text-left">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-emerald-800">Số tiền hoàn lại:</span>
+                    <span class="text-lg font-bold text-emerald-700 font-mono" id="modalRefundAmount">65.000 đ</span>
+                </div>
+            </div>
+
+            <div class="space-y-2.5 text-left text-xs mb-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-1">Ngân hàng thụ hưởng:</label>
+                    <select id="refundBank" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-medium focus:ring-1 focus:ring-primary focus:outline-none">
+                        <option value="VCB">Vietcombank (VCB)</option>
+                        <option value="MB">MB Bank (Quân Đội)</option>
+                        <option value="TCB">Techcombank</option>
+                        <option value="VPB">VPBank</option>
+                        <option value="BIDV">BIDV</option>
+                        <option value="CTG">VietinBank</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-1">Số tài khoản:</label>
+                    <input type="text" id="refundAccount" placeholder="Ví dụ: 1029384756" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-mono font-bold focus:ring-1 focus:ring-primary focus:outline-none" value="1029384756" />
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-1">Tên chủ tài khoản:</label>
+                    <input type="text" id="refundName" placeholder="TRAN VAN BINH" class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold uppercase focus:ring-1 focus:ring-primary focus:outline-none" value="TRAN VAN BINH" />
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <button type="button" onclick="confirmRefundAndSubmit()" id="btnModalRefund" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                    <span>Xác nhận đổi chuyến & Nhận hoàn tiền</span>
+                </button>
+                <button type="button" onclick="closeRefundModal()" class="w-full py-2 px-3 rounded-lg border border-gray-200 text-gray-600 hover:text-gray-900 text-xs font-semibold transition-colors cursor-pointer">
+                    Đóng / Quay lại
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- FOOTER GỌN GÀNG -->
     <footer class="bg-white border-t border-gray-100 py-4 mt-auto">
         <div class="max-w-6xl mx-auto px-4 text-center text-xs text-gray-500">
@@ -377,7 +484,7 @@
 
     <!-- JAVASCRIPT XỬ LÝ CHỌN GHẾ & TÍNH TOÁN -->
     <script>
-        let selectedSeats = ['VIP 08', 'VIP 09'];
+        let selectedSeats = ['VIP 04', 'VIP 08'];
         const oldTicketPrice = @oldTicketPrice;
         let seatUnitPrice = 290000;
 
@@ -475,6 +582,92 @@
             }
         }
 
+        function handleSubmitAction() {
+            const count = selectedSeats.length;
+            if (count === 0) {
+                showToast('Vui lòng chọn ít nhất 1 vị trí ghế mới!', 'warning');
+                return;
+            }
+            const newTotal = count * seatUnitPrice;
+            const delta = newTotal - oldTicketPrice;
+
+            if (delta > 0) {
+                // Mở modal thanh toán chênh lệch
+                const selectEl = document.getElementById('selectTripTime');
+                document.getElementById('modalTripText').textContent = selectEl.value;
+                document.getElementById('modalSeatsText').textContent = selectedSeats.join(', ');
+                document.getElementById('modalDeltaAmount').textContent = `+ ${delta.toLocaleString('vi-VN')} đ`;
+                document.getElementById('modalQrImg').src = `https://img.vietqr.io/image/vietcombank-1029384756-compact2.png?amount=${delta}&addInfo=SBG2988RE&accountName=CONG%20TY%20CO%20PHAN%20SMARTBUS%20GO`;
+
+                const modal = document.getElementById('modalPayment');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    const box = document.getElementById('modalPaymentBox');
+                    if (box) {
+                        box.classList.remove('scale-95');
+                        box.classList.add('scale-100');
+                    }
+                }, 50);
+            } else if (delta < 0) {
+                // Mở modal hoàn tiền
+                const refund = Math.abs(delta);
+                document.getElementById('modalRefundAmount').textContent = `${refund.toLocaleString('vi-VN')} đ`;
+
+                const modal = document.getElementById('modalRefund');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    const box = document.getElementById('modalRefundBox');
+                    if (box) {
+                        box.classList.remove('scale-95');
+                        box.classList.add('scale-100');
+                    }
+                }, 50);
+            } else {
+                // Ngang giá -> Submit form đổi vé luôn
+                document.getElementById('rescheduleForm').submit();
+            }
+        }
+
+        function closePaymentModal() {
+            const modal = document.getElementById('modalPayment');
+            modal.classList.add('hidden');
+        }
+
+        function closeRefundModal() {
+            const modal = document.getElementById('modalRefund');
+            modal.classList.add('hidden');
+        }
+
+        function confirmPaymentAndSubmit() {
+            const btn = document.getElementById('btnModalPay');
+            const btnText = document.getElementById('btnModalPayText');
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.innerHTML = '<span class="inline-flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> <span>Đang xác nhận đổi vé...</span></span>';
+
+            setTimeout(() => {
+                document.getElementById('rescheduleForm').submit();
+            }, 600);
+        }
+
+        function confirmRefundAndSubmit() {
+            const bankEl = document.getElementById('refundBank');
+            const accEl = document.getElementById('refundAccount');
+            const holderEl = document.getElementById('refundName');
+            if (bankEl) document.getElementById('formRefundBank').value = bankEl.value;
+            if (accEl) document.getElementById('formRefundAccount').value = accEl.value;
+            if (holderEl) document.getElementById('formRefundHolder').value = holderEl.value;
+
+            const btn = document.getElementById('btnModalRefund');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="inline-flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> <span>Đang tạo lệnh hoàn tiền...</span></span>';
+            }
+
+            setTimeout(() => {
+                document.getElementById('rescheduleForm').submit();
+            }, 600);
+        }
+
         function onDateChanged(newDate) {
             document.getElementById('formNewDepartureDate').value = newDate;
             showToast(`Đã chọn ngày khởi hành mới: ${newDate}`, 'info');
@@ -489,7 +682,7 @@
             showToast(`Đã chuyển sang khung giờ ${selectEl.value}`, 'info');
         }
 
-        // HÀM HIỂN THỊ TOAST THÔNG BÁO GỌN GÀNG, KHÔNG BAO GIỜ BỊ TRÀN
+        // HÀM HIỂN THỊ TOAST THÔNG BÁO GỌN GÀNG
         let toastTimeout;
         function showToast(message, type = 'info') {
             const toast = document.getElementById('toastNotification');
@@ -520,6 +713,11 @@
                 toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-20px]');
             }, 3000);
         }
+
+        // Khởi động tính toán ban đầu
+        document.addEventListener('DOMContentLoaded', function () {
+            updateCalculation();
+        });
     </script>
 </body>
 </html>
