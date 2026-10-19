@@ -672,7 +672,7 @@ namespace WebApplication1.Controllers
 
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = $"Xác nhận thanh toán thành công #{effectiveTxn} với số tiền {effectiveAmount:N0} đ qua {effectiveMethod}! Vé điện tử đã được kích hoạt.";
-                    return RedirectToAction("Detail", new { id = ticket.TicketCode, status = "CONFIRMED" });
+                    return RedirectToAction("PaymentResult", new { ticketCode = ticket.TicketCode, bookingCode = ticket.Booking?.BookingCode ?? effectiveBookingCode, status = "success", transactionNo = effectiveTxn, amount = effectiveAmount, paymentMethod = effectiveMethod });
                 }
             }
             catch (Exception ex)
@@ -682,7 +682,7 @@ namespace WebApplication1.Controllers
 
             // Fallback khi chạy demo
             TempData["SuccessMessage"] = $"Xác nhận thanh toán thành công #{effectiveTxn} với số tiền {effectiveAmount:N0} đ qua {effectiveMethod}! Vé điện tử đã được kích hoạt.";
-            return RedirectToAction("Detail", new { id = effectiveTicketCode, status = "CONFIRMED" });
+            return RedirectToAction("PaymentResult", new { ticketCode = effectiveTicketCode, bookingCode = effectiveBookingCode, status = "success", transactionNo = effectiveTxn, amount = effectiveAmount, paymentMethod = effectiveMethod });
         }
 
         // =========================================================================
@@ -845,6 +845,7 @@ namespace WebApplication1.Controllers
             }
 
             var cleanCode = searchCode.Trim().ToLowerInvariant();
+            var noDashCode = cleanCode.Replace("-", "");
 
             // Kiểm tra DB
             try
@@ -852,14 +853,16 @@ namespace WebApplication1.Controllers
                 var ticket = await _context.Tickets
                     .Include(t => t.Booking).ThenInclude(b => b.Payments)
                     .FirstOrDefaultAsync(t => t.TicketCode.ToLower() == cleanCode ||
-                                              t.TicketCode.ToLower().StartsWith(cleanCode + "-") ||
-                                              (t.Booking != null && t.Booking.BookingCode.ToLower() == cleanCode));
+                                              t.TicketCode.ToLower().Replace("-", "") == noDashCode ||
+                                              t.TicketCode.ToLower().StartsWith(cleanCode) ||
+                                              (!string.IsNullOrEmpty(bookingCode) && t.Booking != null && t.Booking.BookingCode.ToLower() == bookingCode.ToLower()) ||
+                                              (t.Booking != null && t.Booking.BookingCode.ToLower() == cleanCode) ||
+                                              (t.Booking != null && t.Booking.BookingCode.ToLower().Replace("-", "") == noDashCode));
 
                 if (ticket != null)
                 {
                     var isPaid = ticket.Status == "CONFIRMED" ||
                                  ticket.Status == "PAID" ||
-                                 ticket.Status == "ACTIVE" ||
                                  ticket.Booking?.Payments.Any(p => p.Status == "Paid") == true;
 
                     return Ok(new
@@ -870,7 +873,7 @@ namespace WebApplication1.Controllers
                         ticketCode = ticket.TicketCode,
                         bookingCode = ticket.Booking?.BookingCode,
                         amount = ticket.Booking?.TotalAmount ?? ticket.Price,
-                        paymentMethod = ticket.Booking?.Payments.LastOrDefault()?.PaymentMethod ?? "VietQR",
+                        paymentMethod = ticket.Booking?.Payments.LastOrDefault()?.PaymentMethod ?? "payOS (Sandbox)",
                         transactionNo = ticket.Booking?.Payments.LastOrDefault()?.TransactionCode ?? $"TXN{DateTime.Now:yyyyMMddHHmmss}",
                         paymentTime = ticket.Booking?.Payments.LastOrDefault()?.PaymentTime ?? DateTime.Now,
                         message = isPaid ? "Giao dịch thanh toán đã được đối soát thành công." : "Đang chờ đối soát từ cổng thanh toán..."
@@ -879,22 +882,37 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Lỗi kiểm tra trạng thái thanh toán: {Message}", ex.Message);
+                _logger.LogWarning(ex, "Lỗi kiểm tra Database trong CheckPaymentStatus: {Message}", ex.Message);
             }
 
-            // Demo mock fallback
+            // Kiểm tra trong bộ nhớ DemoPaymentStore (Mô phỏng thanh toán Sandbox)
+            if (WebApplication1.Services.DemoPaymentStore.TryGet(searchCode, out var demoRec) ||
+                (!string.IsNullOrEmpty(bookingCode) && WebApplication1.Services.DemoPaymentStore.TryGet(bookingCode, out demoRec)) ||
+                (!string.IsNullOrEmpty(ticketCode) && WebApplication1.Services.DemoPaymentStore.TryGet(ticketCode, out demoRec)))
+            {
+                return Ok(new
+                {
+                    success = true,
+                    isPaid = true,
+                    status = "SUCCESS",
+                    ticketCode = demoRec?.TicketCode ?? searchCode,
+                    bookingCode = demoRec?.BookingCode ?? bookingCode,
+                    amount = demoRec?.Amount ?? 180000m,
+                    paymentMethod = demoRec?.PaymentMethod ?? "payOS (Sandbox)",
+                    transactionNo = demoRec?.TransactionCode ?? $"TXN{DateTime.Now:yyyyMMddHHmmss}",
+                    paymentTime = demoRec?.PaidAt ?? DateTime.Now,
+                    message = "Giao dịch thanh toán demo đã được xác nhận thành công."
+                });
+            }
+
+            // Mặc định: vẫn đang chờ khách quét mã và thanh toán
             return Ok(new
             {
                 success = true,
-                isPaid = true,
-                status = "SUCCESS",
+                isPaid = false,
+                status = "PENDING",
                 ticketCode = searchCode.ToUpperInvariant(),
-                bookingCode = "BK-84920",
-                amount = 530000m,
-                paymentMethod = "VietQR",
-                transactionNo = $"TXN{DateTime.Now:yyyyMMddHHmmss}",
-                paymentTime = DateTime.Now,
-                message = "Giao dịch thanh toán đã được đối soát thành công."
+                message = "Đang chờ khách hàng quét mã và thanh toán..."
             });
         }
 

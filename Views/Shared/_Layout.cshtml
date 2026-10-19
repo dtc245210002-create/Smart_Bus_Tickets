@@ -175,6 +175,7 @@
                         {
                             var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "";
                             var isAdmin = User.IsInRole("Quản trị viên") || User.IsInRole("Admin") || userEmail.Contains("admin", StringComparison.OrdinalIgnoreCase);
+                            var isDriver = User.IsInRole("Tài xế") && !isAdmin;
 
                             if (isAdmin)
                             {
@@ -183,12 +184,20 @@
                                     <span>Trang Admin</span>
                                 </a>
                             }
-                        }
-                        else
-                        {
-                            <a asp-controller="Driver" asp-action="Login" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold" title="Dành riêng cho Bác tài">
-                                <i class="bi bi-person-badge"></i> Bác tài
-                            </a>
+                            else if (isDriver)
+                            {
+                                <a asp-controller="Driver" asp-action="Dashboard" class="btn btn-warning rounded-pill px-3 py-2 fw-semibold d-none d-sm-inline-flex align-items-center gap-2" title="Bảng điều khiển Bác tài">
+                                    <i class="bi bi-truck-front-fill"></i>
+                                    <span>Bác tài</span>
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Ticket" asp-action="Detail" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold d-none d-sm-inline-flex align-items-center gap-2" title="Xem vé đã đặt">
+                                    <i class="bi bi-ticket-perforated"></i>
+                                    <span>Vé của tôi</span>
+                                </a>
+                            }
                         }
                     </div>
                 </div>

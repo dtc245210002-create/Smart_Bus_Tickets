@@ -1,5 +1,47 @@
 @{
     Layout = null;
+    var rawTicketCode = ViewBag.TicketCode != null ? ((string)ViewBag.TicketCode).Replace("-", "") : "SBG84920";
+    var cleanTicketCode = ViewBag.TicketCode ?? "SBG-TN-CB-001";
+    var cleanBookingCode = ViewBag.BookingCode ?? "BK-TNCB-001";
+    var totalAmountNum = (decimal)(ViewBag.TotalAmount ?? 180000m);
+    var amountFormatted = totalAmountNum.ToString("F0");
+    
+    // Link VietQR API chuẩn NAPAS247 tự động điền STK, Số tiền, và Nội dung chuyển khoản mã vé
+    var vietQrBank = "vietcombank";
+    var vietQrAccount = "1029384756";
+    var vietQrAccountName = Uri.EscapeDataString("CONG TY CO PHAN SMARTBUS GO VIET NAM");
+    var vietQrUrl = $"https://img.vietqr.io/image/{vietQrBank}-{vietQrAccount}-compact2.png?amount={amountFormatted}&addInfo={rawTicketCode}&accountName={vietQrAccountName}";
+
+    // Phân quyền người dùng & Tên tài khoản hiện tại
+    var isUserAuth = User.Identity?.IsAuthenticated == true;
+    var currentUserName = isUserAuth ? (User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Tài khoản") : "";
+    var currentUserEmail = isUserAuth ? (User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "") : "";
+    var isUserAdmin = isUserAuth && (User.IsInRole("Quản trị viên") || User.IsInRole("Admin") || currentUserEmail.Contains("admin", StringComparison.OrdinalIgnoreCase));
+    var isUserDriver = isUserAuth && ((User.IsInRole("Tài xế") || currentUserEmail.Contains("driver", StringComparison.OrdinalIgnoreCase)) && !isUserAdmin);
+
+    // Tự động nhận diện IP mạng LAN của máy tính hoặc Host hiện tại để điện thoại quét mã QR vào được ngay
+    string lanIp = Context.Request.Host.Host;
+    var currentHost = Context.Request.Host.Host;
+    var isLocalhost = string.Equals(currentHost, "localhost", StringComparison.OrdinalIgnoreCase) || currentHost == "127.0.0.1";
+
+    if (isLocalhost)
+    {
+        lanIp = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+            .Where(n => n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up && 
+                        n.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback)
+            .SelectMany(n => n.GetIPProperties().UnicastAddresses)
+            .Where(a => a.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && 
+                        !System.Net.IPAddress.IsLoopback(a.Address) &&
+                        !a.Address.ToString().StartsWith("169.254"))
+            .Select(a => a.Address.ToString())
+            .FirstOrDefault() ?? "192.168.0.109";
+    }
+
+    // Khi điện thoại quét mạng nội bộ, luôn dùng HTTP cổng 5122 (tránh lỗi chứng chỉ SSL localhost)
+    var mobileScheme = isLocalhost ? "http" : Context.Request.Scheme;
+    var mobilePort = isLocalhost ? 5122 : (Context.Request.Host.Port ?? (mobileScheme == "https" ? 443 : 80));
+    var payOsMobileUrl = $"{mobileScheme}://{lanIp}:{mobilePort}/payos/mobile-pay?ticketCode={Uri.EscapeDataString(cleanTicketCode)}&bookingCode={Uri.EscapeDataString(cleanBookingCode)}&amount={amountFormatted}&from={Uri.EscapeDataString((string)(ViewBag.StartPoint ?? "Thái Nguyên"))}&to={Uri.EscapeDataString((string)(ViewBag.EndPoint ?? "Cao Bằng"))}&seats={Uri.EscapeDataString((string)(ViewBag.SeatNumber ?? "A01"))}&depTime={Uri.EscapeDataString((string)(ViewBag.DepartureTime ?? "08:00"))}&passenger={Uri.EscapeDataString((string)(ViewBag.PassengerName ?? currentUserName))}";
+    var payOsQrUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=260x260&data={Uri.EscapeDataString(payOsMobileUrl)}";
 }
 <!DOCTYPE html>
 
@@ -52,14 +94,95 @@
 </div>
 <!-- Right actions -->
 <div class="flex items-center gap-3">
-<button class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#094c3b] hover:bg-[#073c2e] text-white font-semibold text-[14px] shadow-sm transition-all" type="button">
-<span class="material-symbols-outlined text-[19px]">login</span>
-<span class="">Đăng nhập / Đăng ký</span>
-</button>
-<button class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-[14px] transition-colors" type="button">
-<span class="material-symbols-outlined text-[19px] text-gray-600">badge</span>
-<span class="">Bác tài</span>
-</button>
+    @if (isUserAuth)
+    {
+        <!-- Dropdown tên tài khoản hiện tại -->
+        <div class="relative group">
+            <button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#094c3b] hover:bg-[#073c2e] text-white font-semibold text-[14px] shadow-sm transition-all cursor-pointer" type="button">
+                <span class="material-symbols-outlined text-[19px]">account_circle</span>
+                <span class="max-w-[150px] truncate">@currentUserName</span>
+                <span class="material-symbols-outlined text-[16px] text-emerald-300">expand_more</span>
+            </button>
+            <div class="hidden group-hover:block absolute right-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 text-left">
+                <div class="px-4 py-2 border-b border-gray-100">
+                    <span class="text-[11px] text-gray-400 block">Đang đăng nhập</span>
+                    <span class="font-bold text-gray-900 text-sm block truncate">@currentUserName</span>
+                    @if (isUserAdmin)
+                    {
+                        <span class="inline-block mt-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Quản trị viên (Admin)</span>
+                    }
+                    else if (isUserDriver)
+                    {
+                        <span class="inline-block mt-0.5 text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Đội ngũ Bác tài</span>
+                    }
+                    else
+                    {
+                        <span class="inline-block mt-0.5 text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Khách hàng thành viên</span>
+                    }
+                </div>
+                @if (isUserAdmin)
+                {
+                    <a href="/Admin/Dashboard" class="flex items-center gap-2 px-4 py-2 text-sm text-emerald-800 hover:bg-emerald-50 font-semibold transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                        <span>Trang Quản trị Admin</span>
+                    </a>
+                }
+                @if (isUserDriver)
+                {
+                    <a href="/Driver/Dashboard" class="flex items-center gap-2 px-4 py-2 text-sm text-amber-800 hover:bg-amber-50 font-semibold transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">badge</span>
+                        <span>Bảng ca chạy Bác tài</span>
+                    </a>
+                }
+                <a href="/Ticket/Detail" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <span class="material-symbols-outlined text-[18px] text-gray-500">confirmation_number</span>
+                    <span>Vé xe của tôi</span>
+                </a>
+                <div class="border-t border-gray-100 my-1"></div>
+                <form action="/Account/Logout" method="post" class="w-full m-0 p-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">logout</span>
+                        <span>Đăng xuất</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Khi chưa đăng nhập: Nút Đăng nhập / Đăng ký -->
+        <a href="/Account/Login" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#094c3b] hover:bg-[#073c2e] text-white font-semibold text-[14px] shadow-sm transition-all">
+            <span class="material-symbols-outlined text-[19px]">login</span>
+            <span>Đăng nhập / Đăng ký</span>
+        </a>
+    }
+
+    <!-- Nút thứ 2: Tùy biến phù hợp theo từng loại tài khoản -->
+    @if (isUserAdmin)
+    {
+        <!-- Tài khoản Admin: Bỏ nút Bác tài, thay bằng nút Trang Admin -->
+        <a href="/Admin/Dashboard" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#008378] border border-emerald-300 font-semibold text-[13px] shadow-xs transition-colors" title="Bảng điều khiển Quản trị">
+            <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+            <span>Trang Admin</span>
+        </a>
+    }
+    else if (isUserDriver)
+    {
+        <!-- Tài khoản Tài xế: Hiện nút Bác tài -->
+        <a href="/Driver/Dashboard" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-[13px] transition-colors" title="Khu vực dành cho Bác tài">
+            <span class="material-symbols-outlined text-[18px] text-amber-700">badge</span>
+            <span>Bác tài</span>
+        </a>
+    }
+    else if (isUserAuth)
+    {
+        <!-- Tài khoản Khách hàng: Bỏ nút Bác tài, thay bằng nút Vé của tôi -->
+        <a href="/Ticket/Detail" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-[13px] transition-colors" title="Xem danh sách vé đã đặt">
+            <span class="material-symbols-outlined text-[18px] text-[#008378]">confirmation_number</span>
+            <span>Vé của tôi</span>
+        </a>
+    }
 </div>
 </div>
 </header><main class="w-full pt-[104px] bg-[#f4f7f6] min-h-screen pb-16">
@@ -159,32 +282,51 @@
 <!-- Active Method Detailed Body: VietQR -->
 <div class="rounded-2xl bg-[#f8fafc] border border-slate-200/90 p-5 sm:p-7">
 <div class="text-center max-w-lg mx-auto mb-6">
-<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-2">
-<span class="material-symbols-outlined text-[15px]">flash_on</span>
-                Giao dịch xử lý tự động 24/7
-              </span>
-<h3 class="text-xl font-bold text-gray-900">Quét mã VietQR để thanh toán nhanh</h3>
-<p class="text-xs sm:text-sm text-gray-600 mt-1">
-                Mở ứng dụng ngân hàng bất kỳ (VCB, BIDV, Techcombank, MB, VPBank...) hoặc ví điện tử để quét mã thanh toán không cần nhập tay.
-              </p>
+    <!-- Switcher giữa payOS Sandbox Test (Không mất tiền) và VietQR Thật -->
+    <div class="inline-flex p-1 bg-gray-200/80 rounded-xl mb-3 shadow-inner">
+        <button id="tabPayOS" type="button" onclick="switchQrMode('payos')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#0052cc] text-white shadow-sm flex items-center gap-1.5 cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>payOS Sandbox (Test điện thoại)</span>
+        </button>
+        <button id="tabVietQR" type="button" onclick="switchQrMode('vietqr')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-700 hover:text-gray-900 transition-all flex items-center gap-1.5 cursor-pointer">
+            <span>VietQR Ngân hàng</span>
+        </button>
+    </div>
+
+    <h3 id="qrTitle" class="text-xl font-bold text-gray-900">Quét mã payOS Sandbox bằng điện thoại</h3>
+    <p id="qrDesc" class="text-xs sm:text-sm text-gray-600 mt-1">
+        Bật <strong>Camera</strong> (iPhone/Android) hoặc <strong>Zalo</strong> trên điện thoại để quét mã QR và xác nhận thanh toán như bình thường mà <strong>hoàn toàn không bị trừ tiền thật</strong>.
+    </p>
 </div>
 <!-- Content Area: QR and Bank Details -->
 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
 <!-- QR Code Card -->
 <div class="md:col-span-5 flex flex-col items-center justify-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
 <!-- Badges above QR -->
-<div class="flex items-center justify-center gap-2 mb-2 w-full">
-<span class="font-extrabold text-[13px] tracking-tight text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">VietQR</span>
-<span class="font-bold text-[11px] text-gray-700 bg-gray-100 px-2 py-0.5 rounded">Napas247</span>
+<div class="flex items-center justify-center gap-2 mb-2 w-full" id="qrBadges">
+<span class="font-extrabold text-[13px] tracking-tight text-white bg-[#0052cc] px-2 py-0.5 rounded border border-blue-600">payOS Sandbox</span>
+<span class="font-bold text-[11px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">Không trừ tiền thật</span>
 </div>
-<!-- QR Image from DataStore -->
+<!-- QR Image from VietQR / payOS Dynamic API -->
 <div class="relative group p-1 bg-white rounded-xl">
-<img alt="Mã VietQR thanh toán" class="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-xl border border-slate-200 shadow-sm object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ4SelF7-6s33RCvzZ9aFM_5qeV54DxoPkaa4Rw6ktbXlZJ9y2vnJz6Ln5dtcB9N-txplAteAT-f5WSKCXfu3gBvI7rYucrMz4cssi8pJLyBlXzjtjc7sbydh8I6XnmEylkNWtflWZHCp1AjOCcR40iGvYyT9yhchGUHQLybT6HFiwi8tdO6XMQGw7WuRnb0nSZ7UlPzv-R08-Ms7WsnvpMYBz1bALm-BRQ06LRkuTvyhn1KfNIaSQ2g"/>
+<img id="mainQrImage" alt="Mã thanh toán QR" class="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-xl border border-slate-200 shadow-sm object-contain" src="@payOsQrUrl" onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent('@(payOsMobileUrl)');"/>
 </div>
 <div class="mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-500">
-<span class="material-symbols-outlined text-[16px] text-primary">qr_code_2</span>
-<span>Mã QR tự động cập nhật số tiền &amp; nội dung</span>
+<span class="material-symbols-outlined text-[16px] text-primary">qr_code_scanner</span>
+<span>Dùng Camera hoặc Zalo trên điện thoại quét mã</span>
 </div>
+
+<!-- Nút mở giao diện thanh toán Demo (Tab mới trên trình duyệt) -->
+<a href="@payOsMobileUrl" target="_blank" class="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0052cc] text-xs font-bold border border-blue-200 transition-colors cursor-pointer">
+    <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+    <span>📱 Mở giao diện Demo (Tab mới)</span>
+</a>
+
+<!-- Nút 1-click xác nhận thanh toán trực tiếp ngay trên máy tính -->
+<button type="button" onclick="quickSimulatePayment()" id="btnQuickPay" class="mt-1.5 w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer">
+    <span class="material-symbols-outlined text-[16px]">bolt</span>
+    <span id="btnQuickPayText">⚡ Xác nhận thanh toán ngay (Test trực tiếp)</span>
+</button>
 </div>
 <!-- Bank Transfer Detailed Breakdown with Copy Actions -->
 <div class="md:col-span-7 flex flex-col gap-3">
@@ -268,13 +410,7 @@
                 ● Cổng kết nối trực tiếp
               </span>
 </div>
-<!-- Big CTA Confirmation Button -->
-<div class="mt-5">
-<button onclick="window.location.href='/Ticket/Detail' + (window.location.search || '');" class="w-full py-4 px-6 rounded-xl bg-[#008378] hover:bg-[#00685f] active:scale-[0.99] text-white font-bold text-base sm:text-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 tracking-wide font-headline-sm" type="button">
-<span class="material-symbols-outlined text-[24px]">verified</span>
-<span>XÁC NHẬN ĐÃ CHUYỂN KHOẢN • @(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0"))đ</span>
-</button>
-</div>
+
 <!-- Help Notice -->
 <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-xs text-gray-500 text-center">
 <span>Gặp sự cố chuyển tiền hoặc chưa nhận được mã vé?</span>
@@ -442,6 +578,74 @@
 </div>
 </main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.02)] mt-margin-lg"><div class="max-w-7xl mx-auto px-margin lg:px-margin-lg py-margin-lg"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter-lg pb-margin"><div class="lg:col-span-2 flex flex-col gap-space-sm"><div class="flex items-center gap-space-sm"><img alt="SmartBus Go Logo" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRgxUnj_KIPxzYuoxFYCNt7vDx8OgviaFRHD4UhoWmPn5L5yBmR2VfAbX_diVyepOmbCXBhldRrtHlA9U_sU5T_SD9dkw0xhTWQgvxap37YIcu0Jm81CBYMkFsMOEp_xulu57AIYAbPJMkqITDJ14_jbFdV2co8fuZ2xdvdKOKGqx8ZTQzkgHcYrVgLEwc3Jx0gRM7U8oKx1YsD0M7hwHc2Ef8FYrSHYpgxCzcYXm3ayNuXVrYyG3B8w"/><span class="font-headline-sm text-headline-sm text-primary font-bold">SmartBus Go</span></div><p class="font-body-md text-body-md text-on-surface-variant max-w-sm mt-space-xs">Hệ thống kết nối tuyến xe liên tỉnh và xe buýt thông minh hàng đầu Việt Nam. Tối ưu hành trình di chuyển, đặt chỗ nhanh chóng, an toàn và tin cậy.</p><div class="flex items-center gap-space-sm mt-space-sm"><span class="font-label-md text-label-md text-secondary">Tổng đài hỗ trợ 24/7:</span><span class="font-numeric-data text-numeric-data text-primary">1900 6868</span></div><p class="font-body-sm text-body-sm text-secondary">Email: support@smartbusgo.vn</p></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Nhà xe đối tác</span><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Phương Trang FUTA</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Thành Bưởi Limousine</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Hoa Mai Express</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Kumho Samco</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Đăng ký hợp tác nhà xe</a></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Chính sách &amp; Hỗ trợ</span><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Điều khoản sử dụng</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Chính sách bảo mật</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Quy định hoàn tiền &amp; đổi vé</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Hướng dẫn đặt chỗ online</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Câu hỏi thường gặp (FAQ)</a></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Tải ứng dụng</span><p class="font-body-sm text-body-sm text-on-surface-variant mb-space-xs">Trải nghiệm đặt vé và theo dõi lộ trình xe buýt thời gian thực trên di động.</p><div class="flex flex-col gap-space-xs"><div class="flex items-center gap-space-xs p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer"><span class="material-symbols-outlined text-primary text-[24px]">shop</span><div class="flex flex-col"><span class="font-label-md text-[10px] text-secondary leading-none">Tải về trên</span><span class="font-label-lg text-label-lg font-semibold text-on-surface leading-tight">Google Play</span></div></div><div class="flex items-center gap-space-xs p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer"><span class="material-symbols-outlined text-primary text-[24px]">phone_iphone</span><div class="flex flex-col"><span class="font-label-md text-[10px] text-secondary leading-none">Tải về trên</span><span class="font-label-lg text-label-lg font-semibold text-on-surface leading-tight">App Store</span></div></div></div></div></div><div class="pt-margin flex flex-col md:flex-row items-center justify-between gap-space-sm bg-surface-container-lowest"><span class="font-body-sm text-body-sm text-secondary">© 2025 SmartBus Go Vietnam Corp. Giấy phép kinh doanh dịch vụ sàn vận tải số 0318992144.</span><div class="flex items-center gap-space-md"><span class="font-label-md text-label-md text-secondary">Kết nối an toàn qua cổng</span><span class="font-numeric-data text-numeric-data text-on-surface-variant">NAPAS • VISA • VNPAY</span></div></div></div></footer>
 <script>
+        function switchQrMode(mode) {
+            const tabPayOS = document.getElementById("tabPayOS");
+            const tabVietQR = document.getElementById("tabVietQR");
+            const mainQr = document.getElementById("mainQrImage");
+            const qrTitle = document.getElementById("qrTitle");
+            const qrDesc = document.getElementById("qrDesc");
+            const qrBadges = document.getElementById("qrBadges");
+
+            if (mode === 'vietqr') {
+                tabVietQR.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#008378] text-white shadow-sm flex items-center gap-1.5 cursor-pointer";
+                tabPayOS.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-700 hover:text-gray-900 transition-all flex items-center gap-1.5 cursor-pointer";
+                mainQr.src = "@vietQrUrl";
+                qrTitle.textContent = "Quét mã VietQR chuyển khoản ngân hàng";
+                qrDesc.innerHTML = "Mở ứng dụng ngân hàng bất kỳ (VCB, MB, Techcombank, VPBank...) để quét mã chuyển tiền thật vào tài khoản nhà xe.";
+                qrBadges.innerHTML = '<span class="font-extrabold text-[13px] tracking-tight text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">VietQR</span><span class="font-bold text-[11px] text-gray-700 bg-gray-100 px-2 py-0.5 rounded">Napas247</span>';
+            } else {
+                tabPayOS.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#0052cc] text-white shadow-sm flex items-center gap-1.5 cursor-pointer";
+                tabVietQR.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-700 hover:text-gray-900 transition-all flex items-center gap-1.5 cursor-pointer";
+                mainQr.src = "@payOsQrUrl";
+                qrTitle.textContent = "Quét mã payOS Sandbox bằng điện thoại";
+                qrDesc.innerHTML = "Bật <strong>Camera</strong> (iPhone/Android) hoặc <strong>Zalo</strong> trên điện thoại để quét mã QR và xác nhận thanh toán như bình thường mà <strong>hoàn toàn không bị trừ tiền thật</strong>.";
+                qrBadges.innerHTML = '<span class="font-extrabold text-[13px] tracking-tight text-white bg-[#0052cc] px-2 py-0.5 rounded border border-blue-600">payOS Sandbox</span><span class="font-bold text-[11px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">Không trừ tiền thật</span>';
+            }
+        }
+
+        async function quickSimulatePayment() {
+            const btn = document.getElementById("btnQuickPay");
+            const btnText = document.getElementById("btnQuickPayText");
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.innerHTML = '<span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Đang xử lý...</span>';
+
+            const currentTicketCode = "@Html.Raw(cleanTicketCode)";
+            const currentBookingCode = "@Html.Raw(cleanBookingCode)";
+            const amount = Number("@amountFormatted");
+
+            try {
+                const res = await fetch('/api/payos/simulate-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticketCode: currentTicketCode,
+                        bookingCode: currentBookingCode,
+                        amount: amount
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = `/payment-result?ticketCode=${encodeURIComponent(currentTicketCode)}&bookingCode=${encodeURIComponent(currentBookingCode)}&amount=${amount}&status=success`;
+                } else {
+                    alert(data.message || "Có lỗi xảy ra khi xác nhận thanh toán.");
+                    if (btn) btn.disabled = false;
+                    if (btnText) btnText.textContent = "⚡ Xác nhận thanh toán ngay (Test trực tiếp)";
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi khi kết nối API.");
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.textContent = "⚡ Xác nhận thanh toán ngay (Test trực tiếp)";
+            }
+        }
+
+        function handleConfirmPayment() {
+            const currentTicketCode = "@(ViewBag.TicketCode ?? "SBG-TN-CB-001")";
+            const currentBookingCode = "@(ViewBag.BookingCode ?? "BK-TNCB-001")";
+            const amount = "@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("F0"))";
+            window.location.href = `/payment-result?ticketCode=${encodeURIComponent(currentTicketCode)}&bookingCode=${encodeURIComponent(currentBookingCode)}&amount=${amount}&status=success`;
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
             let checkPaymentInterval = null;
 
@@ -451,12 +655,12 @@
             const orderCode = "@(ViewBag.TicketCode != null ? ((string)ViewBag.TicketCode).Replace("-", "") : "SBG84920")"; // Mã đơn hàng / Nội dung chuyển khoản
             const currentTicketCode = "@(ViewBag.TicketCode ?? "SBG-TN-CB-001")";
             const currentBookingCode = "@(ViewBag.BookingCode ?? "BK-TNCB-001")";
-            const checkIntervalMs = 3000;  // Kiểm tra mỗi 3 giây
+            const checkIntervalMs = 1500;  // Kiểm tra mỗi 1.5 giây để chuyển trang tức thì
             
             checkPaymentInterval = setInterval(async function () {
                 try {
                     // Gọi API kiểm tra trạng thái thanh toán từ backend
-                    const response = await fetch(`/api/payment/check-status?orderCode=${encodeURIComponent(orderCode)}&ticketCode=${encodeURIComponent(currentTicketCode)}`, {
+                    const response = await fetch(`/api/payment/check-status?orderCode=${encodeURIComponent(orderCode)}&ticketCode=${encodeURIComponent(currentTicketCode)}&bookingCode=${encodeURIComponent(currentBookingCode)}`, {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/json'
@@ -466,10 +670,9 @@
                     if (response.ok) {
                         const data = await response.json();
                         
-                        // data.isPaid == true nghĩa là Ngân hàng/Webhook đã xác nhận tiền về
+                        // data.isPaid == true nghĩa là Ngân hàng / payOS Sandbox đã xác nhận thanh toán
                         if (data.isPaid) {
                             clearInterval(checkPaymentInterval);
-                            if (timerInterval) clearInterval(timerInterval);
 
                             // Chuyển hướng sang trang kết quả thanh toán Callback (/payment-result)
                             window.location.href = `/payment-result?ticketCode=${encodeURIComponent(currentTicketCode)}&bookingCode=${encodeURIComponent(currentBookingCode)}&status=success`;

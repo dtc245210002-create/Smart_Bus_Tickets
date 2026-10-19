@@ -27,6 +27,11 @@ namespace WebApplication1
             // Đăng ký dịch vụ Gửi Email (SMTP) xác thực tài khoản & thông báo vé
             builder.Services.AddScoped<WebApplication1.Services.Email.IEmailService, WebApplication1.Services.Email.EmailService>();
 
+            // Đăng ký cấu hình & Dịch vụ tích hợp VietQR Pro Callback
+            builder.Services.Configure<WebApplication1.Models.DTOs.VietQr.VietQrSettings>(
+                builder.Configuration.GetSection(WebApplication1.Models.DTOs.VietQr.VietQrSettings.SectionName));
+            builder.Services.AddScoped<WebApplication1.Services.VietQr.IVietQrService, WebApplication1.Services.VietQr.VietQrService>();
+
             // Cấu hình Cookie Authentication cho Đăng nhập / Đăng ký
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>
