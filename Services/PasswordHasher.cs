@@ -29,14 +29,8 @@ namespace WebApplication1.Services
             if (string.Equals(computedHash, storedHash, StringComparison.Ordinal))
                 return true;
 
-            // 2. Tương thích ngược: đối chiếu trực tiếp chuỗi (nếu mật khẩu ban đầu chưa hash)
-            if (string.Equals(inputPassword, storedHash, StringComparison.Ordinal))
-                return true;
-
-            // 3. Hỗ trợ tài khoản mẫu có sẵn trong database (demo_hash, PASS_HASH, hashed_pass_*) với mật khẩu mặc định 123456
-            if (inputPassword == "123456" && (storedHash == "demo_hash" || storedHash == "PASS_HASH" || storedHash.StartsWith("hashed_pass")))
-                return true;
-
+            // Legacy plaintext and demo markers are not credentials. Existing real
+            // SHA256 hashes remain compatible; no shared database rewrite is needed.
             return false;
         }
     }

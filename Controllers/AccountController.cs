@@ -101,39 +101,21 @@ namespace WebApplication1.Controllers
                     new Claim(ClaimTypes.MobilePhone, user.Phone ?? string.Empty)
                 };
 
-                // Bổ sung role từ UserRole
-                bool hasDriverRole = false;
-                foreach (var role in user.Roles)
+                // Roles and driver identity come from DB records, never email text.
+                var principal = await BackendIdentity.LoadAsync(_context, user.UserId);
+                if (principal == null)
                 {
-                    claims.Add(new Claim(ClaimTypes.Role, role.RoleName));
-                    if (role.RoleName.Equals("Tài xế", StringComparison.OrdinalIgnoreCase))
-                    {
-                        hasDriverRole = true;
-                    }
+                    ModelState.AddModelError(string.Empty, "Tài khoản chưa được kích hoạt hoặc đã bị khóa.");
+                    return View(model);
                 }
 
-                // Nếu tài khoản này có liên kết với bảng Driver -> tự động bổ sung Claim Role Tài xế
-                if (user.Driver != null || user.Email.Contains("driver", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (!hasDriverRole)
-                    {
-                        claims.Add(new Claim(ClaimTypes.Role, "Tài xế"));
-                    }
-                    if (user.Driver != null)
-                    {
-                        claims.Add(new Claim("DriverId", user.Driver.DriverId.ToString()));
-                        claims.Add(new Claim("LicenseNo", user.Driver.LicenseNo));
-                    }
-                }
-
-                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var authProperties = new AuthenticationProperties
                 {
                     IsPersistent = model.RememberMe,
                     ExpiresUtc = model.RememberMe ? DateTimeOffset.UtcNow.AddDays(14) : DateTimeOffset.UtcNow.AddHours(8)
                 };
 
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
                 // Khởi tạo phiên làm việc mới độc lập cho tài khoản vừa đăng nhập
                 var newSessionId = "sess_" + Guid.NewGuid().ToString("N");
@@ -154,22 +136,8 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                // Fallback nếu kết nối SQL gián đoạn
-                if (model.Password == "123456" && (username.Contains("@") || username.Length >= 9))
-                {
-                    var fallbackClaims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, "1"),
-                        new Claim(ClaimTypes.Name, username.Split('@')[0]),
-                        new Claim(ClaimTypes.Email, username.Contains("@") ? username : $"{username}@smartbus.vn"),
-                        new Claim(ClaimTypes.Role, "Khách hàng")
-                    };
-                    var identity = new ClaimsIdentity(fallbackClaims, CookieAuthenticationDefaults.AuthenticationScheme);
-                    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
-                    return RedirectToAction("Index", "Home");
-                }
-
-                ModelState.AddModelError(string.Empty, "Đã xảy ra sự cố khi kiểm tra đăng nhập. Vui lòng thử lại sau: " + ex.Message);
+                _logger.LogWarning(ex, "Không thể xác thực tài khoản.");
+                ModelState.AddModelError(string.Empty, "Không thể xác thực lúc này. Vui lòng thử lại sau.");
                 return View(model);
             }
         }
@@ -247,12 +215,12 @@ namespace WebApplication1.Controllers
                     Email = cleanEmail,
                     Phone = cleanPhone,
                     PasswordHash = hashedPassword,
-                    Status = "Active", // Kích hoạt tài khoản
+                    Status = "Pending", // Only the verified signup email may activate this account
                     CreatedAt = DateTime.UtcNow
                 };
 
                 // 6. Gán Role mặc định: "Khách hàng" (RoleId = 2)
-                var customerRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == 2 || r.RoleName.Contains("Khách hàng"));
+                var customerRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Khách hàng");
                 if (customerRole != null)
                 {
                     newUser.Roles.Add(customerRole);
@@ -268,9 +236,10 @@ namespace WebApplication1.Controllers
             }
 
             // 7. Sinh mã OTP 6 chữ số gửi qua email
-            var otp = Random.Shared.Next(100000, 999999).ToString("D6");
+            var otp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString("D6");
             TempData["PendingOtp"] = otp;
             TempData["RegisteredEmail"] = cleanEmail;
+            TempData["OtpExpires"] = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds().ToString();
 
             // Gửi email thật qua SMTP
             var isSent = await _emailService.SendOtpEmailAsync(cleanEmail, otp, model.FullName.Trim());
@@ -282,7 +251,7 @@ namespace WebApplication1.Controllers
             }
             else
             {
-                TempData["WarningMessage"] = $"Hệ thống chưa kết nối SMTP thật (hoặc SMTP chưa cấu hình mật khẩu ứng dụng Gmail). Mã xác thực của bạn là: {otp}";
+                TempData["ErrorMessage"] = "Chưa gửi được email xác thực. Tài khoản vẫn đang chờ kích hoạt.";
             }
 
             return RedirectToAction("VerifyOtp", new { email = cleanEmail });
@@ -296,110 +265,61 @@ namespace WebApplication1.Controllers
         [HttpGet]
         public IActionResult VerifyOtp(string? email)
         {
-            if (string.IsNullOrEmpty(email))
-            {
+            var registered = TempData.Peek("RegisteredEmail") as string;
+            if (string.IsNullOrWhiteSpace(registered) || !string.Equals(email, registered, StringComparison.OrdinalIgnoreCase))
                 return RedirectToAction("Register");
-            }
-
-            var pendingOtp = TempData["PendingOtp"] as string;
-            if (string.IsNullOrEmpty(pendingOtp))
-            {
-                pendingOtp = "123456";
-                TempData["PendingOtp"] = pendingOtp;
-            }
-            TempData.Keep("PendingOtp");
-
-            var isEmailSent = TempData["IsEmailSent"] as bool? ?? false;
-            TempData.Keep("IsEmailSent");
-
-            var model = new VerifyOtpViewModel
-            {
-                Email = email,
-                IsEmailSent = isEmailSent,
-                FallbackOtp = pendingOtp
-            };
-
-            ViewBag.IsEmailSent = isEmailSent;
-            ViewBag.FallbackOtp = pendingOtp;
-
-            return View(model);
+            ViewBag.IsEmailSent = TempData.Peek("IsEmailSent") as bool? ?? false;
+            ViewBag.FallbackOtp = "";
+            return View(new VerifyOtpViewModel { Email = registered, IsEmailSent = ViewBag.IsEmailSent, FallbackOtp = "" });
         }
 
-        // POST: /Account/VerifyOtp
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> VerifyOtp(VerifyOtpViewModel model)
         {
-            var pendingOtp = TempData["PendingOtp"] as string ?? "123456";
-            TempData.Keep("PendingOtp");
-            var isEmailSent = TempData["IsEmailSent"] as bool? ?? false;
-            TempData.Keep("IsEmailSent");
-
-            model.FallbackOtp = pendingOtp;
-            model.IsEmailSent = isEmailSent;
-            ViewBag.IsEmailSent = isEmailSent;
-            ViewBag.FallbackOtp = pendingOtp;
-
-            if (!ModelState.IsValid)
+            model.FallbackOtp = "";
+            ViewBag.FallbackOtp = "";
+            var registered = TempData.Peek("RegisteredEmail") as string;
+            var otp = TempData.Peek("PendingOtp") as string;
+            var sent = TempData.Peek("IsEmailSent") as bool? ?? false;
+            model.IsEmailSent = sent;
+            ViewBag.IsEmailSent = sent;
+            var validExpiry = long.TryParse(TempData.Peek("OtpExpires") as string, out var expiry)
+                && DateTimeOffset.UtcNow.ToUnixTimeSeconds() < expiry;
+            if (!ModelState.IsValid || !sent || !validExpiry || string.IsNullOrEmpty(otp)
+                || !string.Equals(registered, model.Email?.Trim(), StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(otp, model.OtpCode, StringComparison.Ordinal))
             {
+                ModelState.AddModelError("OtpCode", "Mã xác thực không hợp lệ hoặc đã hết hạn.");
                 return View(model);
             }
-
-            // Chấp nhận mã OTP được tạo ra hoặc mã dự phòng '123456'
-            if (model.OtpCode == pendingOtp || model.OtpCode == "123456")
-            {
-                try
-                {
-                    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == model.Email.ToLower());
-                    if (user != null)
-                    {
-                        user.Status = "Active";
-                        await _context.SaveChangesAsync();
-                    }
-                }
-                catch
-                {
-                    // Fallback
-                }
-
-                TempData["SuccessMessage"] = "Kích hoạt tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.";
-                return RedirectToAction("Login");
-            }
-
-            ModelState.AddModelError("OtpCode", $"Mã xác thực OTP không chính xác. Vui lòng kiểm tra lại hộp thư (Mã thử nghiệm hiện tại: {pendingOtp}).");
-            return View(model);
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == registered && u.Status == "Pending");
+            if (user == null) return BadRequest();
+            user.Status = "Active";
+            await _context.SaveChangesAsync();
+            TempData.Remove("PendingOtp");
+            TempData.Remove("OtpExpires");
+            TempData.Remove("RegisteredEmail");
+            TempData.Remove("IsEmailSent");
+            TempData["SuccessMessage"] = "Kích hoạt tài khoản thành công. Vui lòng đăng nhập.";
+            return RedirectToAction("Login");
         }
 
-        // POST: /Account/ResendOtp
         [HttpPost]
         public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
         {
-            if (string.IsNullOrEmpty(request?.Email))
-            {
-                return Json(new { success = false, message = "Địa chỉ email không hợp lệ." });
-            }
-
-            var cleanEmail = request.Email.Trim().ToLowerInvariant();
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == cleanEmail);
-            var fullName = user?.FullName ?? "Quý khách";
-
-            var newOtp = Random.Shared.Next(100000, 999999).ToString("D6");
-            TempData["PendingOtp"] = newOtp;
-            TempData.Keep("PendingOtp");
-
-            bool isSent = await _emailService.SendOtpEmailAsync(cleanEmail, newOtp, fullName);
-            TempData["IsEmailSent"] = isSent;
-            TempData.Keep("IsEmailSent");
-
-            return Json(new
-            {
-                success = true,
-                isEmailSent = isSent,
-                otp = newOtp,
-                message = isSent
-                    ? $"Mã xác thực mới đã được gửi thành công đến hòm thư {cleanEmail}."
-                    : $"Hệ thống chưa kết nối SMTP Gmail thật. Mã OTP thử nghiệm mới của bạn là: {newOtp}"
-            });
+            var registered = TempData.Peek("RegisteredEmail") as string;
+            if (string.IsNullOrEmpty(registered) || !string.Equals(registered, request?.Email?.Trim(), StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { success = false, message = "Phiên đăng ký không hợp lệ." });
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == registered && u.Status == "Pending");
+            if (user == null) return BadRequest(new { success = false, message = "Không có đăng ký đang chờ xác thực." });
+            var otp = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString("D6");
+            var sent = await _emailService.SendOtpEmailAsync(registered, otp, user.FullName);
+            TempData["PendingOtp"] = otp;
+            TempData["OtpExpires"] = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds().ToString();
+            TempData["IsEmailSent"] = sent;
+            return Json(new { success = sent, isEmailSent = sent, otp = "", message = sent
+                ? "Mã xác thực đã được gửi qua email." : "Chưa gửi được email xác thực. Vui lòng thử lại sau." });
         }
 
         // =========================================================================
@@ -411,73 +331,9 @@ namespace WebApplication1.Controllers
         [HttpGet("signin-google")]
         public async Task<IActionResult> ExternalLogin(string provider = "Google", string? returnUrl = null)
         {
-            var googleEmail = "customer.google@smartbus.vn";
-            User? user = null;
-
-            try
-            {
-                user = await _context.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.Email == googleEmail);
-
-                if (user == null)
-                {
-                    user = new User
-                    {
-                        FullName = "Hành Khách Google VIP",
-                        Email = googleEmail,
-                        Phone = "0988112233",
-                        PasswordHash = PasswordHasher.HashPassword("GoogleOAuth2026!"),
-                        Status = "Active",
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    var customerRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == 2 || r.RoleName.Contains("Khách hàng"));
-                    if (customerRole != null)
-                    {
-                        user.Roles.Add(customerRole);
-                    }
-
-                    _context.Users.Add(user);
-                    await _context.SaveChangesAsync();
-                }
-            }
-            catch
-            {
-                // Fallback nếu DB lỗi
-                user = new User
-                {
-                    UserId = 10,
-                    FullName = "Hành Khách Google VIP",
-                    Email = googleEmail,
-                    Phone = "0988112233"
-                };
-            }
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.MobilePhone, user.Phone ?? string.Empty),
-                new Claim(ClaimTypes.Role, "Khách hàng"),
-                new Claim("LoginProvider", "Google")
-            };
-
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(14)
-            };
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
-
-            TempData["SuccessMessage"] = $"Đăng nhập Google thành công! Chào mừng {user.FullName}.";
-
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
-            return RedirectToAction("Index", "Home");
+            // No verified OAuth provider is configured. Never mint a sample principal.
+            await Task.CompletedTask;
+            return StatusCode(503, "Đăng nhập Google chưa được cấu hình xác minh. Vui lòng đăng nhập bằng mật khẩu.");
         }
 
         // =========================================================================

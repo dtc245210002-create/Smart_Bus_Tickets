@@ -61,6 +61,7 @@ namespace WebApplication1.Controllers.Api
             try
             {
                 ticket = await _context.Tickets
+                    .Where(t => t.Booking.UserId.ToString() == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value)
                     .Include(t => t.Booking).ThenInclude(b => b.User)
                     .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
                     .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(b => b.BusType)

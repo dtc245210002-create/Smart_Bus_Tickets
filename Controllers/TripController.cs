@@ -122,7 +122,7 @@ namespace WebApplication1.Controllers
             try
             {
                 // Đảm bảo toàn bộ danh mục xe 63 tỉnh thành đã được nạp cố định vào bảng Bus trong CSDL
-                await WebApplication1.Services.ProvinceLicenseHelper.EnsureAllProvincesBusesSeededAsync(_context);
+
 
                 // Truy vấn tất cả tuyến xe và chuyến xe phù hợp từ DB
                 var queryRoutes = _context.Routes
@@ -148,87 +148,12 @@ namespace WebApplication1.Controllers
                     )
                     .ToList();
 
-                // Nếu chưa có tuyến đường nào phù hợp trong DB, tự động tạo Tuyến đường mới và lưu cố định vào SQL Server
-                if (!queryRoutes.Any())
-                {
-                    var metrics = WebApplication1.Services.RoutePricingService.GetRouteMetrics(model.From, model.To);
-                    var fromCodes = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(model.From);
-                    var toCodes = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(model.To);
-                    var fCode = fromCodes.FirstOrDefault() ?? "HN";
-                    var tCode = toCodes.FirstOrDefault() ?? "HP";
-
-                    var baseCode = $"{fCode}-{tCode}";
-                    var rCode = $"{baseCode}-01";
-                    int counter = 1;
-                    while (await _context.Routes.AnyAsync(r => r.RouteCode == rCode))
-                    {
-                        counter++;
-                        rCode = $"{baseCode}-{counter:D2}";
-                    }
-
-                    var cleanFrom = FormatToTitleCase(model.From);
-                    var cleanTo = FormatToTitleCase(model.To);
-
-                    var newRoute = new WebApplication1.Models.Entities.Route
-                    {
-                        RouteCode = rCode,
-                        RouteName = $"{cleanFrom} - {cleanTo}",
-                        StartPoint = cleanFrom,
-                        EndPoint = cleanTo,
-                        Distance = metrics.Distance,
-                        EstimatedDuration = metrics.EstimatedMinutes,
-                        Status = "Active"
-                    };
-                    _context.Routes.Add(newRoute);
-                    await _context.SaveChangesAsync();
-
-                    var loadedRoute = await _context.Routes
-                        .Include(r => r.RouteStops.OrderBy(rs => rs.StopOrder)).ThenInclude(rs => rs.Stop)
-                        .Include(r => r.Trips).ThenInclude(t => t.Bus).ThenInclude(b => b.BusType)
-                        .Include(r => r.Trips).ThenInclude(t => t.Driver).ThenInclude(d => d.User)
-                        .Include(r => r.Trips).ThenInclude(t => t.Bookings).ThenInclude(b => b.Tickets)
-                        .FirstOrDefaultAsync(r => r.RouteId == newRoute.RouteId);
-
-                    if (loadedRoute != null)
-                    {
-                        queryRoutes.Add(loadedRoute);
-                    }
-                }
-
                 // Lọc các chuyến xe thực tế trong DB
                 foreach (var route in queryRoutes)
                 {
                     var activeTrips = route.Trips
                         .Where(t => t.TripDate == tripDateOnly && (t.Status == null || !t.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)))
                         .ToList();
-
-                    // Nếu ngày tìm kiếm chưa có chuyến tạo sẵn trong DB, tự động sinh các chuyến theo Route thực tế và lưu vào DB
-                    if (!activeTrips.Any())
-                    {
-                        var generated = GenerateScheduledTripsForRoute(route, tripDateOnly);
-                        foreach (var gt in generated)
-                        {
-                            var dbTrip = new Trip
-                            {
-                                RouteId = gt.RouteId,
-                                BusId = gt.BusId,
-                                DriverId = gt.DriverId,
-                                TripDate = gt.TripDate,
-                                DepartureTime = gt.DepartureTime,
-                                ArrivalTime = gt.ArrivalTime,
-                                Status = "Scheduled"
-                            };
-                            _context.Trips.Add(dbTrip);
-                        }
-                        await _context.SaveChangesAsync();
-
-                        activeTrips = await _context.Trips
-                            .Include(t => t.Bus).ThenInclude(b => b.BusType)
-                            .Include(t => t.Driver).ThenInclude(d => d.User)
-                            .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
-                            .Where(t => t.RouteId == route.RouteId && t.TripDate == tripDateOnly && (t.Status == null || t.Status.ToUpper() != "CANCELLED"))
-                            .ToListAsync();
-                    }
 
                     int? currentUserId = User.Identity?.IsAuthenticated == true && int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var uid) ? uid : null;
                     string currentSessionId = Request.Cookies["sbg_session_id"] ?? "";
@@ -251,7 +176,7 @@ namespace WebApplication1.Controllers
                             var st = (tk.Status ?? "").ToUpper();
                             var seats = tk.SeatNumber.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                            if (st == "CONFIRMED" || st == "ACTIVE" || st == "PAID" || st == "USED")
+                            if (st == "ISSUED" || st == "CONFIRMED" || st == "ACTIVE" || st == "PAID" || st == "USED")
                             {
                                 foreach (var s in seats) bookedSeatNumbers.Add(s.Trim().ToUpper());
                             }
@@ -335,7 +260,7 @@ namespace WebApplication1.Controllers
 
                         var busTypeName = trip.Bus?.BusType?.TypeName ?? "Xe Limousine Cao Cấp";
                         int tripIndex = activeTrips.IndexOf(trip);
-                        var price = validTickets.FirstOrDefault()?.Price ?? WebApplication1.Services.RoutePricingService.CalculateTripPrice(effectiveDistance, busTypeName, totalCapacity, tripIndex);
+                        var price = WebApplication1.Services.RoutePricingService.CalculateTripPrice(effectiveDistance, busTypeName, totalCapacity);
                         var originalPrice = Math.Round(price * 1.15m / 5000m, MidpointRounding.AwayFromZero) * 5000m;
 
                         var floorLayouts = _busLayoutService.GenerateFloorLayouts(busTypeName, totalCapacity, bookedSeatNumbers, price);
@@ -395,7 +320,8 @@ namespace WebApplication1.Controllers
             }
             catch
             {
-                // Fallback nếu kết nối cơ sở dữ liệu tạm gián đoạn
+                Response.StatusCode = 503;
+                model.ErrorMessage = "Không thể tải chuyến xe lúc này. Vui lòng thử lại.";
             }
 
             // Lọc theo loại xe

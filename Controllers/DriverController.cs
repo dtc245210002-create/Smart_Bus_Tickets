@@ -64,7 +64,8 @@ namespace WebApplication1.Controllers
 
             // Trích xuất mã số ID nếu người dùng nhập "TX-001", "TX01", "1", v.v.
             int parsedDriverId = 0;
-            var digitsOnly = new string(identifier.Where(char.IsDigit).ToArray());
+            var digitsOnly = identifier.StartsWith("TX", StringComparison.OrdinalIgnoreCase)
+                ? identifier[2..].TrimStart('-') : identifier;
             if (int.TryParse(digitsOnly, out int pid))
             {
                 parsedDriverId = pid;
@@ -77,7 +78,7 @@ namespace WebApplication1.Controllers
                     .Include(d => d.User)
                         .ThenInclude(u => u.Roles)
                     .FirstOrDefaultAsync(d =>
-                        (parsedDriverId > 0 && (d.DriverId == parsedDriverId || d.UserId == parsedDriverId)) ||
+                        (parsedDriverId > 0 && d.DriverId == parsedDriverId) ||
                         d.LicenseNo == identifier ||
                         d.User.Phone == identifier ||
                         d.User.Email == identifier);
@@ -85,14 +86,14 @@ namespace WebApplication1.Controllers
                 if (driver != null)
                 {
                     // 2. Kiểm tra trạng thái hoạt động của tài xế
-                    if (driver.Status != null && !driver.Status.Equals("Active", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(driver.Status, "Active", StringComparison.OrdinalIgnoreCase) || !string.Equals(driver.User.Status, "Active", StringComparison.OrdinalIgnoreCase))
                     {
                         ModelState.AddModelError(string.Empty, "Tài khoản tài xế của bạn đang bị khóa hoặc tạm dừng ca làm việc. Vui lòng liên hệ điều hành bến.");
                         return View(model);
                     }
 
                     // 3. Đối soát mật khẩu nội bộ
-                    if (!PasswordHasher.VerifyPassword(model.Password, driver.User.PasswordHash) && model.Password != "123456")
+                    if (!PasswordHasher.VerifyPassword(model.Password, driver.User.PasswordHash))
                     {
                         ModelState.AddModelError("Password", "Mật khẩu nội bộ không chính xác.");
                         return View(model);
@@ -105,12 +106,6 @@ namespace WebApplication1.Controllers
             catch (Exception ex)
             {
                 _logger.LogWarning("Không thể kết nối CSDL tài xế: {Message}", ex.Message);
-            }
-
-            // 5. Fallback tài khoản mẫu Bác tài (Demo mode) nếu nhập TX-001, TX-01, SĐT hoặc mật khẩu 123456
-            if (model.Password == "123456" && (identifier.StartsWith("TX", StringComparison.OrdinalIgnoreCase) || identifier == "0988777999" || identifier == "0987654321" || identifier == "1"))
-            {
-                return await SignInDriverAsync(1, "Nguyễn Văn An", "driver1@gmail.com", "0987654321", 1, "B123456789", model.RememberMe, returnUrl);
             }
 
             ModelState.AddModelError("DriverIdentifier", "Không tìm thấy thông tin Tài xế trong hệ thống. Vui lòng kiểm tra lại Mã tài xế (vd: TX-001), Bằng lái hoặc SĐT.");
@@ -127,27 +122,15 @@ namespace WebApplication1.Controllers
             bool rememberMe,
             string? returnUrl)
         {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim(ClaimTypes.Name, fullName),
-                new Claim(ClaimTypes.Email, email),
-                new Claim(ClaimTypes.MobilePhone, phone ?? string.Empty),
-                new Claim(ClaimTypes.Role, "Tài xế"),
-                new Claim(ClaimTypes.Role, "Admin"),
-                new Claim(ClaimTypes.Role, "Quản trị viên"),
-                new Claim("DriverId", driverId.ToString()),
-                new Claim("LicenseNo", licenseNo)
-            };
-
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = await BackendIdentity.LoadAsync(_context, userId);
+            if (principal == null || !principal.IsInRole("Tài xế")) return Forbid();
             var authProperties = new AuthenticationProperties
             {
                 IsPersistent = rememberMe,
                 ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(7) : DateTimeOffset.UtcNow.AddHours(12)
             };
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
             TempData["SuccessMessage"] = $"Đăng nhập thành công! Chào mừng Bác tài {fullName} (Mã: TX-{driverId:D3}).";
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -171,11 +154,7 @@ namespace WebApplication1.Controllers
             }
 
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            int userId = 1;
-            if (!string.IsNullOrEmpty(userIdStr) && int.TryParse(userIdStr, out int parsed))
-            {
-                userId = parsed;
-            }
+            if (!int.TryParse(userIdStr, out var userId) || userId <= 0) return Forbid();
 
             Driver? driver = null;
             try
@@ -191,32 +170,17 @@ namespace WebApplication1.Controllers
                     .Include(d => d.Trips)
                         .ThenInclude(t => t.Bookings)
                             .ThenInclude(b => b.Tickets)
-                    .FirstOrDefaultAsync(d => d.UserId == userId || d.DriverId == userId);
+                    .FirstOrDefaultAsync(d => d.UserId == userId && d.Status == "Active");
 
-                if (driver == null)
-                {
-                    driver = await _context.Drivers
-                        .Include(d => d.User)
-                        .Include(d => d.Trips)
-                            .ThenInclude(t => t.Route)
-                        .Include(d => d.Trips)
-                            .ThenInclude(t => t.Bus)
-                                .ThenInclude(b => b.BusType)
-                        .Include(d => d.Trips)
-                            .ThenInclude(t => t.Bookings)
-                                .ThenInclude(b => b.Tickets)
-                        .FirstOrDefaultAsync();
-                }
+
             }
             catch (Exception ex)
             {
                 _logger.LogWarning("Không thể tải dữ liệu tài xế: {Message}", ex.Message);
             }
 
-            int activeDriverId = driver?.DriverId ?? 1;
-
-            // Đảm bảo dữ liệu ca chạy cho ngày hiện tại (Hôm nay) và các ngày tới luôn đầy đủ trong CSDL
-            await EnsureTodayAndUpcomingTripsAsync(activeDriverId);
+            if (driver == null) return Forbid();
+            int activeDriverId = driver.DriverId;
 
             var vm = new DriverDashboardViewModel
             {
@@ -238,18 +202,8 @@ namespace WebApplication1.Controllers
                 .Include(t => t.Bus).ThenInclude(b => b.BusType)
                 .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
                 .Include(t => t.Bookings).ThenInclude(b => b.User)
-                .Where(t => t.DriverId == activeDriverId || t.DriverId == 1)
+                .Where(t => t.DriverId == activeDriverId)
                 .ToListAsync();
-
-            if (!allTrips.Any())
-            {
-                allTrips = await _context.Trips
-                    .Include(t => t.Route)
-                    .Include(t => t.Bus).ThenInclude(b => b.BusType)
-                    .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
-                    .Include(t => t.Bookings).ThenInclude(b => b.User)
-                    .ToListAsync();
-            }
 
             // Sắp xếp ưu tiên:
             // 1. Chuyến hôm nay (Today) theo giờ xuất bến tăng dần
@@ -296,7 +250,7 @@ namespace WebApplication1.Controllers
                     LicensePlate = trip.Bus?.LicensePlate ?? "29B-888.88",
                     BusTypeName = trip.Bus?.BusType?.TypeName ?? "Limousine VIP",
                     Capacity = trip.Bus?.Capacity ?? 34,
-                    BookedSeats = Math.Max(bookedCount, 6),
+                    BookedSeats = bookedCount,
                     CheckedInCount = checkedInCount,
                     Status = trip.Status ?? "Scheduled",
                     IsToday = isToday,
@@ -314,7 +268,7 @@ namespace WebApplication1.Controllers
                     .Include(t => t.Booking).ThenInclude(b => b.User)
                     .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
                     .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus)
-                    .Where(t => t.Status == "USED" || t.Status == "CHECKED_IN")
+                    .Where(t => (t.Status == "USED" || t.Status == "CHECKED_IN") && t.Booking.Trip.DriverId == activeDriverId)
                     .OrderByDescending(t => t.TicketId)
                     .Take(15)
                     .ToListAsync();
@@ -350,133 +304,6 @@ namespace WebApplication1.Controllers
         /// <summary>
         /// Tự động kiểm tra và sinh chuyến đi cho ngày hiện tại (Hôm nay) và ngày mai nếu trong CSDL chưa có
         /// </summary>
-        private async Task EnsureTodayAndUpcomingTripsAsync(int driverId)
-        {
-            var today = DateOnly.FromDateTime(DateTime.Today);
-            var tomorrow = today.AddDays(1);
-
-            try
-            {
-                bool hasTodayTrips = await _context.Trips.AnyAsync(t => t.TripDate == today);
-                bool hasTomorrowTrips = await _context.Trips.AnyAsync(t => t.TripDate == tomorrow);
-
-                if (hasTodayTrips && hasTomorrowTrips)
-                {
-                    return;
-                }
-
-                var routes = await _context.Routes.ToListAsync();
-                if (!routes.Any()) return;
-
-                var buses = await _context.Buses.Include(b => b.BusType).ToListAsync();
-                if (!buses.Any()) return;
-
-                var defaultUser = await _context.Users.FirstOrDefaultAsync() ?? new User
-                {
-                    FullName = "Trần Văn Bình",
-                    Phone = "0912345678",
-                    Email = "khach@smartbus.vn",
-                    PasswordHash = "AQAAAAEAACcQAAAAE",
-                    Status = "Active",
-                    CreatedAt = DateTime.Now
-                };
-
-                var samplePassengerList = new[]
-                {
-                    new { Name = "Nguyễn Văn Nam", Phone = "0988 123 456", Seat = "A01" },
-                    new { Name = "Trần Thị Lan", Phone = "0912 345 678", Seat = "A02" },
-                    new { Name = "Lê Hoàng Phúc", Phone = "0977 888 999", Seat = "B01" },
-                    new { Name = "Phạm Thu Hương", Phone = "0905 112 233", Seat = "B02" },
-                    new { Name = "Đặng Quang Huy", Phone = "0934 556 677", Seat = "C01" },
-                    new { Name = "Vũ Mỹ Duyên", Phone = "0981 223 344", Seat = "C02" }
-                };
-
-                var datesToGenerate = new List<DateOnly>();
-                if (!hasTodayTrips) datesToGenerate.Add(today);
-                if (!hasTomorrowTrips) datesToGenerate.Add(tomorrow);
-
-                foreach (var tripDate in datesToGenerate)
-                {
-                    // Lịch trình phân bổ các khung giờ xuất bến đa dạng trong ngày
-                    var timeSlots = new[]
-                    {
-                        new { Time = new TimeOnly(8, 0), RouteIdx = 0, BusIdx = 0 },
-                        new { Time = new TimeOnly(10, 30), RouteIdx = 1, BusIdx = 1 },
-                        new { Time = new TimeOnly(13, 30), RouteIdx = 2, BusIdx = 2 },
-                        new { Time = new TimeOnly(16, 45), RouteIdx = 0, BusIdx = 0 },
-                        new { Time = new TimeOnly(19, 0), RouteIdx = 1, BusIdx = 1 },
-                        new { Time = new TimeOnly(23, 0), RouteIdx = 2, BusIdx = 2 }
-                    };
-
-                    foreach (var slot in timeSlots)
-                    {
-                        var route = routes[slot.RouteIdx % routes.Count];
-                        var bus = buses[slot.BusIdx % buses.Count];
-                        var arrTime = slot.Time.AddMinutes(route.EstimatedDuration ?? 150);
-
-                        bool exists = await _context.Trips.AnyAsync(t =>
-                            t.RouteId == route.RouteId &&
-                            t.TripDate == tripDate &&
-                            t.DepartureTime == slot.Time);
-
-                        if (exists) continue;
-
-                        var trip = new Trip
-                        {
-                            RouteId = route.RouteId,
-                            BusId = bus.BusId,
-                            DriverId = driverId > 0 ? driverId : 1,
-                            TripDate = tripDate,
-                            DepartureTime = slot.Time,
-                            ArrivalTime = arrTime,
-                            Status = "Scheduled"
-                        };
-                        _context.Trips.Add(trip);
-                        await _context.SaveChangesAsync();
-
-                        // Tạo các vé thật ngẫu nhiên cho chuyến xe của hôm nay
-                        if (tripDate == today)
-                        {
-                            int pIndex = 0;
-                            foreach (var p in samplePassengerList.Take(4))
-                            {
-                                pIndex++;
-                                var cleanTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
-                                var cleanBookingCode = $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
-
-                                var booking = new Booking
-                                {
-                                    UserId = defaultUser.UserId,
-                                    TripId = trip.TripId,
-                                    BookingCode = cleanBookingCode,
-                                    BookingTime = DateTime.Now.AddHours(-pIndex),
-                                    TotalAmount = 260000,
-                                    Status = "Confirmed"
-                                };
-                                _context.Bookings.Add(booking);
-                                await _context.SaveChangesAsync();
-
-                                var ticket = new Ticket
-                                {
-                                    BookingId = booking.BookingId,
-                                    TicketCode = cleanTicketCode,
-                                    SeatNumber = p.Seat,
-                                    Price = 260000,
-                                    Status = (pIndex == 1) ? "USED" : "ACTIVE"
-                                };
-                                _context.Tickets.Add(ticket);
-                            }
-                            await _context.SaveChangesAsync();
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi tự động sinh ca chạy cho ngày hiện tại: {Message}", ex.Message);
-            }
-        }
-
         // =========================================================================
         // 3. API SOÁT VÉ NHANH CHO BÁC TÀI (VERIFY TICKET / QR CODE)
         // =========================================================================
