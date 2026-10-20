@@ -87,5 +87,15 @@
       "passed": true
     }
   ],
-  "handoffCommit": "d60b4d4d3e0fa759e73acee14464d6c1a64d503c"
+  "handoffCommit": "d60b4d4d3e0fa759e73acee14464d6c1a64d503c",
+  "browserQa": {
+    "status": "NOT_VERIFIED_TOOL_BLOCKED",
+    "reportedBy": "Antigravity",
+    "driver": "playwright-1.57.0-win32_x64.zip",
+    "blocker": "browser_subagent driver download HTTP404",
+    "liveHttpProbes": "Login200, Search200, public seat map success; Anti reports anonymous Detail302",
+    "cleanup": "Codex observed context.status STOPPED and databaseDropped=true",
+    "installedBrowserAlternative": "Edge and Chrome binaries exist; alternative interactive route not yet tested",
+    "scope": "No claim of interactive desktop/mobile E2E"
+  }
 }

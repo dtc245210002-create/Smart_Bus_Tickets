@@ -69,6 +69,12 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
 - Frontend S2/S3 đã tích hợp qua cổng logic; S4 browser desktop/mobile-width
   vẫn chờ bằng chứng thực tế. FE06 đã sửa fresh snapshot sau mutation:
   chỉ gọi sau khi generation/in-flight đã ổn định để không tự loại GET mới.
+  Đã cấp server Kestrel/DB test riêng cho Anti; Login/Search/map HTTP đạt,
+  Anti báo thêm anonymous Detail chuyển302 về login. Browser E2E bị chặn
+  do công cụ Anti tải Playwright driver1.57.0 trả404, chưa phải lỗi sản phẩm.
+  Server đã dừng theo stopPath riêng; metadata xác nhận DB tạm đã dọn.
+  Máy có Edge/Chrome sẵn; đang xem xét dùng trình duyệt đã cài để kiểm thử
+  thay vì tải lại driver lỗi. Chưa xác minh hướng thay thế này.
 - Chưa kiểm tra Somee, SMTP/OTP delivery, browser/mobile, check-in đồng thời
   và migration dữ liệu cũ. BookingTime giữ convention server-local hiện hữu;
   inspect timestamp legacy unknown chưa phải event check-in bền vững.
