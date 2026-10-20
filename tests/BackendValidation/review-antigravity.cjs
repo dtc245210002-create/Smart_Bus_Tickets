@@ -2,7 +2,7 @@
 // The workflow gate intentionally fails candidates that have not closed those bugs.
 const reviewPath = require('path').resolve(__dirname, '../..');
 const selectedSource = require('child_process').execFileSync('git', ['show', `${process.argv[2] || 'HEAD'}:wwwroot/js/seat-selection.js`], {cwd:reviewPath,encoding:'utf8'});
-if (process.argv.includes('--workflow') || selectedSource.includes('const inFlightMutations =')) {
+if (process.argv.includes('--workflow') || selectedSource.includes('const tripMutationGen =')) {
 const cp = require('child_process'), vm = require('vm'), fs = require('fs');
 const path = require('path');
 const repo = path.resolve(__dirname, '../..');
@@ -81,6 +81,18 @@ const quote={bookingCode:'BK-real',totalPrice:200000,heldSeats:['A02','A03'],rem
   const s=setup(); s.ctx.tripBookingData['1']={...quote}; s.ctx.updateSeatSummary('1');
   s.ctx.fetch=async()=>response({success:false},503);await s.poll('1');
   check('Failed poll invalidates checkout quote',s.btn.classList.contains('disabled'),s.btn.innerHTML);
+ }
+ {
+  const s=setup(); s.ctx.tripBookingData['1']={...quote};
+  s.ctx.syncSeatStatuses=s.poll; let reads=0;
+  s.ctx.fetch=async url=> {
+   if (url.includes('release-seats')) return response({success:true});
+   reads++; return response({success:true,bookedSeats:[],myHeldSeats:['A03'],heldBookingCode:'BK-real',heldTotalPrice:100000,remainingSeconds:500});
+  };
+  await s.ctx.toggleSeatHold('1','A02',false,s.seats[0]);
+  // Drain the actual unawaited automatic GET; do not manually invoke another poll.
+  for(let i=0;i<8;i++) await Promise.resolve();
+  check('Automatic snapshot after release restores one-seat quote without waiting for interval',reads===1&&!s.btn.classList.contains('disabled')&&s.ctx.tripBookingData['1']?.totalPrice===100000,{reads,button:s.btn.innerHTML,quote:s.ctx.tripBookingData['1']});
  }
  {
   const payment=blob('Views/Ticket/Payment.cshtml');
