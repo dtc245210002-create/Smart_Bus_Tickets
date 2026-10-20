@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let activePollingTripId = null;
     const tripBookingData = {}; // Lưu trữ thông tin bookingCode = holdId thật từ server cho từng chuyến
     const tripMutationGen = {}; // Bộ đếm thế hệ thao tác (mutation generation) chống race condition khi polling
+    const inFlightMutations = {}; // Theo dõi số lượng mutation (hold/release) đang in-flight theo từng tripId
 
     // Helper: Lấy hoặc tạo SessionId đồng bộ lưu trữ qua Cookie & LocalStorage
     function getOrCreateSessionId() {
@@ -110,8 +111,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const sessionId = getOrCreateSessionId();
         const userId = window.sbgCurrentUserId || null;
 
-        // Tăng thế hệ thao tác (mutation generation) để loại bỏ mọi poll cũ in-flight
+        // Tăng thế hệ thao tác và đánh dấu có mutation đang in-flight
         tripMutationGen[tripId] = (tripMutationGen[tripId] || 0) + 1;
+        inFlightMutations[tripId] = (inFlightMutations[tripId] || 0) + 1;
 
         // Vô hiệu hóa tương tác và tạo hiệu ứng chờ tránh double click
         seatEl.style.pointerEvents = "none";
@@ -264,6 +266,11 @@ document.addEventListener("DOMContentLoaded", function () {
             showSeatAlert(tripId, "Lỗi kết nối máy chủ khi xử lý ghế. Vui lòng kiểm tra mạng và thử lại!", "danger");
             updateSeatSummary(tripId);
         } finally {
+            // TĂNG GENERATION KHI KẾT THÚC THAO TÁC:
+            // Vô hiệu hóa mọi poll được bắt đầu trong lúc thao tác này đang diễn ra (in-flight)
+            tripMutationGen[tripId] = (tripMutationGen[tripId] || 0) + 1;
+            inFlightMutations[tripId] = Math.max(0, (inFlightMutations[tripId] || 1) - 1);
+
             seatEl.style.opacity = "1";
             if (!seatEl.classList.contains("booked")) {
                 seatEl.style.pointerEvents = "auto";
@@ -301,6 +308,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         try {
             const res = await fetch(`/api/bookings/trip-seat-status?tripId=${tripId}&sessionId=${encodeURIComponent(sessionId)}&userId=${userId}`);
+
+            const isStale = ((tripMutationGen[tripId] || 0) !== expectedGen) || ((inFlightMutations[tripId] || 0) > 0);
+            if (isStale) {
+                return; // Loại bỏ hoàn toàn response cũ, không để poll lỗi/chậm đè lên thao tác mới
+            }
+
             if (!res.ok) {
                 if (tripBookingData[tripId]) {
                     delete tripBookingData[tripId].totalPrice;
@@ -317,8 +330,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            // LOẠI BỎ RACE CONDITION: Nếu trong thời gian fetch có thao tác chọn/nhả ghế mới -> Bỏ qua response cũ này!
-            if ((tripMutationGen[tripId] || 0) !== expectedGen) {
+            // Kiểm tra lại sau khi await json()
+            if (((tripMutationGen[tripId] || 0) !== expectedGen) || ((inFlightMutations[tripId] || 0) > 0)) {
                 return;
             }
 
@@ -381,11 +394,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             updateSeatSummary(tripId);
         } catch (e) {
-            // Lỗi mạng hoặc exception: Vô hiệu hóa quote cũ để không hiển thị giá không xác minh
-            if (tripBookingData[tripId]) {
-                delete tripBookingData[tripId].totalPrice;
+            // Chỉ xóa quote nếu poll KHÔNG BỊ STALE bởi mutation mới hơn
+            const isStale = ((tripMutationGen[tripId] || 0) !== expectedGen) || ((inFlightMutations[tripId] || 0) > 0);
+            if (!isStale) {
+                if (tripBookingData[tripId]) {
+                    delete tripBookingData[tripId].totalPrice;
+                }
+                updateSeatSummary(tripId);
             }
-            updateSeatSummary(tripId);
         }
     }
 
