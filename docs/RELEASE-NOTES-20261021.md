@@ -82,6 +82,15 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
   truy cập vé khác chủ404, vé chưa trả tiền khôngQR, viewport375px có ảnh.
   Không cộng các ca trùng với Edge thành số test độc lập; bản báo cáo cũ
   nhầm login thất bại là pass đã bị loại và thay bằng bằng chứng HTTP rõ ràng.
+- **5/5 ca hết hạn theo thời gian thực đạt** trên bản publish Production:
+  TTL ban đầu còn577giây, browser chờ579giây, sau đó server trả code/giá null,
+  TTL0, giao diện bỏ chọn và khóa checkout. Không có POST giữ ghế nền trong
+  thời gian chờ; khách B giữ được ghế vừa hết hạn bằng đơn mới. Không sửa
+  đồng hồ hoặc tuổi booking để rút ngắn test. DB tạm đã dọn.
+  Kết quả: `TestResults/browser-smoke/1792538364405/result.json`.
+  Chạy trên fixture Production mới20phút bằng
+  `node tests/BackendValidation/review-antigravity.cjs HEAD --expiry-watch`;
+  phép thử cần gần10phút thực và không được chạy trùng/thao tác vào fixture.
 
 ## Phần chưa hoàn tất / giới hạn bản bàn giao
 
@@ -96,8 +105,8 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
   Playwright driver1.57.0 của Anti tải404; đã dùng Edge/WebSocket native để
   kiểm thử7ca trên, không cần tải driver. Các phiên fixture trước đã dọn;
   phiên dùng cho Anti và phiên Production9ca đều đã dừng/dọn DB tạm.
-  Còn thiếu thiết bị di động vật lý, font/icon ngoài, offline kéo dài và
-  kiểm tra TTL hết hạn theo10phút thực trên browser (đang chuẩn bị).
+  Còn thiếu thiết bị di động vật lý, font/icon ngoài và offline kéo dài.
+  TTL10phút thực, không gia hạn nền và khách khác nhận ghế sau expiry đã đạt.
   Hai lượt browser đầu gặp asset200rỗng trong Testing không được tính pass.
 - Chưa kiểm tra Somee, SMTP/OTP delivery, thiết bị mobile thật, check-in đồng thời
   và migration dữ liệu cũ. BookingTime giữ convention server-local hiện hữu;

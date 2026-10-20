@@ -2,7 +2,7 @@
 // The workflow gate intentionally fails candidates that have not closed those bugs.
 const reviewPath = require('path').resolve(__dirname, '../..');
 const selectedSource = require('child_process').execFileSync('git', ['show', `${process.argv[2] || 'HEAD'}:wwwroot/js/seat-selection.js`], {cwd:reviewPath,encoding:'utf8'});
-if (process.argv.includes('--browser-smoke')) {
+if (process.argv.includes('--browser-smoke') || process.argv.includes('--expiry-watch')) {
 // Installed Edge + a fresh profile avoids downloading a Playwright driver.
 // This talks only to the disposable fixture and this process's browser instance.
 const fs=require('fs'),path=require('path'),cp=require('child_process');
@@ -12,7 +12,7 @@ if(fixture.status!=='READY'||!/^http:\/\/127\.0\.0\.1:\d+$/.test(fixture.baseUrl
 const exe='C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 if(!fs.existsSync(exe))throw Error('Installed Edge unavailable; no driver download attempted');
 const dir=path.join(root,'TestResults/browser-smoke',`${Date.now()}`);fs.mkdirSync(dir,{recursive:true});
-const profile=path.join(dir,'profile'),checks=[],errors=[],pages=[];
+const profile=path.join(dir,'profile'),checks=[],errors=[],pages=[],holdPosts=[];
 const password=fs.readFileSync(path.join(root,'tests/BackendValidation/TestSupport/TestDatabase.cs'),'utf8').match(/PasswordHasher\.HashPassword\("([^"]+)"\)/)?.[1];
 if(!password)throw Error('Synthetic fixture password not found');
 const edge=cp.spawn(exe,['--headless=new','--remote-debugging-address=127.0.0.1','--remote-debugging-port=0',`--user-data-dir=${profile}`,'--no-first-run','--no-default-browser-check','--disable-extensions','--disable-sync','about:blank'],{windowsHide:true,stdio:'ignore'});
@@ -38,11 +38,37 @@ async function openMap(session){await navigate(session,search);await until(sessi
   if(!activePort)throw Error('Installed headless browser did not expose its test endpoint');
   ws=new WebSocket(`ws://127.0.0.1:${activePort[0]}${activePort[1]}`);
   await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true});});
-  ws.addEventListener('message',event=>{const m=JSON.parse(event.data);if(m.method==='Runtime.exceptionThrown')errors.push({browserException:m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text});if(m.id&&pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(m.error.message)):p.resolve(m.result);}});
+  ws.addEventListener('message',event=>{const m=JSON.parse(event.data);if(m.method==='Runtime.exceptionThrown')errors.push({browserException:m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text});if(m.method==='Network.requestWillBeSent'&&m.params.request.method==='POST'&&m.params.request.url.includes('/api/bookings/hold-seats'))holdPosts.push(m.params.request.url);if(m.id&&pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(m.error.message)):p.resolve(m.result);}});
   const a=await page(),b=await page();
+  await command('Network.enable',{},a);
   await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false},a);
   await login(a,'g0.customer.a@example.invalid');record('Desktop customer logs in through actual HTML form',true);
   await openMap(a);await until(a,`document.querySelector(${JSON.stringify(seat('A01'))}).classList.contains('selected')`);
+  if(process.argv.includes('--expiry-watch')){
+   const initial=await evaluate(a,`fetch('/api/bookings/trip-seat-status?tripId=${trip}').then(r=>r.json())`);
+   record('Fresh server hold has original positive ten-minute TTL',initial.heldBookingCode==='G0-PENDING'&&initial.remainingSeconds>540&&initial.remainingSeconds<=600,initial);
+   if(!checks.at(-1).passed)throw Error('Expiry watch requires a fresh fixture; do not age or renew the booking');
+   const started=Date.now(),deadline=started+(initial.remainingSeconds+12)*1000;
+   console.log(`EXPIRY_WATCH_RUNNING resultDir=${dir}; initialTTL=${initial.remainingSeconds}`);
+   await capture(a,'expiry-before');
+   while(Date.now()<deadline){
+    const state=await evaluate(a,`({selected:document.querySelector(${JSON.stringify(seat('A01'))}).classList.contains('selected'),disabled:document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')})`);
+    fs.writeFileSync(path.join(dir,'progress.json'),JSON.stringify({status:'WAITING_REAL_TTL',elapsedSeconds:Math.floor((Date.now()-started)/1000),initialTtl:initial.remainingSeconds,fixtureRunId:fixture.runId},null,2));
+    if(!state.selected&&state.disabled)break;
+    await sleep(1000);
+   }
+   const final=await evaluate(a,`fetch('/api/bookings/trip-seat-status?tripId=${trip}').then(r=>r.json())`);
+   const expiredUi=await evaluate(a,`!document.querySelector(${JSON.stringify(seat('A01'))}).classList.contains('selected') && document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
+   record('Real wall-clock TTL expires server quote and browser selection',expiredUi&&final.heldBookingCode===null&&final.remainingSeconds===0&&final.myHeldSeats.length===0&&Date.now()-started>=(initial.remainingSeconds-5)*1000,{elapsedSeconds:Math.floor((Date.now()-started)/1000),final});
+   record('Polling did not issue background hold POSTs or renew TTL',holdPosts.length===0,{holdPosts:holdPosts.length});
+   await capture(a,'expiry-after');
+   await login(b,'g0.customer.b@example.invalid');await openMap(b);await click(b,seat('A01'));
+   await until(b,`document.querySelector(${JSON.stringify(seat('A01'))}).classList.contains('selected') && !document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
+   const reclaimed=await evaluate(b,`fetch('/api/bookings/trip-seat-status?tripId=${trip}').then(r=>r.json())`);
+   record('Another browser customer can reclaim the expired seat',reclaimed.heldBookingCode&&reclaimed.heldBookingCode!=='G0-PENDING'&&reclaimed.myHeldSeats.includes('A01')&&reclaimed.remainingSeconds>0,reclaimed);
+   fs.writeFileSync(path.join(dir,'progress.json'),JSON.stringify({status:'COMPLETED',fixtureRunId:fixture.runId}));
+   return;
+  }
   await click(a,seat('A02'));await until(a,`document.querySelector(${JSON.stringify(seat('A02'))}).classList.contains('selected') && !document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
   const bookingUrl=await evaluate(a,`document.querySelector(${JSON.stringify(checkout)}).href`);
   record('Real seat click reaches owned booking Payment URL',new URL(bookingUrl).searchParams.get('bookingCode')==='G0-PENDING',bookingUrl);
