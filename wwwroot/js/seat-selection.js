@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     showSeatAlert(tripId, msg, "warning");
                     updateSeatSummary(tripId);
                     return;
-                } else if (!res.ok || !data || !data.success) {
+                } else if (res.status === 503 || !res.ok || !data || !data.success) {
                     // Lỗi máy chủ 503 / lỗi tạm thời (Không đánh dấu booked để cho phép thử lại)
                     seatEl.classList.remove("selected");
                     const msg = (data && data.message) ? data.message : "Hệ thống tạm thời bận hoặc gián đoạn kết nối. Vui lòng thử lại sau giây lát!";
