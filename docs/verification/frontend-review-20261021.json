@@ -100,5 +100,78 @@
         "prevented": true
       }
     }
-  ]
+  ],
+  "candidateReview": {
+    "commit": "c1d5d075671afe417bffc6f7f95b630f0d1cd564",
+    "method": "Node vm executing actual functions; mocked DOM/fetch; not browser E2E",
+    "checks": [
+      {
+        "name": "400 hold classification",
+        "passed": true
+      },
+      {
+        "name": "401 hold classification",
+        "passed": true
+      },
+      {
+        "name": "403 hold classification",
+        "passed": true
+      },
+      {
+        "name": "409 hold classification",
+        "passed": true
+      },
+      {
+        "name": "503 hold classification",
+        "passed": true
+      },
+      {
+        "name": "Release invalidates old total and disables checkout",
+        "passed": true
+      },
+      {
+        "name": "Agreed004 response recovers checkout after release",
+        "passed": true,
+        "observed": "<i class=\"bi bi-credit-card-2-front-fill me-1\"></i> Tiếp tục thanh toán 1 vé (100.000 đ) &rarr;"
+      },
+      {
+        "name": "Unverified sessionStorage price does not enable checkout",
+        "passed": true,
+        "observed": "<i class=\"bi bi-arrow-repeat me-1\"></i> Bấm vào ghế để làm mới giữ chỗ &rarr;"
+      },
+      {
+        "name": "Zero TTL disables checkout and is not replaced by 600",
+        "passed": true
+      },
+      {
+        "name": "Poll started before hold cannot erase confirmed selection",
+        "passed": true
+      },
+      {
+        "name": "Poll begun during hold cannot overwrite its completed result",
+        "passed": false,
+        "observed": {
+          "bookingCode": "BK-new",
+          "totalPrice": 100000,
+          "remainingSeconds": 499,
+          "heldSeats": [
+            "A02"
+          ]
+        }
+      },
+      {
+        "name": "Failed poll invalidates checkout quote",
+        "passed": true,
+        "observed": "<span class=\"spinner-border spinner-border-sm me-1\" role=\"status\"></span> Đang chờ đối chiếu giá từ máy chủ..."
+      },
+      {
+        "name": "Repeated payment submit sends one POST",
+        "passed": true
+      },
+      {
+        "name": "Payment503 stays on page and unlocks retry",
+        "passed": true
+      }
+    ]
+  }
 }

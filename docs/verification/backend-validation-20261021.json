@@ -1,9 +1,9 @@
 {
-  "generatedAtUtc": "2026-10-20T19:05:48.6476712+00:00",
+  "generatedAtUtc": "2026-10-20T19:26:44.4998517+00:00",
   "sourceBase": "ba98ee9",
-  "database": "SmartBus_G0_Test_R_337ab7c387f547689a469335fe86ade6",
+  "database": "SmartBus_G0_Test_R_546e2482b94943c7bf64328e4937a5d2",
   "databaseDropped": true,
-  "passed": 73,
+  "passed": 82,
   "failed": 0,
   "tests": [
     {
@@ -237,12 +237,47 @@
       "detail": null
     },
     {
+      "name": "Read-only quote recovers actual owned booking",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Quote ignores spoofed actor and exposes no other booking",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Repeated quote GET leaves rows, totals and hold timestamps unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Quote rejects invalid and missing trips",
+      "passed": true,
+      "detail": null
+    },
+    {
       "name": "Spoofed release cannot cancel other\u0027s hold",
       "passed": true,
       "detail": null
     },
     {
       "name": "Release/retry keeps total equal to active tickets",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Quote after release recovers reduced server total and same booking",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Mismatched stored total returns no quote and is not repaired by GET",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Multiple owned active bookings cannot yield a guessed quote",
       "passed": true,
       "detail": null
     },
@@ -258,6 +293,11 @@
     },
     {
       "name": "Pending ticket cannot check in without verified payment",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Fresh process and new session recover same code, total and original TTL",
       "passed": true,
       "detail": null
     },
@@ -319,6 +359,11 @@
     },
     {
       "name": "Search unscheduled day returns without seeding",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Expired booking yields no checkout quote or TTL renewal",
       "passed": true,
       "detail": null
     },

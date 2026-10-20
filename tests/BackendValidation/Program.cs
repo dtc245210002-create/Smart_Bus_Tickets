@@ -86,8 +86,11 @@ async Task<object> Snapshot()
     await using var c = database.OpenContext();
     return new { users = await c.Users.CountAsync(), trips = await c.Trips.CountAsync(), bookings = await c.Bookings.CountAsync(),
         tickets = await c.Tickets.CountAsync(), payments = await c.Payments.CountAsync(),
-        states = await c.Tickets.OrderBy(t => t.TicketId).Select(t => new { t.TicketId, t.Status }).ToListAsync() };
+        states = await c.Tickets.OrderBy(t => t.TicketId).Select(t => new { t.TicketId, t.Status, t.BookingId, t.SeatNumber, t.Price }).ToListAsync(),
+        bookingStates = await c.Bookings.OrderBy(b => b.BookingId).Select(b => new { b.BookingId, b.UserId, b.BookingCode, b.BookingTime, b.TotalAmount, b.Status }).ToListAsync() };
 }
+async Task<JsonElement> HoldSnapshot(HttpClient client, string extra = "") =>
+    await client.GetFromJsonAsync<JsonElement>("/api/bookings/trip-seat-status?tripId=" + database.Ids.Trip + extra);
 try
 {
     var port = FreePort(); Launch(product, new[] { "--urls", $"http://127.0.0.1:{port}" }, database.ConnectionString);
@@ -172,15 +175,57 @@ try
         var rows = await db.Tickets.Include(t => t.Booking).Where(t => t.Booking.TripId == database.Ids.Trip && (t.SeatNumber == "A02" || t.SeatNumber == "A03")).ToListAsync();
         Check("Spoofed userId not stored", rows.Count == 2 && rows.All(t => t.Booking.UserId == database.Ids.CustomerA));
     }
+    var quoteBeforeRead = JsonSerializer.Serialize(await Snapshot());
+    var heldQuote = await HoldSnapshot(a);
+    var originalQuoteTotal = heldQuote.GetProperty("heldTotalPrice").GetDecimal();
+    Check("Read-only quote recovers actual owned booking", heldQuote.GetProperty("heldBookingCode").GetString() == "G0-PENDING"
+        && heldQuote.GetProperty("myHeldSeats").GetArrayLength() == 3
+        && heldQuote.GetProperty("remainingSeconds").GetInt32() is > 0 and <= 600);
+    var spoofedQuote = await HoldSnapshot(b, "&userId=" + database.Ids.CustomerA + "&sessionId=actor-" + database.Ids.CustomerA);
+    Check("Quote ignores spoofed actor and exposes no other booking", spoofedQuote.GetProperty("heldBookingCode").ValueKind == JsonValueKind.Null
+        && spoofedQuote.GetProperty("heldTotalPrice").ValueKind == JsonValueKind.Null
+        && spoofedQuote.GetProperty("remainingSeconds").GetInt32() == 0);
+    await HoldSnapshot(a);
+    Check("Repeated quote GET leaves rows, totals and hold timestamps unchanged", quoteBeforeRead == JsonSerializer.Serialize(await Snapshot()));
+    Check("Quote rejects invalid and missing trips", (int)(await a.GetAsync("/api/bookings/trip-seat-status?tripId=0")).StatusCode == 400
+        && (int)(await a.GetAsync("/api/bookings/trip-seat-status?tripId=999999")).StatusCode == 404);
     await b.PostAsJsonAsync("/api/bookings/release-seats", new { tripId = database.Ids.Trip, seatNumbers = new[] { "A02" }, userId = database.Ids.CustomerA, sessionId = "actor-" + database.Ids.CustomerA });
     await using (var db = database.OpenContext()) Check("Spoofed release cannot cancel other's hold", await db.Tickets.AnyAsync(t => t.Booking.TripId == database.Ids.Trip && t.SeatNumber == "A02" && t.Status == "HELD"));
     await a.PostAsJsonAsync("/api/bookings/release-seats", new { tripId = database.Ids.Trip, seatNumbers = new[] { "A02" } });
     await a.PostAsJsonAsync("/api/bookings/hold-seats", new { tripId = database.Ids.Trip, seatNumbers = new[] { "A03" } });
+    var afterReleaseQuote = await HoldSnapshot(a);
     await using (var db = database.OpenContext())
     {
         var booking = await db.Bookings.Include(bk => bk.Tickets).SingleAsync(bk => bk.BookingId == database.Ids.PendingBooking);
         Check("Release/retry keeps total equal to active tickets", booking.TotalAmount == booking.Tickets.Where(t => t.Status == "HELD").Sum(t => t.Price)
             && booking.Tickets.Count(t => t.SeatNumber == "A03" && t.Status == "HELD") == 1);
+        Check("Quote after release recovers reduced server total and same booking", afterReleaseQuote.GetProperty("heldBookingCode").GetString() == booking.BookingCode
+            && afterReleaseQuote.GetProperty("heldTotalPrice").GetDecimal() == booking.TotalAmount
+            && booking.TotalAmount < originalQuoteTotal && afterReleaseQuote.GetProperty("myHeldSeats").GetArrayLength() == 2);
+    }
+    await using (var db = database.OpenContext())
+    {
+        var booking = await db.Bookings.FindAsync(database.Ids.PendingBooking);
+        booking!.TotalAmount += 1; await db.SaveChangesAsync();
+    }
+    var mismatchBefore = JsonSerializer.Serialize(await Snapshot());
+    var mismatch = await HoldSnapshot(a);
+    Check("Mismatched stored total returns no quote and is not repaired by GET", mismatch.GetProperty("heldBookingCode").ValueKind == JsonValueKind.Null
+        && mismatch.GetProperty("heldTotalPrice").ValueKind == JsonValueKind.Null && mismatch.GetProperty("remainingSeconds").GetInt32() == 0
+        && mismatchBefore == JsonSerializer.Serialize(await Snapshot()));
+    await using (var db = database.OpenContext())
+    { var booking = await db.Bookings.FindAsync(database.Ids.PendingBooking); booking!.TotalAmount -= 1; await db.SaveChangesAsync(); }
+    await using (var db = database.OpenContext())
+    {
+        var extra = new Booking { TripId = database.Ids.Trip, UserId = database.Ids.CustomerA, BookingCode = "G0-AMBIGUOUS-QUOTE", BookingTime = DateTime.Now, Status = "Pending", TotalAmount = 100 };
+        extra.Tickets.Add(new Ticket { TicketCode = "G0-AMBIGUOUS-QUOTE-A07", SeatNumber = "A07", Price = 100, Status = "HELD" });
+        db.Bookings.Add(extra); await db.SaveChangesAsync();
+        var ambiguousBefore = JsonSerializer.Serialize(await Snapshot());
+        var ambiguous = await HoldSnapshot(a);
+        Check("Multiple owned active bookings cannot yield a guessed quote", ambiguous.GetProperty("heldBookingCode").ValueKind == JsonValueKind.Null
+            && ambiguous.GetProperty("heldTotalPrice").ValueKind == JsonValueKind.Null
+            && ambiguousBefore == JsonSerializer.Serialize(await Snapshot()));
+        db.Tickets.RemoveRange(extra.Tickets); db.Bookings.Remove(extra); await db.SaveChangesAsync();
     }
     Check("Payment view reads server booking", (int)(await a.GetAsync("/Ticket/Payment?bookingCode=G0-PENDING&total=1&from=FAKE")).StatusCode == 200);
     var formHtml = await a.GetStringAsync("/Ticket/Reschedule?ticketCode=" + database.Ids.PendingTicketCode);
@@ -193,6 +238,12 @@ try
         new { qrPayload = database.Ids.PendingTicketCode, currentTripId = database.Ids.Trip })).StatusCode == 400);
     var nodePort = FreePort(); Launch(product, new[] { "--urls", $"http://127.0.0.1:{nodePort}" }, database.ConnectionString);
     using var freshNode = Client(nodePort); await WaitForServer(freshNode);
+    using var freshActor = Client(nodePort);
+    await Login(freshActor, "g0.customer.a@example.invalid", "G0FixtureOnly!");
+    var recoveredQuote = await HoldSnapshot(freshActor);
+    Check("Fresh process and new session recover same code, total and original TTL", recoveredQuote.GetProperty("heldBookingCode").GetString() == "G0-PENDING"
+        && recoveredQuote.GetProperty("heldTotalPrice").GetDecimal() == afterReleaseQuote.GetProperty("heldTotalPrice").GetDecimal()
+        && recoveredQuote.GetProperty("remainingSeconds").GetInt32() <= heldQuote.GetProperty("remainingSeconds").GetInt32());
     var freshMap = await (await freshNode.GetAsync("/api/trips/" + database.Ids.Trip + "/seats?userId=" + database.Ids.CustomerA)).Content.ReadFromJsonAsync<JsonElement>();
     Check("Fresh process reads SQL holds; spoofed anonymous mine=false", freshMap.GetProperty("data").GetProperty("seats").EnumerateArray()
         .Any(seat => seat.GetProperty("seatNumber").GetString() == "A03" && seat.GetProperty("status").GetString() == "HOLD" && !seat.GetProperty("isMine").GetBoolean()));
@@ -239,6 +290,11 @@ try
         && noScheduleBefore == JsonSerializer.Serialize(await Snapshot()));
     await using (var db = database.OpenContext())
     { var booking = await db.Bookings.FindAsync(database.Ids.PendingBooking); booking!.BookingTime = DateTime.Now.AddMinutes(-11); await db.SaveChangesAsync(); }
+    var expiredQuoteBefore = JsonSerializer.Serialize(await Snapshot());
+    var expiredQuote = await HoldSnapshot(a);
+    Check("Expired booking yields no checkout quote or TTL renewal", expiredQuote.GetProperty("heldBookingCode").ValueKind == JsonValueKind.Null
+        && expiredQuote.GetProperty("heldTotalPrice").ValueKind == JsonValueKind.Null && expiredQuote.GetProperty("remainingSeconds").GetInt32() == 0
+        && expiredQuoteBefore == JsonSerializer.Serialize(await Snapshot()));
     var expiredMap = await (await freshNode.GetAsync("/api/trips/" + database.Ids.Trip + "/seats")).Content.ReadFromJsonAsync<JsonElement>();
     Check("Expired hold is available after restart", expiredMap.GetProperty("data").GetProperty("seats").EnumerateArray()
         .Any(seat => seat.GetProperty("seatNumber").GetString() == "A03" && seat.GetProperty("status").GetString() == "AVAILABLE"));

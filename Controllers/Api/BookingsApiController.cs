@@ -132,14 +132,44 @@ public class BookingsApiController : ControllerBase
     {
         if (ActorId <= 0) return Unauthorized();
         if (tripId <= 0) return BadRequest(new { success = false, message = "TripId không hợp lệ." });
-        if (!await _context.Trips.AnyAsync(t => t.TripId == tripId)) return NotFound();
-        var tickets = await _context.Tickets.AsNoTracking().Include(t => t.Booking)
-            .Where(t => t.Booking.TripId == tripId).ToListAsync();
-        var active = tickets.Where(t => BlocksSeat(t, DateTime.Now)).ToList();
-        var mine = active.Where(t => IsHeld(t) && t.Booking.UserId == ActorId).ToList();
-        return Ok(new { success = true, tripId,
-            bookedSeats = active.Except(mine).SelectMany(t => (t.SeatNumber ?? "").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries)).Distinct(),
-            myHeldSeats = mine.Select(t => t.SeatNumber).Distinct() });
+        try
+        {
+            if (!await _context.Trips.AnyAsync(t => t.TripId == tripId)) return NotFound();
+            var tickets = await _context.Tickets.AsNoTracking().Include(t => t.Booking)
+                .Where(t => t.Booking.TripId == tripId).ToListAsync();
+            var now = DateTime.Now;
+            var active = tickets.Where(t => BlocksSeat(t, now)).ToList();
+            var mine = active.Where(t => IsHeld(t) && t.Booking.UserId == ActorId).ToList();
+            string? heldBookingCode = null;
+            decimal? heldTotalPrice = null;
+            var remainingSeconds = 0;
+            var bookings = mine.GroupBy(t => t.BookingId).ToList();
+            if (bookings.Count == 1)
+            {
+                var booking = bookings[0].First().Booking;
+                var codes = mine.Select(t => t.SeatNumber ?? "").ToList();
+                var total = mine.Sum(t => t.Price);
+                var remaining = (int)(booking.BookingTime.AddMinutes(10) - now).TotalSeconds;
+                // A quote requires one unambiguous, consistent owned booking. Reading
+                // never repairs totals, renews holds or allocates a replacement booking.
+                if (booking.Status == "Pending" && !string.IsNullOrWhiteSpace(booking.BookingCode)
+                    && remaining > 0 && total > 0 && total == booking.TotalAmount
+                    && codes.All(c => !string.IsNullOrWhiteSpace(c)
+                        && c.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries).Length == 1)
+                    && codes.Distinct(StringComparer.OrdinalIgnoreCase).Count() == codes.Count)
+                {
+                    heldBookingCode = booking.BookingCode;
+                    heldTotalPrice = total;
+                    remainingSeconds = Math.Min(600, remaining);
+                }
+            }
+            return Ok(new { success = true, tripId,
+                bookedSeats = active.Except(mine).SelectMany(t => (t.SeatNumber ?? "").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries)).Distinct(),
+                myHeldSeats = mine.Select(t => t.SeatNumber).Distinct(),
+                heldBookingCode, heldTotalPrice, remainingSeconds });
+        }
+        catch (Microsoft.Data.SqlClient.SqlException)
+        { return StatusCode(503, new { success = false, message = "Chưa thể đọc giữ chỗ. Vui lòng thử lại." }); }
     }
 
     [HttpPost("verify-payment")]

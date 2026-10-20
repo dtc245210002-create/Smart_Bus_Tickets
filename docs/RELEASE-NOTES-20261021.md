@@ -33,11 +33,20 @@ thành `b705a36`, `a25eb9d`. Không sửa tay file thuộc Antigravity.
 ## Kiểm chứng
 
 - Build cây tích hợp đạt, 0 lỗi; còn2 warning nullable legacy.
-- **73/73 kiểm tra HTTP/SQL đạt** trên cây tích hợp: Kestrel/cookie/
+- **82/82 kiểm tra HTTP/SQL đạt** trên cây tích hợp: Kestrel/cookie/
   antiforgery thật, LocalDB test riêng, hai OS worker trả200/409 và một
-  phân bổ ghế. DB tạm đã dọn theo marker/token.
+  phân bổ ghế. Bổ sung9 ca đọc quote, chống giả actor, tổng không khớp,
+  nhiều đơn mơ hồ, release/reload/TTL và không ghi khi GET. DB tạm đã dọn
+  theo marker/token. Kết quả này thuộc bản local bổ sung AGREEMENT-004.
 - **11/11 kỳ vọng JS đạt** bằng Node vm/mock DOM/fetch, tách khỏi73 test
   backend; chưa phải browser/mobile E2E.
+- Backend004 bổ sung `heldBookingCode`, `heldTotalPrice`, `remainingSeconds`
+  vào GET trip-seat-status. Chỉ trả quote cho một đơn Pending hợp lệ của
+  người đăng nhập; không tạo/gia hạn giữ chỗ hoặc sửa tổng tiền khi đọc.
+- Review ứng viên FE `c1d5d07`: **13/14** ca Node vm đạt; còn race khi poll
+  bắt đầu trong lúc hold đang chạy rồi trả snapshot cũ sau hold success.
+  Chưa tích hợp ứng viên. Chạy lại bằng
+  `node tests/BackendValidation/review-antigravity.cjs c1d5d07 --workflow`.
 - Evidence JSON ở `docs/verification/`; hướng dẫn chạy tại
   `tests/BackendValidation/README.md`.
 
@@ -48,9 +57,9 @@ thành `b705a36`, `a25eb9d`. Không sửa tay file thuộc Antigravity.
   trả503. Đây là chặn hành vi sai, không phải checkout tiền thật hoàn chỉnh.
 - ConfirmReschedule trả409 để không tự xác nhận vé/giá/ghế theo client khi
   chưa có workflow đổi vé an toàn. Đổi/hủy/hoàn tiền đầy đủ chưa nghiệm thu.
-- Frontend S2/S3/S4 `f833927`, `daf58db` chưa tích hợp: review còn vấn đề
-  quote/tổng cũ sau nhả bớt ghế và khôi phục booking sau reload. Luồng nối
-  checkout theo booking thật phải chốt các ca đó trước khi nhận.
+- Frontend S2/S3/S4 từ `f833927` tới `c1d5d07` chưa tích hợp: Anti đã sửa
+  storage price/TTL/payment503 và phục hồi quote theo004; còn ca race nêu
+  trên trước khi nhận luồng nối checkout theo booking thật.
 - Chưa kiểm tra Somee, SMTP/OTP delivery, browser/mobile, check-in đồng thời
   và migration dữ liệu cũ. BookingTime giữ convention server-local hiện hữu;
   inspect timestamp legacy unknown chưa phải event check-in bền vững.
