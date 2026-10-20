@@ -25,10 +25,24 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     const qrContainer = document.getElementById("ticketQrCanvas");
-    const qrPayload = document.getElementById("qrPayloadData")?.value || "SMARTBUS_DEFAULT";
+    const rawPayload = document.getElementById("qrPayloadData")?.value;
+    const qrPayload = rawPayload ? rawPayload.trim() : "";
     const qrImage = document.getElementById("ticketQrImage");
 
-    if (qrContainer && typeof QRCode !== 'undefined') {
+    // Nếu không có payload vé thật hoặc là chuỗi mẫu, không tự sinh QR giả lập
+    if (!qrPayload || qrPayload === "SMARTBUS_DEFAULT") {
+        if (qrContainer) {
+            qrContainer.innerHTML = `
+                <div class="text-center p-2 text-muted">
+                    <i class="bi bi-qr-code-scan fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                    <span class="small fw-semibold d-block text-secondary">Mã QR chưa khả dụng</span>
+                    <span class="text-muted" style="font-size: 0.75rem;">Vui lòng hoàn tất thanh toán để lấy mã</span>
+                </div>`;
+        }
+        if (qrImage) {
+            qrImage.style.display = "none";
+        }
+    } else if (qrContainer && typeof QRCode !== 'undefined') {
         try {
             // Tạo phần tử tạm để thử vẽ QR bằng QRCodeJS
             const tempDiv = document.createElement("div");

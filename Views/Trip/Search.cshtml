@@ -133,7 +133,17 @@
                 <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-xs"><i class="bi bi-broadcast text-success"></i> Có định vị GPS xe</span>
             </div>
 
-            @foreach (var trip in Model.Trips)
+            @if (Model.Trips == null || !Model.Trips.Any())
+            {
+                <div class="sbg-filter-card text-center p-5 rounded-4 shadow-sm my-3 border">
+                    <i class="bi bi-bus-front text-muted fs-1 mb-3 d-block"></i>
+                    <h5 class="fw-bold text-dark">Không tìm thấy chuyến xe phù hợp</h5>
+                    <p class="text-muted small mb-3">Hiện chưa có chuyến xe nào chạy tuyến <strong>@Model.From &rarr; @Model.To</strong> vào ngày <strong>@Model.DepartureDate.ToString("dd/MM/yyyy")</strong>.</p>
+                    <p class="small text-muted mb-0">Gợi ý: Bạn có thể chọn ngày khởi hành khác hoặc thử tìm các tuyến liên tỉnh lân cận.</p>
+                </div>
+            }
+
+            @foreach (var trip in Model.Trips ?? Enumerable.Empty<WebApplication1.Models.ViewModels.TripItemViewModel>())
             {
                 <div class="sbg-trip-card" id="tripCard-@trip.TripId">
                     @if (trip.IsFlashSale)

@@ -108,8 +108,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const sessionId = getOrCreateSessionId();
         const userId = window.sbgCurrentUserId || null;
 
-        // Tạm thời vô hiệu hóa tương tác tránh double click
+        // Vô hiệu hóa tương tác và tạo hiệu ứng chờ tránh double click
         seatEl.style.pointerEvents = "none";
+        seatEl.style.opacity = "0.6";
 
         try {
             if (isSelecting) {
@@ -128,24 +129,32 @@ document.addEventListener("DOMContentLoaded", function () {
                     })
                 });
 
-                const data = await res.json();
+                let data = null;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    data = null;
+                }
 
-                if (!res.ok || !data.success) {
-                    // GHẾ BỊ XUNG ĐỘT (Tài khoản khác đã chọn trước)
+                if (!res.ok || !data || !data.success) {
+                    // GHẾ BỊ XUNG ĐỘT (409 Conflict hoặc lỗi validation 400)
                     seatEl.classList.remove("selected");
                     seatEl.classList.add("booked");
-                    showSeatAlert(tripId, data.message || `Ghế ${seatCode} vừa có tài khoản khác chọn. Vui lòng chọn ghế khác!`, "warning");
+                    seatEl.style.pointerEvents = "none";
+                    const msg = (data && data.message) ? data.message : `Ghế ${seatCode} đang được tài khoản khác giữ hoặc đã bán. Vui lòng chọn ghế khác!`;
+                    showSeatAlert(tripId, msg, "warning");
                     updateSeatSummary(tripId);
                     return;
                 }
 
-                // Thành công: Đánh dấu ghế Đang chọn
+                // Thành công từ server: Đánh dấu ghế Đang chọn
                 seatEl.classList.add("selected");
                 seatEl.classList.remove("booked");
-                showSeatAlert(tripId, `Đã chọn và giữ ghế ${seatCode} vào hệ thống (giữ 10 phút)!`, "success");
+                const remSec = (data.data && data.data.remainingSeconds) ? data.data.remainingSeconds : 600;
+                showSeatAlert(tripId, `Đã giữ ghế ${seatCode} thành công (thời hạn ${Math.round(remSec / 60)} phút)!`, "success");
             } else {
                 // HỦY CHỌN GHẾ -> GỬI API HỦY GIỮ CHỖ
-                await fetch("/api/bookings/release-seats", {
+                const res = await fetch("/api/bookings/release-seats", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -158,22 +167,35 @@ document.addEventListener("DOMContentLoaded", function () {
                     })
                 });
 
-                seatEl.classList.remove("selected");
-                showSeatAlert(tripId, `Đã hủy giữ ghế ${seatCode}.`, "info");
+                let data = null;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    data = null;
+                }
+
+                if (res.ok && data && data.success) {
+                    seatEl.classList.remove("selected");
+                    showSeatAlert(tripId, `Đã hủy giữ ghế ${seatCode}.`, "info");
+                } else {
+                    showSeatAlert(tripId, (data && data.message) ? data.message : `Không thể hủy giữ ghế ${seatCode}. Vui lòng thử lại.`, "warning");
+                }
             }
 
             updateSeatSummary(tripId);
         } catch (err) {
             console.error("Lỗi khi kết nối API giữ ghế:", err);
-            // Fallback giao diện người dùng
+            // Tuyệt đối không tự động coi là chọn thành công khi mất mạng/lỗi kết nối
             if (isSelecting) {
-                seatEl.classList.add("selected");
-            } else {
                 seatEl.classList.remove("selected");
             }
+            showSeatAlert(tripId, "Lỗi kết nối máy chủ khi giữ chỗ. Vui lòng kiểm tra mạng và thử lại!", "danger");
             updateSeatSummary(tripId);
         } finally {
-            seatEl.style.pointerEvents = "auto";
+            seatEl.style.opacity = "1";
+            if (!seatEl.classList.contains("booked")) {
+                seatEl.style.pointerEvents = "auto";
+            }
         }
     }
 
