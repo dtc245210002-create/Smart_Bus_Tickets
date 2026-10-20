@@ -91,6 +91,56 @@ async Task<object> Snapshot()
 }
 async Task<JsonElement> HoldSnapshot(HttpClient client, string extra = "") =>
     await client.GetFromJsonAsync<JsonElement>("/api/bookings/trip-seat-status?tripId=" + database.Ids.Trip + extra);
+
+// Browser QA uses the same guarded disposable fixture as HTTP regressions.
+// No connection string, ownership token or real credentials are written to metadata.
+if (args.FirstOrDefault() == "browser-fixture")
+{
+    var minutes = args.Length > 1 && int.TryParse(args[1], out var requested) ? Math.Clamp(requested, 5, 90) : 60;
+    var browserDir = Path.Combine(root, "TestResults/browser-fixture");
+    Directory.CreateDirectory(browserDir);
+    var runId = Guid.NewGuid().ToString("N");
+    var stopPath = Path.Combine(browserDir, runId + ".stop");
+    var metadataPath = Path.Combine(browserDir, "context.json");
+    var expires = DateTimeOffset.UtcNow.AddMinutes(minutes);
+    var browserPort = FreePort();
+    var baseUrl = $"http://127.0.0.1:{browserPort}";
+    var status = "STARTING";
+    var dropped = false;
+    async Task Metadata() => await File.WriteAllTextAsync(metadataPath, JsonSerializer.Serialize(new
+    {
+        runId, status, baseUrl, expiresAtUtc = expires, runnerPid = Environment.ProcessId,
+        stopPath, databaseDropped = dropped, fixture = database.Ids,
+        searchUrl = baseUrl + "/Trip/Search?from=H%C3%A0%20N%E1%BB%99i&to=H%E1%BA%A3i%20Ph%C3%B2ng&date=" + database.Ids.ServiceDate.ToString("yyyy-MM-dd"),
+        accounts = new[] { "g0.customer.a@example.invalid", "g0.customer.b@example.invalid", "g0.driver@example.invalid", "g0.admin@example.invalid" },
+        credentialsSource = "tests/BackendValidation/TestSupport/TestDatabase.cs (synthetic fixture only)",
+        warning = "Local disposable browser test; never use real customer data or real bank transfers."
+    }, new JsonSerializerOptions { WriteIndented = true }));
+    try
+    {
+        await Metadata();
+        Launch(product, new[] { "--urls", baseUrl }, database.ConnectionString);
+        using var browserClient = Client(browserPort);
+        await WaitForServer(browserClient);
+        status = "READY"; await Metadata();
+        Console.WriteLine($"BROWSER_FIXTURE_READY {baseUrl} metadata={metadataPath}");
+        while (DateTimeOffset.UtcNow < expires && !File.Exists(stopPath) && processes.All(p => !p.HasExited))
+            await Task.Delay(1000);
+    }
+    finally
+    {
+        foreach (var process in processes)
+        {
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync(); process.Dispose();
+        }
+        await database.DropOwnedEphemeralAsync(); dropped = true;
+        status = "STOPPED"; await Metadata();
+        await File.WriteAllLinesAsync(Path.Combine(browserDir, runId + ".log"), logs);
+        Console.WriteLine("BROWSER_FIXTURE_STOPPED owned temporary database dropped");
+    }
+    return;
+}
 try
 {
     var port = FreePort(); Launch(product, new[] { "--urls", $"http://127.0.0.1:{port}" }, database.ConnectionString);
