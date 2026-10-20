@@ -1,0 +1,381 @@
+{
+  "generatedAtUtc": "2026-10-20T19:05:48.6476712+00:00",
+  "sourceBase": "ba98ee9",
+  "database": "SmartBus_G0_Test_R_337ab7c387f547689a469335fe86ade6",
+  "databaseDropped": true,
+  "passed": 73,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "Password: real legacy hash accepted",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Password: wrong/demo/plain/hash-as-password rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Anonymous admin denied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Anonymous hold API 401",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Customer A login",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Customer B login",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Driver real login",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Admin real login",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Customer cannot access admin",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Driver not elevated to admin",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Admin can access admin",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Customer cannot access driver/dashboard/demo",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Cross-owner denied: /Ticket/Detail",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Cross-owner denied: /Ticket/Cancel",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Cross-owner denied: /Ticket/Reschedule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Cross-owner denied: /api/v1/tickets/G0-PAID-A01/change-eligibility",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Cross-owner denied: /api/payment/check-status",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Own ticket readable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Authorized inspect succeeds without check-in",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Inspect does not invent check-in timestamp",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Inspect repeated leaves all SQL rows/statuses unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Inspect rejects fuzzy booking-prefix code",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Explicit authorized check-in still works",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Duplicate explicit check-in remains blocked",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Inspect USED returns already-used without another check-in",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Missing booking is rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "GET expected response: /Ticket/Detail",
+      "passed": true,
+      "detail": 409
+    },
+    {
+      "name": "GET expected response: /Ticket/PaymentResult",
+      "passed": true,
+      "detail": 200
+    },
+    {
+      "name": "GET expected response: /Driver/Dashboard",
+      "passed": true,
+      "detail": 200
+    },
+    {
+      "name": "GET expected response: /Trip/Search",
+      "passed": true,
+      "detail": 200
+    },
+    {
+      "name": "GET refresh does not mint trips/bookings/tickets/payments/statuses",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Pending detail has no boarding QR payload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Payment GET cannot write",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Unverified/insufficient/replayed payment rejected 0",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Unverified/insufficient/replayed payment rejected 1",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Unverified payment produces no writes",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Google sample login disabled",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Driver sample password rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Driver cannot scan another driver\u0027s trip",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Driver cannot inspect another driver\u0027s trip",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Customer cannot scan",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Missing trip rejected before scan",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Nonexistent seat rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "ISSUED seat rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Hold uses authenticated actor",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Spoofed userId not stored",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Spoofed release cannot cancel other\u0027s hold",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Release/retry keeps total equal to active tickets",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Payment view reads server booking",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Exchange cannot bypass payment/seat gate",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Pending ticket cannot check in without verified payment",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Fresh process reads SQL holds; spoofed anonymous mine=false",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Cancelled PaymentResult is readable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Cancelled ticket not revived by result GET",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Ambiguous fuzzy match cannot scan across trips",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Two OS processes: one SQL allocation for A06",
+      "passed": true,
+      "detail": {
+        "first": 0,
+        "second": 0
+      }
+    },
+    {
+      "name": "Two OS workers return one 200 and one 409",
+      "passed": true,
+      "detail": [
+        200,
+        409
+      ]
+    },
+    {
+      "name": "Unknown trip does not become mock map",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Unknown hold trip not replaced with fallback",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Seven seats in one request rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Missing route distance uses same canonical fare as Search",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Search unscheduled day returns without seeding",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Expired hold is available after restart",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Other actor can reclaim expired hold",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Client cannot extend server TTL to 30 minutes",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Reallocation/retry has one active allocation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Retry preserves original hold timestamp",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Returned quote equals server ticket sum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Six-seat hold accepted",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Seventh cumulative seat rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "DB failure plus demo password cannot create login",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Existing cookie rejected after account blocked",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Revalidated driver principal has no Admin role",
+      "passed": true,
+      "detail": null
+    }
+  ]
+}

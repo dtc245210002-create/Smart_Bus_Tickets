@@ -1,0 +1,104 @@
+{
+  "commit": "bfa54ae222ae949b23964dfb4eaf6c2b3d2082e2",
+  "method": "Node vm with mocked fetch/DOM; not browser E2E",
+  "checks": [
+    {
+      "name": "Hold success follows server",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": true,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "409 marks conflicting seat",
+      "passed": true,
+      "observed": {
+        "booked": true,
+        "selected": false,
+        "pointerEvents": "none"
+      }
+    },
+    {
+      "name": "400 must not mark seat sold",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": false,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "401 must not mark seat sold",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": false,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "403 must not mark seat sold",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": false,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "503 must not mark seat sold",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": false,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "Non-JSON must not mark seat sold",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": false,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "Network failure does not select",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": false,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "Failed release retains selection",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": true,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "Confirmed release removes selection",
+      "passed": true,
+      "observed": {
+        "booked": false,
+        "selected": false,
+        "pointerEvents": "auto"
+      }
+    },
+    {
+      "name": "Repeated submit event must prevent navigation/request",
+      "passed": true,
+      "observed": {
+        "disabled": true,
+        "prevented": true
+      }
+    }
+  ]
+}

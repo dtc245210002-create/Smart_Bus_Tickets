@@ -20,4 +20,9 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <Content Remove="tests/**;TestResults/**" />
+    <None Remove="tests/**;TestResults/**" />
+  </ItemGroup>
 </Project>

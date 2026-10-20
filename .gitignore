@@ -33,3 +33,8 @@ project.lock.json
 
 # Logs
 *.log
+
+# Isolated validation output and SQL LocalDB files
+TestResults/
+*.mdf
+*.ldf
