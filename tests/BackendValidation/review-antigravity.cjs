@@ -1,6 +1,8 @@
 // Run baseline checks by default; --workflow exercises release/reload/expiry/races.
 // The workflow gate intentionally fails candidates that have not closed those bugs.
-if (process.argv.includes('--workflow')) {
+const reviewPath = require('path').resolve(__dirname, '../..');
+const selectedSource = require('child_process').execFileSync('git', ['show', `${process.argv[2] || 'HEAD'}:wwwroot/js/seat-selection.js`], {cwd:reviewPath,encoding:'utf8'});
+if (process.argv.includes('--workflow') || selectedSource.includes('const inFlightMutations =')) {
 const cp = require('child_process'), vm = require('vm'), fs = require('fs');
 const path = require('path');
 const repo = path.resolve(__dirname, '../..');
@@ -22,7 +24,7 @@ function setup() {
  accordion.querySelectorAll=s=> s.endsWith('.selected') ? seats.filter(x=>x.classList.contains('selected')) : seats;
  accordion.querySelector=s=> ({'.selected-seats-list':list,'.selected-total-price':total,'.btn-continue-booking':btn})[s];
  const store = new Map();
- const ctx={tripBookingData:{},tripMutationGen:{}, window:{sbgCurrentUserId:2}, getOrCreateSessionId:()=> 'test',showSeatAlert(){}, console:{error(){}},
+ const ctx={tripBookingData:{},tripMutationGen:{},inFlightMutations:{}, window:{sbgCurrentUserId:2}, getOrCreateSessionId:()=> 'test',showSeatAlert(){}, console:{error(){}},
  document:{getElementById:()=>accordion}, sessionStorage:{setItem:(k,v)=>store.set(k,v),getItem:k=>store.get(k),removeItem:k=>store.delete(k)},
  fetch:async()=>({ok:true,status:200,json:async()=>({success:true})})};
  vm.createContext(ctx); vm.runInContext(fragment,ctx);
