@@ -31,6 +31,7 @@ Frontend được bàn giao/review: `d05579c`, `bfa54ae`, tích hợp nguyên co
 thành `b705a36`, `a25eb9d`. Không sửa tay file thuộc Antigravity.
 Backend004: `a6ee9f9`. Đã nhận bổ sung chuỗi FE `f833927` tới `f87c488`
 thành `ae15b63`, `cc1bfb3`, `93bb9ff`, `cfad8e8`, `270ce05`, `f157845`.
+FE06 `4ebb417`/`d60b4d4` được tích hợp thành `aa271f6`/`f9fc94d`.
 Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push07:00.
 
 ## Kiểm chứng
@@ -41,17 +42,20 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
   phân bổ ghế. Bổ sung9 ca đọc quote, chống giả actor, tổng không khớp,
   nhiều đơn mơ hồ, release/reload/TTL và không ghi khi GET. DB tạm đã dọn
   theo marker/token. Kết quả này thuộc bản local bổ sung AGREEMENT-004.
-- **14/14 kỳ vọng workflow JS đạt** trên bản tích hợp bằng Node vm/mock
+- **15/15 kỳ vọng workflow JS đạt** trên bản tích hợp bằng Node vm/mock
   DOM/fetch; baseline S1 trước đó11/11. Tách khỏi82 test backend;
   chưa phải browser/mobile E2E.
 - Backend004 bổ sung `heldBookingCode`, `heldTotalPrice`, `remainingSeconds`
   vào GET trip-seat-status. Chỉ trả quote cho một đơn Pending hợp lệ của
   người đăng nhập; không tạo/gia hạn giữ chỗ hoặc sửa tổng tiền khi đọc.
-- Anti sửa race của `c1d5d07` tại `f87c488`;14/14 ca bao gồm poll trước và
+- Anti sửa race của `c1d5d07` tại `f87c488`; các ca bao gồm poll trước và
   trong lúc hold, storage price, TTL0, release/recovery, lỗi poll và payment503.
   Chạy lại bằng `node tests/BackendValidation/review-antigravity.cjs HEAD`.
-  Harness điều khiển polling thủ công để tái hiện thứ tự response; không
-  suy kết quả thành kiểm thử toàn bộ chu kỳ polling tự động trên trình duyệt.
+  Ca15 bật hàm sync thật trong VM và xác nhận GET tự động ngay sau release
+  khôi phục quote;14 ca trước điều khiển polling để tái hiện thứ tự response.
+  Không suy kết quả thành kiểm thử toàn bộ chu kỳ polling trên trình duyệt.
+  JS-only FE06 đã kiểm tra cú pháp và15ca trên source tích hợp; không chạy
+  lại82ca SQL vì backend không đổi từ lần xác minh trước.
 - Evidence JSON ở `docs/verification/`; hướng dẫn chạy tại
   `tests/BackendValidation/README.md`.
 
@@ -62,10 +66,9 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
   trả503. Đây là chặn hành vi sai, không phải checkout tiền thật hoàn chỉnh.
 - ConfirmReschedule trả409 để không tự xác nhận vé/giá/ghế theo client khi
   chưa có workflow đổi vé an toàn. Đổi/hủy/hoàn tiền đầy đủ chưa nghiệm thu.
-- Frontend S2/S3 đã tích hợp qua cổng logic; S4 browser/mobile vẫn chờ
-  bằng chứng thực tế. Cần kiểm tra vị trí gọi fresh snapshot sau mutation:
-  lệnh gọi trước khi tăng generation ở finally có thể bị loại, khiến phải
-  chờ lượt polling4giây kế tiếp. Đã giao Anti xác minh/sửa trong scope004.
+- Frontend S2/S3 đã tích hợp qua cổng logic; S4 browser desktop/mobile-width
+  vẫn chờ bằng chứng thực tế. FE06 đã sửa fresh snapshot sau mutation:
+  chỉ gọi sau khi generation/in-flight đã ổn định để không tự loại GET mới.
 - Chưa kiểm tra Somee, SMTP/OTP delivery, browser/mobile, check-in đồng thời
   và migration dữ liệu cũ. BookingTime giữ convention server-local hiện hữu;
   inspect timestamp legacy unknown chưa phải event check-in bền vững.

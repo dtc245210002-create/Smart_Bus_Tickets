@@ -1,5 +1,5 @@
 {
-  "commit": "f157845",
+  "commit": "f9fc94d",
   "method": "Node vm executing actual functions; mocked DOM/fetch; not browser E2E",
   "checks": [
     {
@@ -63,6 +63,22 @@
       "observed": "<span class=\"spinner-border spinner-border-sm me-1\" role=\"status\"></span> Đang chờ đối chiếu giá từ máy chủ..."
     },
     {
+      "name": "Automatic snapshot after release restores one-seat quote without waiting for interval",
+      "passed": true,
+      "observed": {
+        "reads": 1,
+        "button": "<i class=\"bi bi-credit-card-2-front-fill me-1\"></i> Tiếp tục thanh toán 1 vé (100.000 đ) &rarr;",
+        "quote": {
+          "bookingCode": "BK-real",
+          "totalPrice": 100000,
+          "remainingSeconds": 500,
+          "heldSeats": [
+            "A03"
+          ]
+        }
+      }
+    },
+    {
       "name": "Repeated payment submit sends one POST",
       "passed": true
     },
@@ -71,5 +87,5 @@
       "passed": true
     }
   ],
-  "handoffCommit": "f87c4882376917e1672474d6ccf0949f5465ec9c"
+  "handoffCommit": "d60b4d4d3e0fa759e73acee14464d6c1a64d503c"
 }
