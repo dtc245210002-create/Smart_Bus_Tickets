@@ -198,6 +198,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 const displayMins = remSec ? Math.max(1, Math.round(remSec / 60)) : 10;
                 showSeatAlert(tripId, `Đã giữ ghế ${seatCode} thành công (thời hạn ${displayMins} phút)!`, "success");
+                // Lấy fresh GET snapshot để đồng bộ đầy đủ toàn bộ ghế giữ và báo giá tổng
+                syncSeatStatuses(tripId);
             } else {
                 // HỦY CHỌN GHẾ -> GỬI API HỦY GIỮ CHỖ
                 const res = await fetch("/api/bookings/release-seats", {
@@ -239,6 +241,9 @@ document.addEventListener("DOMContentLoaded", function () {
                             delete tripBookingData[tripId];
                         }
                     }
+
+                    // Lấy fresh GET snapshot để khôi phục báo giá chính thức cho các ghế còn lại
+                    syncSeatStatuses(tripId);
                 } else {
                     // Nhả ghế thất bại: Giữ nguyên selected vì server vẫn đang ghi nhận giữ chỗ
                     seatEl.classList.add("selected");
@@ -296,9 +301,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
         try {
             const res = await fetch(`/api/bookings/trip-seat-status?tripId=${tripId}&sessionId=${encodeURIComponent(sessionId)}&userId=${userId}`);
-            if (!res.ok) return;
+            if (!res.ok) {
+                if (tripBookingData[tripId]) {
+                    delete tripBookingData[tripId].totalPrice;
+                }
+                updateSeatSummary(tripId);
+                return;
+            }
             const data = await res.json();
-            if (!data.success) return;
+            if (!data.success) {
+                if (tripBookingData[tripId]) {
+                    delete tripBookingData[tripId].totalPrice;
+                }
+                updateSeatSummary(tripId);
+                return;
+            }
 
             // LOẠI BỎ RACE CONDITION: Nếu trong thời gian fetch có thao tác chọn/nhả ghế mới -> Bỏ qua response cũ này!
             if ((tripMutationGen[tripId] || 0) !== expectedGen) {
@@ -364,7 +381,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             updateSeatSummary(tripId);
         } catch (e) {
-            // Giữ nguyên giao diện nếu kết nối mạng tạm gián đoạn
+            // Lỗi mạng hoặc exception: Vô hiệu hóa quote cũ để không hiển thị giá không xác minh
+            if (tripBookingData[tripId]) {
+                delete tripBookingData[tripId].totalPrice;
+            }
+            updateSeatSummary(tripId);
         }
     }
 
