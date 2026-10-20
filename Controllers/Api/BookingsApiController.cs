@@ -29,7 +29,8 @@ public class BookingsApiController : ControllerBase
         return true;
     }
     internal static decimal BaseFare(Trip trip) => RoutePricingService.CalculateTripPrice(
-        trip.Route.Distance ?? 0, trip.Bus.BusType.TypeName, trip.Bus.Capacity);
+        trip.Route.Distance ?? RoutePricingService.GetRouteMetrics(trip.Route.StartPoint, trip.Route.EndPoint).Distance,
+        trip.Bus.BusType.TypeName, trip.Bus.Capacity);
     private async Task LockTripAsync(int tripId)
     {
         // Transaction-owned SQL lock coordinates all workers, without schema changes.
