@@ -58,6 +58,13 @@ async function openMap(session){await navigate(session,search);await until(sessi
   const state=await evaluate(a,`(async()=>{const q=await fetch('/api/bookings/trip-seat-status?tripId=${trip}').then(r=>r.json());return {q,total:document.querySelector(${JSON.stringify(accordion+' .selected-total-price')}).innerText,href:document.querySelector(${JSON.stringify(checkout)}).href}})()`);
   record('Browser release recovers server quote for the exact remaining seats',state.q.myHeldSeats.includes('A03')&&!state.q.myHeldSeats.includes('A02')&&state.total.replace(/\D/g,'')===String(state.q.heldTotalPrice),state);
   await capture(a,'mobile-after-release');
+  await command('Network.enable',{},a);
+  await command('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0},a);
+  await until(a,`document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
+  record('Real browser offline polling invalidates checkout quote',true);
+  await command('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1},a);
+  await until(a,`!document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
+  record('Network restore recovers same booking without re-holding',await evaluate(a,`document.querySelector(${JSON.stringify(checkout)}).href===${JSON.stringify(bookingUrl)}`));
   await click(a,checkout);await until(a,"location.pathname==='/Ticket/Payment' && !!document.getElementById('paymentConfirmForm')");
   await click(a,'#btnConfirmPayment');await until(a,"!!document.getElementById('paymentStatusAlert') && document.getElementById('paymentStatusAlert').innerText.includes('503') && !document.getElementById('btnConfirmPayment').disabled");
   record('Actual Payment503 stays on page and permits retry',await evaluate(a,"location.pathname==='/Ticket/Payment'"));
@@ -67,7 +74,7 @@ async function openMap(session){await navigate(session,search);await until(sessi
  finally{
   if(ws?.readyState===WebSocket.OPEN){try{await command('Browser.close');}catch{}ws.close();}
   if(edge.exitCode===null)edge.kill();
-  const result={sourceCommit:cp.execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),method:'Installed headless Edge, isolated fresh contexts, actual DOM/input and HTTP; not physical mobile',fixtureRunId:fixture.runId,checks,errors,artifacts:dir,notVerified:['physical mobile','real payment provider','full offline/expiry matrix','driver/admin browser flows']};
+  const result={sourceCommit:cp.execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),method:'Installed headless Edge, isolated fresh contexts, actual DOM/input and HTTP; not physical mobile',environment:fixture.environment,fixtureRunId:fixture.runId,checks,errors,artifacts:dir,notVerified:['physical mobile','real payment provider','long offline and full expiry browser matrix','driver/admin browser flows in this runner']};
   fs.writeFileSync(path.join(dir,'result.json'),JSON.stringify(result,null,2));
   console.log(`${checks.filter(c=>c.passed).length}/${checks.length}; result=${path.join(dir,'result.json')}`);
   if(checks.some(c=>!c.passed))process.exitCode=1;

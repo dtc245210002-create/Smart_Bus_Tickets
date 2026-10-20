@@ -89,14 +89,14 @@
   ],
   "handoffCommit": "d60b4d4d3e0fa759e73acee14464d6c1a64d503c",
   "browserQa": {
-    "status": "PARTIAL_BROWSER_VERIFIED_INSTALLED_EDGE",
+    "status": "PUBLISHED_BROWSER_AND_COMPLEMENTARY_ROLES_VERIFIED_WITH_LIMITS",
     "reportedBy": "Antigravity",
     "driver": "playwright-1.57.0-win32_x64.zip",
     "blocker": "browser_subagent driver download HTTP404",
     "liveHttpProbes": "Login200, Search200, public seat map success; Anti reports anonymous Detail302",
     "cleanup": "Codex observed context.status STOPPED and databaseDropped=true",
     "installedBrowserAlternative": "Installed Edge + native WebSocket/CDP verified7/7 real browser cases",
-    "scope": "Seven real browser cases; complementary S4 matrix pending, no provider or physical mobile claim"
+    "scope": "Production9 real browser cases; corrected Chrome role evidence reviewed; real10minute browser expiry, long offline, provider and physical mobile remain unverified"
   },
   "browserSmoke": {
     "sourceCommit": "685055b2948ca5c62b96b9f001f21acbcedd8d07",
@@ -160,5 +160,189 @@
     ],
     "environment": "Development browser fixture; Testing API regressions unchanged",
     "visualLimit": "External material icon/font loading not verified; viewport emulation is not a physical device"
+  },
+  "publishedBrowserSmoke": {
+    "sourceCommit": "58b6f2867e3952812edc310f43560c6fb7c870da",
+    "method": "Installed headless Edge, isolated fresh contexts, actual DOM/input and HTTP; not physical mobile",
+    "environment": "Production",
+    "fixtureRunId": "db08d69d08c145e09b17560c08ec082c",
+    "checks": [
+      {
+        "name": "Desktop customer logs in through actual HTML form",
+        "passed": true
+      },
+      {
+        "name": "Real seat click reaches owned booking Payment URL",
+        "passed": true,
+        "observed": "http://127.0.0.1:64519/Ticket/Payment?bookingCode=G0-PENDING&tripId=1"
+      },
+      {
+        "name": "Second isolated customer sees the first customer seat blocked",
+        "passed": true
+      },
+      {
+        "name": "Mobile-width reload recovers actual same booking",
+        "passed": true
+      },
+      {
+        "name": "Browser release recovers server quote for the exact remaining seats",
+        "passed": true,
+        "observed": {
+          "q": {
+            "success": true,
+            "tripId": 1,
+            "bookedSeats": [],
+            "myHeldSeats": [
+              "A01",
+              "A03"
+            ],
+            "heldBookingCode": "G0-PENDING",
+            "heldTotalPrice": 305000,
+            "remainingSeconds": 575
+          },
+          "total": "305.000 VNĐ",
+          "href": "http://127.0.0.1:64519/Ticket/Payment?bookingCode=G0-PENDING&tripId=1"
+        }
+      },
+      {
+        "name": "Real browser offline polling invalidates checkout quote",
+        "passed": true
+      },
+      {
+        "name": "Network restore recovers same booking without re-holding",
+        "passed": true
+      },
+      {
+        "name": "Actual Payment503 stays on page and permits retry",
+        "passed": true
+      },
+      {
+        "name": "Mobile viewport is 390 pixels",
+        "passed": true,
+        "observed": 390
+      }
+    ],
+    "errors": [],
+    "artifacts": "C:\\Users\\admin\\OneDrive\\ドキュメント\\ChatGPT\\Smart_Bus_Tickets\\integration-sync-20261021\\Smart_Bus_Tickets\\TestResults\\browser-smoke\\1792538175209",
+    "notVerified": [
+      "physical mobile",
+      "real payment provider",
+      "long offline and full expiry browser matrix",
+      "driver/admin browser flows in this runner"
+    ],
+    "staticAssets": [
+      {
+        "mime": "text/javascript",
+        "status": 200,
+        "bytes": 28445,
+        "path": "/js/seat-selection.js"
+      },
+      {
+        "mime": "text/css",
+        "status": 200,
+        "bytes": 667,
+        "path": "/css/site.css"
+      },
+      {
+        "mime": "text/css",
+        "status": 200,
+        "bytes": 232808,
+        "path": "/lib/bootstrap/dist/css/bootstrap.min.css"
+      }
+    ],
+    "cleanup": "Runner STOPPED; own temporary database dropped"
+  },
+  "complementaryBrowserReportedByAntigravity": {
+    "server": "http://127.0.0.1:62381",
+    "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "timestampUtc": "2026-10-20T20:26:52.609Z",
+    "results": [
+      {
+        "id": "S4-DRIVER-01",
+        "name": "Driver Authenticated Area Access",
+        "passed": true,
+        "details": {
+          "landedUrl": "http://127.0.0.1:62381/Driver/Dashboard",
+          "title": "Bảng điều khiển Bác tài - SmartBus Go - SmartBus Go | Vé xe buýt thông minh toàn quốc"
+        }
+      },
+      {
+        "id": "S4-DRIVER-02",
+        "name": "Driver Prohibited from Admin Dashboard (403/Forbidden)",
+        "passed": true,
+        "details": {
+          "driverAdminProbe": {
+            "status": 403,
+            "ok": false,
+            "type": "basic"
+          }
+        }
+      },
+      {
+        "id": "S4-ADMIN-01",
+        "name": "Admin Authentication and Area Access",
+        "passed": true,
+        "details": {
+          "adminLandedUrl": "http://127.0.0.1:62381/",
+          "adminPageUrl": "http://127.0.0.1:62381/Admin/Dashboard",
+          "title": "Tổng quan vận hành · SmartBus Go Admin"
+        }
+      },
+      {
+        "id": "S4-CUST-01",
+        "name": "Customer A Authentication",
+        "passed": true,
+        "details": {
+          "custLandedUrl": "http://127.0.0.1:62381/"
+        }
+      },
+      {
+        "id": "S4-CUST-02",
+        "name": "Customer Forbidden from Admin Area (403/Forbidden)",
+        "passed": true,
+        "details": {
+          "custAdminProbe": {
+            "status": 403,
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "S4-CUST-03",
+        "name": "Cross-Customer Ticket Access Denied (404/Not Found per Ownership Guard)",
+        "passed": true,
+        "details": {
+          "custCrossTicketProbe": {
+            "status": 404,
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "S4-CUST-04",
+        "name": "Pending Ticket SSR QR Guard (No active QR issued, Unconfirmed alert displayed)",
+        "passed": true,
+        "details": {
+          "hasQrImg": false,
+          "hasQrCanvas": false,
+          "hasUnconfirmedWarning": true
+        }
+      },
+      {
+        "id": "S4-MOBILE-01",
+        "name": "Mobile Viewport (375px) Search Page Rendering & Screenshot",
+        "passed": true,
+        "details": {
+          "mobileMetrics": {
+            "width": 375,
+            "height": 812,
+            "tripCount": 3,
+            "title": "Vé xe từ Hà Nội đi Hải Phòng - SmartBus Go | Vé xe buýt thông minh toàn quốc"
+          },
+          "screenshotPath": "C:\\Users\\admin\\OneDrive\\Desktop\\Smart_Bus-Ticket\\Smart_Bus_Tickets\\TestResults\\browser-smoke\\anti-mobile-375.png"
+        }
+      }
+    ],
+    "codexReview": "Corrected authenticated role403/ownership404 evidence accepted; mobile screenshot confirms375viewport only, tripCount3 not validated; prior false-positive report superseded"
   }
 }

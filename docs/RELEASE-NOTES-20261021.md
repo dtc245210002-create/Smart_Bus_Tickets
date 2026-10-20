@@ -68,6 +68,20 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
   Fixture tạo bằng `dotnet tests/BackendValidation/bin/Debug/net9.0/BackendValidation.dll browser-fixture 20`.
   Mode browser dùng Development để nạp static assets runtime của bản Debug;
   API regression giữ Testing. Không thay môi trường/config của sản phẩm.
+- **9/9 ca trên bản publish ở Production đạt**: cùng7ca trên và thêm mất
+  mạng khóa checkout, khôi phục mạng lấy lại cùng đơn bằng polling. JS/CSS
+  trả200, nội dung khác rỗng và MIME đúng. Kết quả tại
+  `TestResults/browser-smoke/1792538175209/result.json`; fixture đã dừng và
+  DB tạm đã dọn. Publish không chứa test/tooling artifacts.
+  Sau publish vào `../publish-release-check`, tạo fixture bằng
+  `dotnet tests/BackendValidation/bin/Debug/net9.0/BackendValidation.dll browser-fixture 10 Production`,
+  rồi chạy cùng lệnh `--browser-smoke` phía trên. Đây là kiểm thử local bản
+  publish, chưa deploy lên Somee.
+- Đã review bằng chứng Chrome bổ sung của Anti: tài xế đăng nhập vào đúng
+  Dashboard, tài xế/khách bị chặn Admin403, Admin vào được Dashboard,
+  truy cập vé khác chủ404, vé chưa trả tiền khôngQR, viewport375px có ảnh.
+  Không cộng các ca trùng với Edge thành số test độc lập; bản báo cáo cũ
+  nhầm login thất bại là pass đã bị loại và thay bằng bằng chứng HTTP rõ ràng.
 
 ## Phần chưa hoàn tất / giới hạn bản bàn giao
 
@@ -81,11 +95,11 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
   chỉ gọi sau khi generation/in-flight đã ổn định để không tự loại GET mới.
   Playwright driver1.57.0 của Anti tải404; đã dùng Edge/WebSocket native để
   kiểm thử7ca trên, không cần tải driver. Các phiên fixture trước đã dọn;
-  phiên mới có thời hạn20phút để Anti kiểm tra bổ sung role/offline/expiry.
-  Còn thiếu ma trận browser đầy đủ, thiết bị di động vật lý, font/icon ngoài,
-  driver/admin trên browser và static assets của môi trường publish production.
+  phiên dùng cho Anti và phiên Production9ca đều đã dừng/dọn DB tạm.
+  Còn thiếu thiết bị di động vật lý, font/icon ngoài, offline kéo dài và
+  kiểm tra TTL hết hạn theo10phút thực trên browser (đang chuẩn bị).
   Hai lượt browser đầu gặp asset200rỗng trong Testing không được tính pass.
-- Chưa kiểm tra Somee, SMTP/OTP delivery, full browser/mobile, check-in đồng thời
+- Chưa kiểm tra Somee, SMTP/OTP delivery, thiết bị mobile thật, check-in đồng thời
   và migration dữ liệu cũ. BookingTime giữ convention server-local hiện hữu;
   inspect timestamp legacy unknown chưa phải event check-in bền vững.
 - Giữ nguyên schema/dữ liệu Somee, appsettings/User Secrets và nhánh nhóm.

@@ -103,13 +103,16 @@ if (args.FirstOrDefault() == "browser-fixture")
     var stopPath = Path.Combine(browserDir, runId + ".stop");
     var metadataPath = Path.Combine(browserDir, "context.json");
     var expires = DateTimeOffset.UtcNow.AddMinutes(minutes);
+    var browserEnvironment = args.ElementAtOrDefault(2) == "Production" ? "Production" : "Development";
+    var browserProduct = browserEnvironment == "Production"
+        ? Path.GetFullPath(Path.Combine(root, "../publish-release-check/WebApplication1.dll")) : product;
     var browserPort = FreePort();
     var baseUrl = $"http://127.0.0.1:{browserPort}";
     var status = "STARTING";
     var dropped = false;
     async Task Metadata() => await File.WriteAllTextAsync(metadataPath, JsonSerializer.Serialize(new
     {
-        runId, status, baseUrl, expiresAtUtc = expires, runnerPid = Environment.ProcessId, environment = "Development",
+        runId, status, baseUrl, expiresAtUtc = expires, runnerPid = Environment.ProcessId, environment = browserEnvironment,
         stopPath, databaseDropped = dropped, fixture = database.Ids,
         searchUrl = baseUrl + "/Trip/Search?from=H%C3%A0%20N%E1%BB%99i&to=H%E1%BA%A3i%20Ph%C3%B2ng&date=" + database.Ids.ServiceDate.ToString("yyyy-MM-dd"),
         accounts = new[] { "g0.customer.a@example.invalid", "g0.customer.b@example.invalid", "g0.driver@example.invalid", "g0.admin@example.invalid" },
@@ -119,7 +122,8 @@ if (args.FirstOrDefault() == "browser-fixture")
     try
     {
         await Metadata();
-        Launch(product, new[] { "--urls", baseUrl }, database.ConnectionString, "Development");
+        if (!File.Exists(browserProduct)) throw new FileNotFoundException("Build/publish the browser test target first", browserProduct);
+        Launch(browserProduct, new[] { "--urls", baseUrl, "--contentRoot", browserEnvironment == "Production" ? Path.GetDirectoryName(browserProduct)! : root }, database.ConnectionString, browserEnvironment);
         using var browserClient = Client(browserPort);
         await WaitForServer(browserClient);
         status = "READY"; await Metadata();
