@@ -136,13 +136,34 @@ document.addEventListener("DOMContentLoaded", function () {
                     data = null;
                 }
 
-                if (!res.ok || !data || !data.success) {
-                    // GHẾ BỊ XUNG ĐỘT (409 Conflict hoặc lỗi validation 400)
+                if (res.status === 409) {
+                    // GHẾ BỊ XUNG ĐỘT (Chỉ HTTP 409 mới đánh dấu ghế booked/đã bán/người khác giữ)
                     seatEl.classList.remove("selected");
                     seatEl.classList.add("booked");
                     seatEl.style.pointerEvents = "none";
                     const msg = (data && data.message) ? data.message : `Ghế ${seatCode} đang được tài khoản khác giữ hoặc đã bán. Vui lòng chọn ghế khác!`;
                     showSeatAlert(tripId, msg, "warning");
+                    updateSeatSummary(tripId);
+                    return;
+                } else if (res.status === 401 || res.status === 403) {
+                    // Yêu cầu xác thực / Phân quyền (Không đánh dấu ghế booked)
+                    seatEl.classList.remove("selected");
+                    const msg = (data && data.message) ? data.message : "Vui lòng đăng nhập tài khoản hành khách để giữ chỗ!";
+                    showSeatAlert(tripId, msg, "danger");
+                    updateSeatSummary(tripId);
+                    return;
+                } else if (res.status === 400) {
+                    // Lỗi xác thực yêu cầu (Tối đa 6 ghế hoặc dữ liệu ghế không hợp lệ, không đánh dấu booked)
+                    seatEl.classList.remove("selected");
+                    const msg = (data && data.message) ? data.message : "Yêu cầu không hợp lệ. Vui lòng kiểm tra lại số lượng hoặc lựa chọn ghế!";
+                    showSeatAlert(tripId, msg, "warning");
+                    updateSeatSummary(tripId);
+                    return;
+                } else if (!res.ok || !data || !data.success) {
+                    // Lỗi máy chủ 503 / lỗi tạm thời (Không đánh dấu booked để cho phép thử lại)
+                    seatEl.classList.remove("selected");
+                    const msg = (data && data.message) ? data.message : "Hệ thống tạm thời bận hoặc gián đoạn kết nối. Vui lòng thử lại sau giây lát!";
+                    showSeatAlert(tripId, msg, "danger");
                     updateSeatSummary(tripId);
                     return;
                 }
@@ -178,18 +199,23 @@ document.addEventListener("DOMContentLoaded", function () {
                     seatEl.classList.remove("selected");
                     showSeatAlert(tripId, `Đã hủy giữ ghế ${seatCode}.`, "info");
                 } else {
-                    showSeatAlert(tripId, (data && data.message) ? data.message : `Không thể hủy giữ ghế ${seatCode}. Vui lòng thử lại.`, "warning");
+                    // Nhả ghế thất bại: Giữ nguyên selected vì server vẫn đang ghi nhận giữ chỗ
+                    seatEl.classList.add("selected");
+                    const msg = (data && data.message) ? data.message : `Không thể hủy giữ ghế ${seatCode} lúc này. Vui lòng thử lại!`;
+                    showSeatAlert(tripId, msg, "warning");
                 }
             }
 
             updateSeatSummary(tripId);
         } catch (err) {
             console.error("Lỗi khi kết nối API giữ ghế:", err);
-            // Tuyệt đối không tự động coi là chọn thành công khi mất mạng/lỗi kết nối
+            // Lỗi mạng khi chọn: gỡ selected; lỗi mạng khi nhả: giữ selected
             if (isSelecting) {
                 seatEl.classList.remove("selected");
+            } else {
+                seatEl.classList.add("selected");
             }
-            showSeatAlert(tripId, "Lỗi kết nối máy chủ khi giữ chỗ. Vui lòng kiểm tra mạng và thử lại!", "danger");
+            showSeatAlert(tripId, "Lỗi kết nối máy chủ khi xử lý ghế. Vui lòng kiểm tra mạng và thử lại!", "danger");
             updateSeatSummary(tripId);
         } finally {
             seatEl.style.opacity = "1";
@@ -237,6 +263,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const seatBoxes = accordion.querySelectorAll(".sbg-seat-box");
             seatBoxes.forEach(seat => {
+                // Nếu ghế đang có thao tác giữ/nhả in-flight (chờ response mạng), không đè trạng thái
+                if (seat.style.opacity === "0.6") {
+                    return;
+                }
+
                 const code = (seat.getAttribute("data-code") || "").toUpperCase();
 
                 if (booked.has(code)) {
@@ -246,18 +277,19 @@ document.addEventListener("DOMContentLoaded", function () {
                     seat.style.pointerEvents = "none";
                     seat.setAttribute("title", `Ghế ${code} - Đã bán hoặc đang được tài khoản khác giữ`);
                 } else if (myHeld.has(code)) {
-                    // Ghế do chính tài khoản này đang giữ
+                    // Ghế do chính tài khoản này đang giữ hợp lệ trên server
                     seat.classList.add("selected");
                     seat.classList.remove("booked");
                     seat.style.pointerEvents = "auto";
                     seat.setAttribute("title", `Ghế ${code} - Bạn đang giữ chỗ`);
                 } else {
-                    // Ghế trống: Nếu client chưa click chọn thì mở khóa
-                    if (!seat.classList.contains("selected")) {
-                        seat.classList.remove("booked");
-                        seat.style.pointerEvents = "auto";
-                        seat.setAttribute("title", `Ghế ${code} - Còn trống, bấm để chọn`);
+                    // Ghế trống (hoặc đã hết hạn giữ chỗ trên server -> xóa selected)
+                    if (seat.classList.contains("selected")) {
+                        seat.classList.remove("selected");
                     }
+                    seat.classList.remove("booked");
+                    seat.style.pointerEvents = "auto";
+                    seat.setAttribute("title", `Ghế ${code} - Còn trống, bấm để chọn`);
                 }
             });
 

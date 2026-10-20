@@ -133,7 +133,17 @@
                 <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-xs"><i class="bi bi-broadcast text-success"></i> Có định vị GPS xe</span>
             </div>
 
-            @if (Model.Trips == null || !Model.Trips.Any())
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger d-flex align-items-center rounded-4 shadow-sm my-3 p-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1">Không thể tải danh sách chuyến xe</h6>
+                        <div class="small">@Model.ErrorMessage</div>
+                    </div>
+                </div>
+            }
+            else if (Model.Trips == null || !Model.Trips.Any())
             {
                 <div class="sbg-filter-card text-center p-5 rounded-4 shadow-sm my-3 border">
                     <i class="bi bi-bus-front text-muted fs-1 mb-3 d-block"></i>

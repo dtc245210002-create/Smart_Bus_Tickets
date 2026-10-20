@@ -526,15 +526,22 @@
             // Chống submit lặp lại nhiều lần khi người dùng click xác nhận
             const confirmForm = document.getElementById('paymentConfirmForm');
             if (confirmForm) {
+                let isSubmitted = false;
                 confirmForm.addEventListener('submit', function (e) {
+                    if (isSubmitted) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        return false;
+                    }
+                    isSubmitted = true;
                     const btn = document.getElementById('btnConfirmPayment');
                     const txt = document.getElementById('btnConfirmText');
-                    if (btn && !btn.disabled) {
+                    if (btn) {
                         btn.disabled = true;
                         btn.classList.add('opacity-75', 'cursor-not-allowed');
-                        if (txt) {
-                            txt.innerHTML = '<span class="inline-block animate-spin mr-2">⌛</span> ĐANG XÁC THỰC THANH TOÁN VỚI HỆ THỐNG...';
-                        }
+                    }
+                    if (txt) {
+                        txt.innerHTML = '<span class="inline-block animate-spin mr-2">⌛</span> ĐANG XÁC THỰC THANH TOÁN VỚI HỆ THỐNG...';
                     }
                 });
             }

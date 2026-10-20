@@ -209,12 +209,28 @@ else
                 </div>
 
                 <div class="sbg-qr-box d-flex align-items-center justify-content-center p-2 bg-white rounded-3 shadow-sm border mx-auto" id="ticketQrCanvas" style="width: 190px; height: 190px; background-color: #ffffff;">
-                    <img id="ticketQrImage" 
-                         src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=@Uri.EscapeDataString(Model.TicketCode)&color=0A4D46" 
-                         alt="Mã QR Vé Xe @Model.TicketCode" 
-                         class="img-fluid rounded" 
-                         style="width: 170px; height: 170px; object-fit: contain;"
-                         onerror="this.onerror=null; this.src='https://quickchart.io/qr?text=@Uri.EscapeDataString(Model.TicketCode)&size=170';" />
+                    @if ((Model.Status == "ACTIVE" || Model.Status == "CONFIRMED" || Model.Status == "PAID" || Model.Status == "ISSUED") 
+                        && !string.IsNullOrWhiteSpace(Model.TicketCode) 
+                        && !string.IsNullOrWhiteSpace(Model.QrDataPayload) 
+                        && Model.QrDataPayload != "SMARTBUS_DEFAULT")
+                    {
+                        <img id="ticketQrImage" 
+                             src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=@Uri.EscapeDataString(Model.QrDataPayload ?? Model.TicketCode)&color=0A4D46" 
+                             alt="Mã QR Vé Xe @Model.TicketCode" 
+                             class="img-fluid rounded" 
+                             style="width: 170px; height: 170px; object-fit: contain;"
+                             onerror="this.onerror=null; this.src='https://quickchart.io/qr?text=@Uri.EscapeDataString(Model.QrDataPayload ?? Model.TicketCode)&size=170';" />
+                    }
+                    else
+                    {
+                        <div class="text-center p-2 text-muted">
+                            <i class="bi bi-qr-code fs-1 d-block mb-1 text-secondary opacity-50"></i>
+                            <span class="small fw-semibold d-block text-secondary">Mã QR chưa khả dụng</span>
+                            <span class="text-muted" style="font-size: 0.75rem;">
+                                @(Model.Status == "CANCELLED" ? "Vé đã hủy không có mã quét" : "Vé cần xác nhận thanh toán trước khi cấp mã")
+                            </span>
+                        </div>
+                    }
                 </div>
 
                 <div class="text-center mt-3">
