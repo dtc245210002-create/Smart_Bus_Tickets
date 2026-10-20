@@ -9,6 +9,9 @@ namespace WebApplication1.Services.TicketValidation
         /// </summary>
         string ExtractTicketCode(string rawPayload);
 
+        /// <summary>Read an exact ticket without checking it in or changing any state.</summary>
+        Task<ValidateQrResponse> InspectAsync(ValidateQrRequest request, int? staffUserId = null);
+
         /// <summary>
         /// Xác thực và soát mã vé QR cho nhân viên soát vé / tài xế
         /// </summary>

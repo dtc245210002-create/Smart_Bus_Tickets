@@ -1,6 +1,37 @@
 # Kiểm kê độc lập mục 1–3 — 21/10/2026
 
-## Cập nhật hiện hành: triển khai backend và kiểm thử thực tế
+## Hiện hành — S1/S2/S3 backend, 73/73 kiểm tra đạt
+
+Gói SMARTBUS-SYNC-01 và AGREEMENT-003 đã được cả hai bên ACK/ACTIVE qua file.
+Antigravity nhận trọn S1–S4 trên đúng5 file FE; Codex làm BE/SQL/quyền và tích
+hợp tương ứng, tự đọc lại file ở mốc sửa/test/commit/bàn giao. Không có cơ chế
+đánh thức agent đã dừng và không dùng MCP để trao đổi.
+
+BE S1 commit048f8e5; S2 e200229 sửa fare khi route không lưu distance, cùng
+nguồn tính với Search. S2 bổ sung expiry/reallocation/retry TTL/max6/process
+restart/không seed lịch; 66/66 HTTP/SQL đạt trước S3.
+
+S3 thêm InspectAsync truy vấn vé chính xác và không tracking, không gọi
+SaveChanges/check-in. API inspect gọi đường này, giữ kiểm tra staff/assignment/
+payment và mã chính xác. Xem nhiều lần không đổi status; check-in tường minh
+vẫn hoạt động và chặn quét lặp tuần tự. DTO thời gian legacy chưa có persisted
+check-in timestamp: inspect trả giá trị mặc định unknown, không gán giờ xem
+thành giờ check-in; chưa đổi wire field/schema hoặc hoàn thiện audit thời gian.
+
+**73/73 kiểm tra đạt** sau S3, bao gồm66 trước +7 ca inspect/check-in. DB tạm
+được dọn đúng marker/token, không reset fixture lâu dài. Chưa test scan đồng
+thời, provider/Somee, SMTP/OTP delivery hoặc browser/mobile E2E.
+
+FE d05579c có6 ca đỏ; đã nhận bfa54ae sửa lại và chạy Node vm/mock fetch/DOM
+trên chính git blob: **11/11 kỳ vọng đạt**. Không cộng mock11 vào73 HTTP/SQL.
+Đọc diff thấy SSR QR guard và polling hết hạn đã sửa. Chưa coi S2/S3 FE hoặc
+checkout tiền thật hoàn tất, chưa push/deploy hoặc sửa DB chung.
+
+Evidence hiện tại: `../validation/results/backend.json`,
+`../validation/results/bfa54ae-review.json`; cách chạy tại
+`../validation/README.md`. Các đoạn trạng thái cũ dưới đây là lịch sử.
+
+## Đợt đầu: triển khai backend và kiểm thử thực tế (lịch sử)
 
 Các mục kiểm kê ban đầu bên dưới là lịch sử. Worktree hiện đã có bản sửa
 backend trên nền ba98ee9, không thay đổi các nhánh khác hoặc Somee.

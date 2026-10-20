@@ -107,15 +107,16 @@ namespace WebApplication1.Controllers.Api
                 });
             }
 
-            // Gọi validate với currentTripId để xem kết quả (nhưng nếu cần xem trước mà không đổi trạng thái)
-            // Ta có thể kiểm tra trạng thái nhanh
-            var result = await _ticketValidationService.ValidateAndCheckInAsync(new ValidateQrRequest
+            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var staffUserId);
+            var result = await _ticketValidationService.InspectAsync(request, staffUserId);
+            return result.Code switch
             {
-                QrPayload = request.QrPayload,
-                CurrentTripId = request.CurrentTripId
-            });
-
-            return Ok(result);
+                TicketValidationCodes.Success => Ok(result),
+                TicketValidationCodes.TicketNotFound => NotFound(result),
+                TicketValidationCodes.AlreadyUsed => Conflict(result),
+                TicketValidationCodes.TripMismatch => StatusCode(422, result),
+                _ => BadRequest(result)
+            };
         }
     }
 }

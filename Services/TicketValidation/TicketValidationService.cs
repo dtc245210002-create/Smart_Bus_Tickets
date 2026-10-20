@@ -108,6 +108,47 @@ namespace WebApplication1.Services.TicketValidation
             return trimmed;
         }
 
+        public async Task<ValidateQrResponse> InspectAsync(ValidateQrRequest request, int? staffUserId = null)
+        {
+            ValidateQrResponse Fail(string code, string message, TicketValidationData? data = null) =>
+                new() { Success = false, Code = code, Message = message, Data = data };
+            if (request == null || request.CurrentTripId is null or <= 0 || staffUserId is null or <= 0)
+                return Fail(TicketValidationCodes.InvalidInput, "Cần nhân viên xác thực và chuyến xe đang soát vé.");
+            var key = ExtractTicketCode(request.QrPayload)?.Trim();
+            if (string.IsNullOrWhiteSpace(key))
+                return Fail(TicketValidationCodes.InvalidInput, "Mã vé không hợp lệ.");
+            var ticket = await _context.Tickets.AsNoTrackingWithIdentityResolution()
+                .Include(t => t.Booking).ThenInclude(b => b.User)
+                .Include(t => t.Booking).ThenInclude(b => b.Payments)
+                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
+                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
+                .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
+                .Include(t => t.BoardingStop).Include(t => t.DropOffStop)
+                .SingleOrDefaultAsync(t => t.TicketCode == key);
+            if (ticket == null) return Fail(TicketValidationCodes.TicketNotFound, "Không tìm thấy mã vé chính xác.");
+            if (ticket.Booking.TripId != request.CurrentTripId)
+                return Fail(TicketValidationCodes.TripMismatch, "Vé không thuộc chuyến xe đang soát.");
+            var allowed = await _context.Users.AnyAsync(u => u.UserId == staffUserId && u.Status == "Active"
+                && (u.Roles.Any(r => r.RoleName == "Admin" || r.RoleName == "Quản trị viên")
+                    || u.Driver != null && u.Driver.DriverId == ticket.Booking.Trip.DriverId && u.Driver.Status == "Active"));
+            if (!allowed) return Fail(TicketValidationCodes.InvalidInput, "Không có quyền xem vé của chuyến xe này.");
+            var data = MapToValidationData(ticket);
+            // Legacy DTO is non-nullable and no persisted check-in timestamp exists.
+            // Default denotes unknown; never stamp inspection as a new check-in.
+            data.CheckInTime = default;
+            var state = ticket.Status?.Trim().ToUpperInvariant();
+            if (state is "USED" or "CHECKED_IN" or "CHECKEDIN")
+                return Fail(TicketValidationCodes.AlreadyUsed, "Vé đã được sử dụng.", data);
+            if (state is "CANCELLED" or "CANCELED" or "REFUNDED")
+                return Fail(TicketValidationCodes.TicketCancelled, "Vé đã bị hủy.", data);
+            if (state is not ("ISSUED" or "CONFIRMED" or "ACTIVE" or "PAID")
+                || ticket.Booking.TotalAmount <= 0
+                || ticket.Booking.Payments.Where(p => p.Status == "Paid").Sum(p => p.Amount) < ticket.Booking.TotalAmount)
+                return Fail(TicketValidationCodes.InvalidStatus, "Vé chưa đủ điều kiện lên xe.", data);
+            return new ValidateQrResponse { Success = true, Code = TicketValidationCodes.Success,
+                Message = "Thông tin vé hợp lệ. Chưa thực hiện check-in.", Data = data };
+        }
+
         public async Task<ValidateQrResponse> ValidateAndCheckInAsync(ValidateQrRequest request, int? staffUserId = null)
         {
             if (string.IsNullOrWhiteSpace(request.QrPayload))
