@@ -562,7 +562,7 @@
                             }
                         });
 
-                        // 1. Máy chủ trả về HTTP 503: Cổng thanh toán đối soát chưa xong hoặc tạm gián đoạn
+                        // 1. Máy chủ trả về HTTP 503: Dịch vụ tạm thời gián đoạn / giao dịch chưa thể xác thực
                         // Tuyệt đối không fake paid, giữ nguyên người dùng ở màn hình thanh toán
                         if (response.status === 503) {
                             if (alertBox) {
@@ -570,8 +570,8 @@
                                 alertBox.innerHTML = `
                                     <span class="material-symbols-outlined text-amber-600 text-xl flex-shrink-0 mt-0.5">warning</span>
                                     <div>
-                                        <div class="font-bold">Hệ thống đang chờ ngân hàng đối soát giao dịch (HTTP 503)</div>
-                                        <div class="mt-1 text-xs text-amber-800">Giao dịch của bạn chưa được ghi nhận hoàn tất. Trạng thái vé vẫn được giữ nguyên là CHƯA THANH TOÁN. Vui lòng kiểm tra lại tài khoản hoặc bấm thử lại sau giây lát.</div>
+                                        <div class="font-bold">Dịch vụ xác thực thanh toán tạm thời gián đoạn (HTTP 503)</div>
+                                        <div class="mt-1 text-xs text-amber-800">Giao dịch của bạn chưa thể xác thực lúc này. Trạng thái vé vẫn được giữ nguyên là CHƯA THANH TOÁN. Vui lòng bấm thử lại sau giây lát hoặc liên hệ tổng đài 1900 6868 để được trợ giúp.</div>
                                     </div>
                                 `;
                                 alertBox.classList.remove('hidden');

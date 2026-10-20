@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let pollInterval = null;
     let activePollingTripId = null;
     const tripBookingData = {}; // Lưu trữ thông tin bookingCode = holdId thật từ server cho từng chuyến
+    const tripMutationGen = {}; // Bộ đếm thế hệ thao tác (mutation generation) chống race condition khi polling
 
     // Helper: Lấy hoặc tạo SessionId đồng bộ lưu trữ qua Cookie & LocalStorage
     function getOrCreateSessionId() {
@@ -109,6 +110,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const sessionId = getOrCreateSessionId();
         const userId = window.sbgCurrentUserId || null;
 
+        // Tăng thế hệ thao tác (mutation generation) để loại bỏ mọi poll cũ in-flight
+        tripMutationGen[tripId] = (tripMutationGen[tripId] || 0) + 1;
+
         // Vô hiệu hóa tương tác và tạo hiệu ứng chờ tránh double click
         seatEl.style.pointerEvents = "none";
         seatEl.style.opacity = "0.6";
@@ -172,28 +176,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Thành công từ server: Đánh dấu ghế Đang chọn
                 seatEl.classList.add("selected");
                 seatEl.classList.remove("booked");
-                const remSec = (data.data && data.data.remainingSeconds) ? data.data.remainingSeconds : 600;
+                const remSec = (data.data && typeof data.data.remainingSeconds === "number") ? data.data.remainingSeconds : null;
                 const serverHoldId = (data.data && data.data.holdId) ? data.data.holdId : null;
                 const serverTotal = (data.data && data.data.totalPrice != null) ? data.data.totalPrice : null;
 
-                // Thu thập danh sách ghế đã chọn sau khi thêm ghế này
-                const accordionEl = document.getElementById("seatAccordion-" + tripId);
-                const currentSelectedCodes = accordionEl 
-                    ? Array.from(accordionEl.querySelectorAll(".sbg-seat-box.selected")).map(s => (s.getAttribute("data-code") || "").toUpperCase())
+                // Lấy danh sách heldSeats chính thức từ response server (không suy từ DOM)
+                const serverHeldSeats = (data.data && Array.isArray(data.data.heldSeats) && data.data.heldSeats.length > 0)
+                    ? data.data.heldSeats.map(s => (s || "").toUpperCase())
                     : [seatCode.toUpperCase()];
 
-                if (serverHoldId) {
+                // Chỉ ghi nhận giữ chỗ và báo giá khi có holdId và remainingSeconds > 0
+                if (serverHoldId && remSec !== null && remSec > 0) {
                     tripBookingData[tripId] = {
                         bookingCode: serverHoldId,
                         totalPrice: serverTotal,
                         remainingSeconds: remSec,
-                        heldSeats: currentSelectedCodes
+                        heldSeats: serverHeldSeats
                     };
-                    try {
-                        sessionStorage.setItem("sbg_hold_" + tripId, JSON.stringify(tripBookingData[tripId]));
-                    } catch (e) {}
+                } else {
+                    delete tripBookingData[tripId];
                 }
-                showSeatAlert(tripId, `Đã giữ ghế ${seatCode} thành công (thời hạn ${Math.round(remSec / 60)} phút)!`, "success");
+                const displayMins = remSec ? Math.max(1, Math.round(remSec / 60)) : 10;
+                showSeatAlert(tripId, `Đã giữ ghế ${seatCode} thành công (thời hạn ${displayMins} phút)!`, "success");
             } else {
                 // HỦY CHỌN GHẾ -> GỬI API HỦY GIỮ CHỖ
                 const res = await fetch("/api/bookings/release-seats", {
@@ -220,6 +224,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     seatEl.classList.remove("selected");
                     showSeatAlert(tripId, `Đã hủy giữ ghế ${seatCode}.`, "info");
 
+                    // Tăng thế hệ thao tác để hủy các poll cũ
+                    tripMutationGen[tripId] = (tripMutationGen[tripId] || 0) + 1;
+
                     // VÔ HIỆU HÓA BÁO GIÁ CŨ: Khi nhả một ghế, quote tổng tiền cũ (totalPrice) không còn hiệu lực
                     if (tripBookingData[tripId]) {
                         delete tripBookingData[tripId].totalPrice;
@@ -230,13 +237,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
                         if (!tripBookingData[tripId].heldSeats || tripBookingData[tripId].heldSeats.length === 0) {
                             delete tripBookingData[tripId];
-                            try {
-                                sessionStorage.removeItem("sbg_hold_" + tripId);
-                            } catch (e) {}
-                        } else {
-                            try {
-                                sessionStorage.setItem("sbg_hold_" + tripId, JSON.stringify(tripBookingData[tripId]));
-                            } catch (e) {}
                         }
                     }
                 } else {
@@ -292,6 +292,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const sessionId = getOrCreateSessionId();
         const userId = window.sbgCurrentUserId || "";
+        const expectedGen = tripMutationGen[tripId] || 0;
 
         try {
             const res = await fetch(`/api/bookings/trip-seat-status?tripId=${tripId}&sessionId=${encodeURIComponent(sessionId)}&userId=${userId}`);
@@ -299,38 +300,34 @@ document.addEventListener("DOMContentLoaded", function () {
             const data = await res.json();
             if (!data.success) return;
 
+            // LOẠI BỎ RACE CONDITION: Nếu trong thời gian fetch có thao tác chọn/nhả ghế mới -> Bỏ qua response cũ này!
+            if ((tripMutationGen[tripId] || 0) !== expectedGen) {
+                return;
+            }
+
             const booked = new Set((data.bookedSeats || []).map(s => s.toUpperCase()));
             const myHeld = new Set((data.myHeldSeats || []).map(s => s.toUpperCase()));
             const myHeldList = (data.myHeldSeats || []).map(s => s.toUpperCase());
 
-            // 1. Phục hồi hoặc cập nhật dữ liệu giữ chỗ cho tripId
+            // 1. Phục hồi hoặc cập nhật dữ liệu giữ chỗ cho tripId từ server chính thức
             if (data.heldBookingCode) {
-                // Nếu server mở rộng hợp đồng cung cấp heldBookingCode & heldTotalPrice
-                tripBookingData[tripId] = {
-                    bookingCode: data.heldBookingCode,
-                    totalPrice: data.heldTotalPrice != null ? data.heldTotalPrice : null,
-                    remainingSeconds: data.remainingSeconds || 600,
-                    heldSeats: myHeldList
-                };
-                try {
-                    sessionStorage.setItem("sbg_hold_" + tripId, JSON.stringify(tripBookingData[tripId]));
-                } catch (e) {}
-            } else if (!tripBookingData[tripId] || !tripBookingData[tripId].bookingCode) {
-                // Thử phục hồi từ sessionStorage của chính phiên duyệt này khi reload
-                try {
-                    const storedStr = sessionStorage.getItem("sbg_hold_" + tripId);
-                    if (storedStr) {
-                        const stored = JSON.parse(storedStr);
-                        if (stored && stored.bookingCode && Array.isArray(stored.heldSeats)) {
-                            // Kiểm tra danh sách ghế trong bộ nhớ tạm có khớp chính xác với myHeldSeats server trả về
-                            const isMatch = stored.heldSeats.length === myHeldList.length &&
-                                            stored.heldSeats.every(s => myHeld.has(s.toUpperCase()));
-                            if (isMatch) {
-                                tripBookingData[tripId] = stored;
-                            }
-                        }
-                    }
-                } catch (e) {}
+                const ttl = (typeof data.remainingSeconds === "number") ? data.remainingSeconds : 0;
+                // Bắt buộc TTL > 0 và có giá từ server (không dùng || 600, không gia hạn ngầm)
+                if (ttl > 0 && typeof data.heldTotalPrice === "number") {
+                    tripBookingData[tripId] = {
+                        bookingCode: data.heldBookingCode,
+                        totalPrice: data.heldTotalPrice,
+                        remainingSeconds: ttl,
+                        heldSeats: myHeldList
+                    };
+                } else {
+                    delete tripBookingData[tripId];
+                }
+            } else {
+                // Chưa có heldBookingCode từ server: Xóa quote cũ để không tự tính toán hay suy đoán
+                if (tripBookingData[tripId]) {
+                    delete tripBookingData[tripId].totalPrice;
+                }
             }
 
             const seatBoxes = accordion.querySelectorAll(".sbg-seat-box");
