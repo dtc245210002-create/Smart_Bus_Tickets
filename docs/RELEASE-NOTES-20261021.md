@@ -58,6 +58,16 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
   lại82ca SQL vì backend không đổi từ lần xác minh trước.
 - Evidence JSON ở `docs/verification/`; hướng dẫn chạy tại
   `tests/BackendValidation/README.md`.
+- **7/7 ca trình duyệt thật đạt** bằng Edge headless đã cài, profile/phiên
+  khách A/B riêng, thao tác form và click thật. Bao phủ giữ/nhả ghế, khách B
+  thấy ghế A bị khóa, reload ở390px khôi phục cùng booking, giá khớp server
+  và Payment503 giữ trang/mở retry. Ảnh và JSON tại
+  `TestResults/browser-smoke/1792527283406/` trên máy kiểm thử.
+  Chạy lại với fixture đang READY:
+  `node tests/BackendValidation/review-antigravity.cjs HEAD --browser-smoke`.
+  Fixture tạo bằng `dotnet tests/BackendValidation/bin/Debug/net9.0/BackendValidation.dll browser-fixture 20`.
+  Mode browser dùng Development để nạp static assets runtime của bản Debug;
+  API regression giữ Testing. Không thay môi trường/config của sản phẩm.
 
 ## Phần chưa hoàn tất / giới hạn bản bàn giao
 
@@ -66,16 +76,16 @@ Các cập nhật sau bản push02:09 hiện chỉ ở local, chờ lịch push0
   trả503. Đây là chặn hành vi sai, không phải checkout tiền thật hoàn chỉnh.
 - ConfirmReschedule trả409 để không tự xác nhận vé/giá/ghế theo client khi
   chưa có workflow đổi vé an toàn. Đổi/hủy/hoàn tiền đầy đủ chưa nghiệm thu.
-- Frontend S2/S3 đã tích hợp qua cổng logic; S4 browser desktop/mobile-width
-  vẫn chờ bằng chứng thực tế. FE06 đã sửa fresh snapshot sau mutation:
+- Frontend S2/S3 đã tích hợp qua cổng logic; S4 browser đã xác minh một phần
+  trên desktop1440px/mobile-width390px. FE06 đã sửa fresh snapshot sau mutation:
   chỉ gọi sau khi generation/in-flight đã ổn định để không tự loại GET mới.
-  Đã cấp server Kestrel/DB test riêng cho Anti; Login/Search/map HTTP đạt,
-  Anti báo thêm anonymous Detail chuyển302 về login. Browser E2E bị chặn
-  do công cụ Anti tải Playwright driver1.57.0 trả404, chưa phải lỗi sản phẩm.
-  Server đã dừng theo stopPath riêng; metadata xác nhận DB tạm đã dọn.
-  Máy có Edge/Chrome sẵn; đang xem xét dùng trình duyệt đã cài để kiểm thử
-  thay vì tải lại driver lỗi. Chưa xác minh hướng thay thế này.
-- Chưa kiểm tra Somee, SMTP/OTP delivery, browser/mobile, check-in đồng thời
+  Playwright driver1.57.0 của Anti tải404; đã dùng Edge/WebSocket native để
+  kiểm thử7ca trên, không cần tải driver. Các phiên fixture trước đã dọn;
+  phiên mới có thời hạn20phút để Anti kiểm tra bổ sung role/offline/expiry.
+  Còn thiếu ma trận browser đầy đủ, thiết bị di động vật lý, font/icon ngoài,
+  driver/admin trên browser và static assets của môi trường publish production.
+  Hai lượt browser đầu gặp asset200rỗng trong Testing không được tính pass.
+- Chưa kiểm tra Somee, SMTP/OTP delivery, full browser/mobile, check-in đồng thời
   và migration dữ liệu cũ. BookingTime giữ convention server-local hiện hữu;
   inspect timestamp legacy unknown chưa phải event check-in bền vững.
 - Giữ nguyên schema/dữ liệu Somee, appsettings/User Secrets và nhánh nhóm.

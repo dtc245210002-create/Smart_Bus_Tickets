@@ -2,7 +2,78 @@
 // The workflow gate intentionally fails candidates that have not closed those bugs.
 const reviewPath = require('path').resolve(__dirname, '../..');
 const selectedSource = require('child_process').execFileSync('git', ['show', `${process.argv[2] || 'HEAD'}:wwwroot/js/seat-selection.js`], {cwd:reviewPath,encoding:'utf8'});
-if (process.argv.includes('--workflow') || selectedSource.includes('const tripMutationGen =')) {
+if (process.argv.includes('--browser-smoke')) {
+// Installed Edge + a fresh profile avoids downloading a Playwright driver.
+// This talks only to the disposable fixture and this process's browser instance.
+const fs=require('fs'),path=require('path'),cp=require('child_process');
+const root=reviewPath;
+const fixture=JSON.parse(fs.readFileSync(path.join(root,'TestResults/browser-fixture/context.json'),'utf8'));
+if(fixture.status!=='READY'||!/^http:\/\/127\.0\.0\.1:\d+$/.test(fixture.baseUrl)||new Date(fixture.expiresAtUtc)<=new Date()) throw Error('A ready, unexpired local disposable fixture is required');
+const exe='C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
+if(!fs.existsSync(exe))throw Error('Installed Edge unavailable; no driver download attempted');
+const dir=path.join(root,'TestResults/browser-smoke',`${Date.now()}`);fs.mkdirSync(dir,{recursive:true});
+const profile=path.join(dir,'profile'),checks=[],errors=[],pages=[];
+const password=fs.readFileSync(path.join(root,'tests/BackendValidation/TestSupport/TestDatabase.cs'),'utf8').match(/PasswordHasher\.HashPassword\("([^"]+)"\)/)?.[1];
+if(!password)throw Error('Synthetic fixture password not found');
+const edge=cp.spawn(exe,['--headless=new','--remote-debugging-address=127.0.0.1','--remote-debugging-port=0',`--user-data-dir=${profile}`,'--no-first-run','--no-default-browser-check','--disable-extensions','--disable-sync','about:blank'],{windowsHide:true,stdio:'ignore'});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));let ws,sequence=0;const pending=new Map();
+function record(name,passed,observed){checks.push({name,passed:!!passed,observed});console.log(`${passed?'PASS':'FAIL'} ${name}`);}
+function command(method,params={},sessionId){return new Promise((resolve,reject)=>{const id=++sequence;const timer=setTimeout(()=>{pending.delete(id);reject(Error(`CDP timeout: ${method}`))},15000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})}));});}
+async function page(){const c=await command('Target.createBrowserContext');const t=await command('Target.createTarget',{url:'about:blank',browserContextId:c.browserContextId});const a=await command('Target.attachToTarget',{targetId:t.targetId,flatten:true});const session=a.sessionId;pages.push(session);await command('Page.enable',{},session);await command('Runtime.enable',{},session);return session;}
+async function evaluate(session,expression){const r=await command('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true},session);if(r.exceptionDetails)throw Error(r.exceptionDetails.text+': '+(r.exceptionDetails.exception?.description||''));return r.result.value;}
+async function until(session,expression){for(let i=0;i<60;i++){try{if(await evaluate(session,expression))return;}catch{}await sleep(250);}throw Error('Browser condition timed out: '+expression);}
+async function navigate(session,url){const marker=String(Date.now())+Math.random();await evaluate(session,`window.__qaNavMarker=${JSON.stringify(marker)}`);await command('Page.navigate',{url},session);const pathname=new URL(url).pathname;await until(session,`window.__qaNavMarker!==${JSON.stringify(marker)} && location.pathname===${JSON.stringify(pathname)} && document.readyState!=='loading'`);}
+async function click(session,selector){const r=await evaluate(session,`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('Element missing');e.scrollIntoView({block:'center',behavior:'instant'});const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);await command('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...r},session);await command('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...r},session);}
+async function login(session,email){await navigate(session,fixture.baseUrl+'/Account/Login');await evaluate(session,`(()=>{document.querySelector('[name="Username"]').value=${JSON.stringify(email)};document.querySelector('[name="Password"]').value=${JSON.stringify(password)};document.querySelector('[name="Username"]').form.requestSubmit();return true})()`);await until(session,"location.pathname!='/Account/Login' && document.readyState!=='loading'");}
+async function capture(session,name){const shot=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false},session);fs.writeFileSync(path.join(dir,name+'.png'),Buffer.from(shot.data,'base64'));}
+const trip=fixture.fixture.Trip;
+const search=fixture.baseUrl+'/Trip/Search?from='+encodeURIComponent('Hà Nội')+'&to='+encodeURIComponent('Hải Phòng')+'&date='+fixture.fixture.ServiceDate;
+const accordion='#seatAccordion-'+trip;
+const seat=code=>`${accordion} .sbg-seat-box[data-code="${code}"]`;
+const checkout=accordion+' .btn-continue-booking';
+async function openMap(session){await navigate(session,search);await until(session,`!!document.querySelector('.btn-toggle-seat-map[data-trip-id="${trip}"]')`);await click(session,`.btn-toggle-seat-map[data-trip-id="${trip}"]`);await until(session,`document.querySelector(${JSON.stringify(accordion)}).classList.contains('show')`);}
+(async()=>{
+ try{
+  let activePort;for(let i=0;i<80;i++){if(fs.existsSync(path.join(profile,'DevToolsActivePort'))){activePort=fs.readFileSync(path.join(profile,'DevToolsActivePort'),'utf8').trim().split(/\r?\n/);break;}await sleep(250);}
+  if(!activePort)throw Error('Installed headless browser did not expose its test endpoint');
+  ws=new WebSocket(`ws://127.0.0.1:${activePort[0]}${activePort[1]}`);
+  await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true});});
+  ws.addEventListener('message',event=>{const m=JSON.parse(event.data);if(m.method==='Runtime.exceptionThrown')errors.push({browserException:m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text});if(m.id&&pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(m.error.message)):p.resolve(m.result);}});
+  const a=await page(),b=await page();
+  await command('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false},a);
+  await login(a,'g0.customer.a@example.invalid');record('Desktop customer logs in through actual HTML form',true);
+  await openMap(a);await until(a,`document.querySelector(${JSON.stringify(seat('A01'))}).classList.contains('selected')`);
+  await click(a,seat('A02'));await until(a,`document.querySelector(${JSON.stringify(seat('A02'))}).classList.contains('selected') && !document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
+  const bookingUrl=await evaluate(a,`document.querySelector(${JSON.stringify(checkout)}).href`);
+  record('Real seat click reaches owned booking Payment URL',new URL(bookingUrl).searchParams.get('bookingCode')==='G0-PENDING',bookingUrl);
+  await capture(a,'desktop-held');
+  await login(b,'g0.customer.b@example.invalid');await openMap(b);
+  await until(b,`document.querySelector(${JSON.stringify(seat('A02'))}).classList.contains('booked')`);
+  record('Second isolated customer sees the first customer seat blocked',true);
+  await command('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:false},a);
+  await openMap(a);await until(a,`!document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
+  record('Mobile-width reload recovers actual same booking',await evaluate(a,`document.querySelector(${JSON.stringify(checkout)}).href===${JSON.stringify(bookingUrl)}`));
+  await click(a,seat('A03'));await until(a,`document.querySelector(${JSON.stringify(seat('A03'))}).classList.contains('selected') && !document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
+  await click(a,seat('A02'));await until(a,`!document.querySelector(${JSON.stringify(seat('A02'))}).classList.contains('selected') && !document.querySelector(${JSON.stringify(checkout)}).classList.contains('disabled')`);
+  const state=await evaluate(a,`(async()=>{const q=await fetch('/api/bookings/trip-seat-status?tripId=${trip}').then(r=>r.json());return {q,total:document.querySelector(${JSON.stringify(accordion+' .selected-total-price')}).innerText,href:document.querySelector(${JSON.stringify(checkout)}).href}})()`);
+  record('Browser release recovers server quote for the exact remaining seats',state.q.myHeldSeats.includes('A03')&&!state.q.myHeldSeats.includes('A02')&&state.total.replace(/\D/g,'')===String(state.q.heldTotalPrice),state);
+  await capture(a,'mobile-after-release');
+  await click(a,checkout);await until(a,"location.pathname==='/Ticket/Payment' && !!document.getElementById('paymentConfirmForm')");
+  await click(a,'#btnConfirmPayment');await until(a,"!!document.getElementById('paymentStatusAlert') && document.getElementById('paymentStatusAlert').innerText.includes('503') && !document.getElementById('btnConfirmPayment').disabled");
+  record('Actual Payment503 stays on page and permits retry',await evaluate(a,"location.pathname==='/Ticket/Payment'"));
+  await capture(a,'mobile-payment503');
+  record('Mobile viewport is 390 pixels',await evaluate(a,'innerWidth')===390,await evaluate(a,'innerWidth'));
+ }catch(e){errors.push({name:e.name,message:e.message});record('Browser smoke completed',false,e.message);for(let i=0;i<pages.length;i++){try{await capture(pages[i],'failure-'+i);errors.push({page:i,diagnostic:await evaluate(pages[i],"({url:location.href,ready:document.readyState,body:document.body.innerText.slice(0,1400),scripts:Array.from(document.scripts).map(s=>s.src)})")});}catch{}}}
+ finally{
+  if(ws?.readyState===WebSocket.OPEN){try{await command('Browser.close');}catch{}ws.close();}
+  if(edge.exitCode===null)edge.kill();
+  const result={sourceCommit:cp.execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),method:'Installed headless Edge, isolated fresh contexts, actual DOM/input and HTTP; not physical mobile',fixtureRunId:fixture.runId,checks,errors,artifacts:dir,notVerified:['physical mobile','real payment provider','full offline/expiry matrix','driver/admin browser flows']};
+  fs.writeFileSync(path.join(dir,'result.json'),JSON.stringify(result,null,2));
+  console.log(`${checks.filter(c=>c.passed).length}/${checks.length}; result=${path.join(dir,'result.json')}`);
+  if(checks.some(c=>!c.passed))process.exitCode=1;
+ }
+})().catch(e=>{console.error(e.message);process.exitCode=1});
+} else if (process.argv.includes('--workflow') || selectedSource.includes('const tripMutationGen =')) {
 const cp = require('child_process'), vm = require('vm'), fs = require('fs');
 const path = require('path');
 const repo = path.resolve(__dirname, '../..');

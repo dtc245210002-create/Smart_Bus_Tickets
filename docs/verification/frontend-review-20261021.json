@@ -89,13 +89,76 @@
   ],
   "handoffCommit": "d60b4d4d3e0fa759e73acee14464d6c1a64d503c",
   "browserQa": {
-    "status": "NOT_VERIFIED_TOOL_BLOCKED",
+    "status": "PARTIAL_BROWSER_VERIFIED_INSTALLED_EDGE",
     "reportedBy": "Antigravity",
     "driver": "playwright-1.57.0-win32_x64.zip",
     "blocker": "browser_subagent driver download HTTP404",
     "liveHttpProbes": "Login200, Search200, public seat map success; Anti reports anonymous Detail302",
     "cleanup": "Codex observed context.status STOPPED and databaseDropped=true",
-    "installedBrowserAlternative": "Edge and Chrome binaries exist; alternative interactive route not yet tested",
-    "scope": "No claim of interactive desktop/mobile E2E"
+    "installedBrowserAlternative": "Installed Edge + native WebSocket/CDP verified7/7 real browser cases",
+    "scope": "Seven real browser cases; complementary S4 matrix pending, no provider or physical mobile claim"
+  },
+  "browserSmoke": {
+    "sourceCommit": "685055b2948ca5c62b96b9f001f21acbcedd8d07",
+    "method": "Installed headless Edge, isolated fresh contexts, actual DOM/input and HTTP; not physical mobile",
+    "fixtureRunId": "4cadbcfc97a846d8948f763a82a46d54",
+    "checks": [
+      {
+        "name": "Desktop customer logs in through actual HTML form",
+        "passed": true
+      },
+      {
+        "name": "Real seat click reaches owned booking Payment URL",
+        "passed": true,
+        "observed": "http://127.0.0.1:62381/Ticket/Payment?bookingCode=G0-PENDING&tripId=1"
+      },
+      {
+        "name": "Second isolated customer sees the first customer seat blocked",
+        "passed": true
+      },
+      {
+        "name": "Mobile-width reload recovers actual same booking",
+        "passed": true
+      },
+      {
+        "name": "Browser release recovers server quote for the exact remaining seats",
+        "passed": true,
+        "observed": {
+          "q": {
+            "success": true,
+            "tripId": 1,
+            "bookedSeats": [],
+            "myHeldSeats": [
+              "A01",
+              "A03"
+            ],
+            "heldBookingCode": "G0-PENDING",
+            "heldTotalPrice": 305000,
+            "remainingSeconds": 574
+          },
+          "total": "305.000 VNĐ",
+          "href": "http://127.0.0.1:62381/Ticket/Payment?bookingCode=G0-PENDING&tripId=1"
+        }
+      },
+      {
+        "name": "Actual Payment503 stays on page and permits retry",
+        "passed": true
+      },
+      {
+        "name": "Mobile viewport is 390 pixels",
+        "passed": true,
+        "observed": 390
+      }
+    ],
+    "errors": [],
+    "artifacts": "C:\\Users\\admin\\OneDrive\\ドキュメント\\ChatGPT\\Smart_Bus_Tickets\\integration-sync-20261021\\Smart_Bus_Tickets\\TestResults\\browser-smoke\\1792527283406",
+    "notVerified": [
+      "physical mobile",
+      "real payment provider",
+      "full offline/expiry matrix",
+      "driver/admin browser flows"
+    ],
+    "environment": "Development browser fixture; Testing API regressions unchanged",
+    "visualLimit": "External material icon/font loading not verified; viewport emulation is not a physical device"
   }
 }

@@ -52,12 +52,12 @@ var database = await TestDatabase.CreateAsync(ephemeral: true);
 var processes = new List<Process>(); var logs = new List<string>();
 int FreePort()
 { var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0); listener.Start(); var port = ((IPEndPoint)listener.LocalEndpoint).Port; listener.Stop(); return port; }
-Process Launch(string file, IEnumerable<string> arguments, string? connection = null)
+Process Launch(string file, IEnumerable<string> arguments, string? connection = null, string environment = "Testing")
 {
     var start = new ProcessStartInfo("dotnet") { WorkingDirectory = root, UseShellExecute = false,
         RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
     start.ArgumentList.Add(file); foreach (var arg in arguments) start.ArgumentList.Add(arg);
-    start.Environment["ASPNETCORE_ENVIRONMENT"] = "Testing";
+    start.Environment["ASPNETCORE_ENVIRONMENT"] = environment;
     if (connection != null) start.Environment["ConnectionStrings__DefaultConnection"] = connection;
     var proc = Process.Start(start)!; processes.Add(proc);
     proc.OutputDataReceived += (_, e) => { if (e.Data != null) lock (logs) logs.Add(e.Data); };
@@ -109,7 +109,7 @@ if (args.FirstOrDefault() == "browser-fixture")
     var dropped = false;
     async Task Metadata() => await File.WriteAllTextAsync(metadataPath, JsonSerializer.Serialize(new
     {
-        runId, status, baseUrl, expiresAtUtc = expires, runnerPid = Environment.ProcessId,
+        runId, status, baseUrl, expiresAtUtc = expires, runnerPid = Environment.ProcessId, environment = "Development",
         stopPath, databaseDropped = dropped, fixture = database.Ids,
         searchUrl = baseUrl + "/Trip/Search?from=H%C3%A0%20N%E1%BB%99i&to=H%E1%BA%A3i%20Ph%C3%B2ng&date=" + database.Ids.ServiceDate.ToString("yyyy-MM-dd"),
         accounts = new[] { "g0.customer.a@example.invalid", "g0.customer.b@example.invalid", "g0.driver@example.invalid", "g0.admin@example.invalid" },
@@ -119,7 +119,7 @@ if (args.FirstOrDefault() == "browser-fixture")
     try
     {
         await Metadata();
-        Launch(product, new[] { "--urls", baseUrl }, database.ConnectionString);
+        Launch(product, new[] { "--urls", baseUrl }, database.ConnectionString, "Development");
         using var browserClient = Client(browserPort);
         await WaitForServer(browserClient);
         status = "READY"; await Metadata();
