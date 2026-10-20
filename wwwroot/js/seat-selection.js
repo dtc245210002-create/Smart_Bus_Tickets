@@ -199,8 +199,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 const displayMins = remSec ? Math.max(1, Math.round(remSec / 60)) : 10;
                 showSeatAlert(tripId, `Đã giữ ghế ${seatCode} thành công (thời hạn ${displayMins} phút)!`, "success");
-                // Lấy fresh GET snapshot để đồng bộ đầy đủ toàn bộ ghế giữ và báo giá tổng
-                syncSeatStatuses(tripId);
+                // Đánh dấu cần lấy fresh GET snapshot sau khi mutation hoàn tất
+                tripMutationGen[tripId + '_needsSync'] = true;
             } else {
                 // HỦY CHỌN GHẾ -> GỬI API HỦY GIỮ CHỖ
                 const res = await fetch("/api/bookings/release-seats", {
@@ -243,8 +243,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
                     }
 
-                    // Lấy fresh GET snapshot để khôi phục báo giá chính thức cho các ghế còn lại
-                    syncSeatStatuses(tripId);
+                    // Đánh dấu cần lấy fresh GET snapshot sau khi mutation hoàn tất
+                    tripMutationGen[tripId + '_needsSync'] = true;
                 } else {
                     // Nhả ghế thất bại: Giữ nguyên selected vì server vẫn đang ghi nhận giữ chỗ
                     seatEl.classList.add("selected");
@@ -273,6 +273,12 @@ document.addEventListener("DOMContentLoaded", function () {
             seatEl.style.opacity = "1";
             if (!seatEl.classList.contains("booked")) {
                 seatEl.style.pointerEvents = "auto";
+            }
+
+            // Kích hoạt fresh GET snapshot khi toàn bộ thao tác in-flight đã hoàn tất và generation đã ổn định
+            if ((tripMutationGen[tripId + '_inflight'] || 0) === 0 && tripMutationGen[tripId + '_needsSync']) {
+                tripMutationGen[tripId + '_needsSync'] = false;
+                await syncSeatStatuses(tripId);
             }
         }
     }
