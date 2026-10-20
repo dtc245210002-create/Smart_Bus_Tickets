@@ -175,12 +175,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 const remSec = (data.data && data.data.remainingSeconds) ? data.data.remainingSeconds : 600;
                 const serverHoldId = (data.data && data.data.holdId) ? data.data.holdId : null;
                 const serverTotal = (data.data && data.data.totalPrice != null) ? data.data.totalPrice : null;
+
+                // Thu thập danh sách ghế đã chọn sau khi thêm ghế này
+                const accordionEl = document.getElementById("seatAccordion-" + tripId);
+                const currentSelectedCodes = accordionEl 
+                    ? Array.from(accordionEl.querySelectorAll(".sbg-seat-box.selected")).map(s => (s.getAttribute("data-code") || "").toUpperCase())
+                    : [seatCode.toUpperCase()];
+
                 if (serverHoldId) {
                     tripBookingData[tripId] = {
                         bookingCode: serverHoldId,
                         totalPrice: serverTotal,
-                        remainingSeconds: remSec
+                        remainingSeconds: remSec,
+                        heldSeats: currentSelectedCodes
                     };
+                    try {
+                        sessionStorage.setItem("sbg_hold_" + tripId, JSON.stringify(tripBookingData[tripId]));
+                    } catch (e) {}
                 }
                 showSeatAlert(tripId, `Đã giữ ghế ${seatCode} thành công (thời hạn ${Math.round(remSec / 60)} phút)!`, "success");
             } else {
@@ -208,6 +219,26 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (res.ok && data && data.success) {
                     seatEl.classList.remove("selected");
                     showSeatAlert(tripId, `Đã hủy giữ ghế ${seatCode}.`, "info");
+
+                    // VÔ HIỆU HÓA BÁO GIÁ CŨ: Khi nhả một ghế, quote tổng tiền cũ (totalPrice) không còn hiệu lực
+                    if (tripBookingData[tripId]) {
+                        delete tripBookingData[tripId].totalPrice;
+                        if (Array.isArray(tripBookingData[tripId].heldSeats)) {
+                            tripBookingData[tripId].heldSeats = tripBookingData[tripId].heldSeats.filter(
+                                s => s !== seatCode.toUpperCase()
+                            );
+                        }
+                        if (!tripBookingData[tripId].heldSeats || tripBookingData[tripId].heldSeats.length === 0) {
+                            delete tripBookingData[tripId];
+                            try {
+                                sessionStorage.removeItem("sbg_hold_" + tripId);
+                            } catch (e) {}
+                        } else {
+                            try {
+                                sessionStorage.setItem("sbg_hold_" + tripId, JSON.stringify(tripBookingData[tripId]));
+                            } catch (e) {}
+                        }
+                    }
                 } else {
                     // Nhả ghế thất bại: Giữ nguyên selected vì server vẫn đang ghi nhận giữ chỗ
                     seatEl.classList.add("selected");
@@ -270,6 +301,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const booked = new Set((data.bookedSeats || []).map(s => s.toUpperCase()));
             const myHeld = new Set((data.myHeldSeats || []).map(s => s.toUpperCase()));
+            const myHeldList = (data.myHeldSeats || []).map(s => s.toUpperCase());
+
+            // 1. Phục hồi hoặc cập nhật dữ liệu giữ chỗ cho tripId
+            if (data.heldBookingCode) {
+                // Nếu server mở rộng hợp đồng cung cấp heldBookingCode & heldTotalPrice
+                tripBookingData[tripId] = {
+                    bookingCode: data.heldBookingCode,
+                    totalPrice: data.heldTotalPrice != null ? data.heldTotalPrice : null,
+                    remainingSeconds: data.remainingSeconds || 600,
+                    heldSeats: myHeldList
+                };
+                try {
+                    sessionStorage.setItem("sbg_hold_" + tripId, JSON.stringify(tripBookingData[tripId]));
+                } catch (e) {}
+            } else if (!tripBookingData[tripId] || !tripBookingData[tripId].bookingCode) {
+                // Thử phục hồi từ sessionStorage của chính phiên duyệt này khi reload
+                try {
+                    const storedStr = sessionStorage.getItem("sbg_hold_" + tripId);
+                    if (storedStr) {
+                        const stored = JSON.parse(storedStr);
+                        if (stored && stored.bookingCode && Array.isArray(stored.heldSeats)) {
+                            // Kiểm tra danh sách ghế trong bộ nhớ tạm có khớp chính xác với myHeldSeats server trả về
+                            const isMatch = stored.heldSeats.length === myHeldList.length &&
+                                            stored.heldSeats.every(s => myHeld.has(s.toUpperCase()));
+                            if (isMatch) {
+                                tripBookingData[tripId] = stored;
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
 
             const seatBoxes = accordion.querySelectorAll(".sbg-seat-box");
             seatBoxes.forEach(seat => {
@@ -316,13 +378,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const selectedSeats = accordion.querySelectorAll(".sbg-seat-box.selected");
         const seatCodes = [];
-        let totalPrice = 0;
+        let baseTotalPrice = 0;
 
         selectedSeats.forEach(s => {
-            const code = s.getAttribute("data-code");
+            const code = (s.getAttribute("data-code") || "").toUpperCase();
             const price = parseFloat(s.getAttribute("data-price") || 150000);
             seatCodes.push(code);
-            totalPrice += price;
+            baseTotalPrice += price;
         });
 
         const seatListEl = accordion.querySelector(".selected-seats-list");
@@ -330,32 +392,59 @@ document.addEventListener("DOMContentLoaded", function () {
         const btnContinue = accordion.querySelector(".btn-continue-booking");
 
         if (selectedSeats.length > 0) {
-            // Có ghế được chọn
             const count = selectedSeats.length;
             const booking = tripBookingData[tripId];
-            const displayTotal = (booking && booking.totalPrice != null) ? booking.totalPrice : totalPrice;
-            seatListEl.innerHTML = `<span class="badge bg-success me-1">${count} ghế</span> <span class="fw-bold text-dark">${seatCodes.join(", ")}</span>`;
-            totalPriceEl.innerText = displayTotal.toLocaleString("vi-VN") + " VNĐ";
-            
-            // Kích hoạt nút tiếp tục
+
+            // Kiểm tra báo giá từ server: Chỉ hợp lệ khi booking có totalPrice VÀ tập ghế giữ khớp 100% với danh sách đang chọn
+            const isQuoteValid = booking &&
+                                 typeof booking.totalPrice === "number" &&
+                                 Array.isArray(booking.heldSeats) &&
+                                 booking.heldSeats.length === count &&
+                                 seatCodes.every(code => booking.heldSeats.map(s => s.toUpperCase()).includes(code));
+
+            if (seatListEl) {
+                seatListEl.innerHTML = `<span class="badge bg-success me-1">${count} ghế</span> <span class="fw-bold text-dark">${seatCodes.join(", ")}</span>`;
+            }
+
+            if (isQuoteValid) {
+                // Báo giá chính thức từ server đã xác nhận
+                totalPriceEl.innerText = booking.totalPrice.toLocaleString("vi-VN") + " VNĐ";
+            } else {
+                // Báo giá cũ đã bị vô hiệu hóa (sau khi nhả ghế hoặc reload) -> không suy giá client là giá server
+                if (booking) {
+                    delete booking.totalPrice;
+                }
+                totalPriceEl.innerHTML = `${baseTotalPrice.toLocaleString("vi-VN")} VNĐ <small class="text-muted fw-normal">(tạm tính)</small>`;
+            }
+
+            // Cập nhật nút tiếp tục
             if (btnContinue) {
-                if (booking && booking.bookingCode) {
+                if (booking && booking.bookingCode && isQuoteValid) {
+                    // Đã có mã giữ chỗ và báo giá chính thức từ máy chủ
                     btnContinue.classList.remove("disabled");
-                    btnContinue.innerHTML = `<i class="bi bi-credit-card-2-front-fill me-1"></i> Tiếp tục thanh toán ${count} vé (${displayTotal.toLocaleString("vi-VN")} đ) &rarr;`;
+                    btnContinue.innerHTML = `<i class="bi bi-credit-card-2-front-fill me-1"></i> Tiếp tục thanh toán ${count} vé (${booking.totalPrice.toLocaleString("vi-VN")} đ) &rarr;`;
                     btnContinue.setAttribute("href", `/Ticket/Payment?bookingCode=${encodeURIComponent(booking.bookingCode)}&tripId=${encodeURIComponent(tripId)}`);
-                } else {
+                } else if (booking && booking.bookingCode && !isQuoteValid) {
+                    // Có mã giữ chỗ nhưng số ghế đã đổi sau khi nhả ghế -> chờ đối chiếu quote từ server
                     btnContinue.classList.add("disabled");
-                    btnContinue.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Đang đồng bộ giữ chỗ...`;
+                    btnContinue.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Đang chờ đối chiếu giá từ máy chủ...`;
+                    btnContinue.setAttribute("href", "javascript:void(0);");
+                } else {
+                    // Trường hợp reload trang chưa có mã giữ chỗ thật -> thông báo rõ ràng, không treo spinner vô hạn
+                    btnContinue.classList.add("disabled");
+                    btnContinue.innerHTML = `<i class="bi bi-arrow-repeat me-1"></i> Bấm vào ghế để làm mới giữ chỗ &rarr;`;
                     btnContinue.setAttribute("href", "javascript:void(0);");
                 }
             }
         } else {
-            // Chưa chọn ghế nào hoặc đã nhả hết ghế
+            // Không còn ghế nào được chọn
             delete tripBookingData[tripId];
-            seatListEl.innerText = "Chưa chọn ghế nào";
-            totalPriceEl.innerText = "0 VNĐ";
-            
-            // Vô hiệu hóa nút tiếp tục
+            try {
+                sessionStorage.removeItem("sbg_hold_" + tripId);
+            } catch (e) {}
+            if (seatListEl) seatListEl.innerText = "Chưa chọn ghế nào";
+            if (totalPriceEl) totalPriceEl.innerText = "0 VNĐ";
+
             if (btnContinue) {
                 btnContinue.classList.add("disabled");
                 btnContinue.innerHTML = `Vui lòng chọn ghế trước khi tiếp tục &rarr;`;

@@ -279,6 +279,7 @@
 </div>
 <!-- Big CTA Confirmation Button with Anti-Double-Submit -->
 <div class="mt-5">
+<div id="paymentStatusAlert" class="hidden"></div>
 <form id="paymentConfirmForm" method="post" action="/Ticket/ConfirmPayment">
     @Html.AntiForgeryToken()
     <input type="hidden" name="ticketCode" value="@(ViewBag.TicketCode ?? "")" />
@@ -523,25 +524,125 @@
                 }
             }, checkIntervalMs);
 
-            // Chống submit lặp lại nhiều lần khi người dùng click xác nhận
+            // Chống submit lặp lại nhiều lần & Xử lý xác thực thanh toán qua API an toàn
             const confirmForm = document.getElementById('paymentConfirmForm');
             if (confirmForm) {
                 let isSubmitted = false;
-                confirmForm.addEventListener('submit', function (e) {
+                confirmForm.addEventListener('submit', async function (e) {
+                    e.preventDefault();
                     if (isSubmitted) {
-                        e.preventDefault();
                         e.stopImmediatePropagation();
                         return false;
                     }
                     isSubmitted = true;
+
                     const btn = document.getElementById('btnConfirmPayment');
                     const txt = document.getElementById('btnConfirmText');
+                    const alertBox = document.getElementById('paymentStatusAlert');
+
+                    if (alertBox) {
+                        alertBox.classList.add('hidden');
+                        alertBox.innerHTML = '';
+                    }
                     if (btn) {
                         btn.disabled = true;
                         btn.classList.add('opacity-75', 'cursor-not-allowed');
                     }
                     if (txt) {
                         txt.innerHTML = '<span class="inline-block animate-spin mr-2">⌛</span> ĐANG XÁC THỰC THANH TOÁN VỚI HỆ THỐNG...';
+                    }
+
+                    try {
+                        const formData = new FormData(confirmForm);
+                        const response = await fetch(confirmForm.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        // 1. Máy chủ trả về HTTP 503: Cổng thanh toán đối soát chưa xong hoặc tạm gián đoạn
+                        // Tuyệt đối không fake paid, giữ nguyên người dùng ở màn hình thanh toán
+                        if (response.status === 503) {
+                            if (alertBox) {
+                                alertBox.className = 'mb-4 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-sm font-medium flex items-start gap-3 shadow-xs';
+                                alertBox.innerHTML = `
+                                    <span class="material-symbols-outlined text-amber-600 text-xl flex-shrink-0 mt-0.5">warning</span>
+                                    <div>
+                                        <div class="font-bold">Hệ thống đang chờ ngân hàng đối soát giao dịch (HTTP 503)</div>
+                                        <div class="mt-1 text-xs text-amber-800">Giao dịch của bạn chưa được ghi nhận hoàn tất. Trạng thái vé vẫn được giữ nguyên là CHƯA THANH TOÁN. Vui lòng kiểm tra lại tài khoản hoặc bấm thử lại sau giây lát.</div>
+                                    </div>
+                                `;
+                                alertBox.classList.remove('hidden');
+                            }
+                            isSubmitted = false;
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                            }
+                            if (txt) {
+                                txt.innerHTML = '<span class="material-symbols-outlined text-[20px] mr-1">refresh</span> THỬ LẠI XÁC NHẬN THANH TOÁN';
+                            }
+                            return;
+                        }
+
+                        // 2. Chuyển hướng thành công (302/Redirect từ server sang trang vé hoặc kết quả)
+                        if (response.redirected) {
+                            window.location.href = response.url;
+                            return;
+                        }
+
+                        // 3. Lỗi HTTP khác từ server (400, 404, 500...)
+                        if (!response.ok) {
+                            if (alertBox) {
+                                alertBox.className = 'mb-4 p-4 rounded-xl border border-red-300 bg-red-50 text-red-900 text-sm font-medium flex items-start gap-3 shadow-xs';
+                                alertBox.innerHTML = `
+                                    <span class="material-symbols-outlined text-red-600 text-xl flex-shrink-0 mt-0.5">error</span>
+                                    <div>
+                                        <div class="font-bold">Không thể xác nhận thanh toán lúc này (Lỗi ${response.status})</div>
+                                        <div class="mt-1 text-xs text-red-800">Giao dịch chưa hoàn tất. Vui lòng thử lại hoặc gọi tổng đài 1900 6868 để được trợ giúp.</div>
+                                    </div>
+                                `;
+                                alertBox.classList.remove('hidden');
+                            }
+                            isSubmitted = false;
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                            }
+                            if (txt) {
+                                txt.innerHTML = '<span class="material-symbols-outlined text-[20px] mr-1">refresh</span> THỬ LẠI XÁC NHẬN THANH TOÁN';
+                            }
+                            return;
+                        }
+
+                        // 4. Nếu server trả về trang HTML thành công
+                        const htmlText = await response.text();
+                        document.open();
+                        document.write(htmlText);
+                        document.close();
+                    } catch (netErr) {
+                        console.error('Lỗi mạng khi gửi xác nhận thanh toán:', netErr);
+                        if (alertBox) {
+                            alertBox.className = 'mb-4 p-4 rounded-xl border border-red-300 bg-red-50 text-red-900 text-sm font-medium flex items-start gap-3 shadow-xs';
+                            alertBox.innerHTML = `
+                                <span class="material-symbols-outlined text-red-600 text-xl flex-shrink-0 mt-0.5">wifi_off</span>
+                                <div>
+                                    <div class="font-bold">Lỗi kết nối khi gửi yêu cầu xác nhận</div>
+                                    <div class="mt-1 text-xs text-red-800">Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng của bạn và thử lại.</div>
+                                </div>
+                            `;
+                            alertBox.classList.remove('hidden');
+                        }
+                        isSubmitted = false;
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                        }
+                        if (txt) {
+                            txt.innerHTML = '<span class="material-symbols-outlined text-[20px] mr-1">refresh</span> THỬ LẠI XÁC NHẬN THANH TOÁN';
+                        }
                     }
                 });
             }
