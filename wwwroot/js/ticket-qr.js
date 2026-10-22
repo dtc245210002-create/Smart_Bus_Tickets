@@ -25,12 +25,26 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     const qrContainer = document.getElementById("ticketQrCanvas");
-    const qrPayload = document.getElementById("qrPayloadData")?.value || "SMARTBUS_DEFAULT";
+    const qrPayload = document.getElementById("qrPayloadData")?.value || document.getElementById("ticketCodeDisplay")?.innerText?.trim() || "SMARTBUS_DEFAULT";
     const qrImage = document.getElementById("ticketQrImage");
+    const isTicketUsed = qrContainer?.dataset.status === "USED" || qrContainer?.classList.contains("sbg-qr-box-used");
+    const isTicketInactive = isTicketUsed || qrContainer?.dataset.status === "EXPIRED" || qrContainer?.dataset.status === "CANCELLED";
 
-    if (qrContainer && typeof QRCode !== 'undefined') {
+    // 1. Kiểm tra xem ảnh QR từ Server Base64 đã hiển thị thành công chưa
+    const hasValidServerQr = qrImage && qrImage.getAttribute("src") && qrImage.getAttribute("src").startsWith("data:image/");
+
+    if (hasValidServerQr && qrImage) {
+        qrImage.style.display = "block";
+        qrImage.style.visibility = "visible";
+    }
+
+    // 2. Client-side fallback: Chỉ render lại bằng QRCodeJS nếu chưa có ảnh Base64 từ Server
+    if (!hasValidServerQr && qrContainer && typeof QRCode !== 'undefined' && !isTicketInactive) {
+        renderClientQr();
+    }
+
+    function renderClientQr() {
         try {
-            // Tạo phần tử tạm để thử vẽ QR bằng QRCodeJS
             const tempDiv = document.createElement("div");
             new QRCode(tempDiv, {
                 text: qrPayload,
@@ -41,17 +55,49 @@ document.addEventListener("DOMContentLoaded", function () {
                 correctLevel: QRCode.CorrectLevel.M
             });
 
-            // Nếu vẽ thành công, thay thế nội dung của qrContainer
+            // QRCodeJS tạo ra canvas (bị ẩn style display:none) và img
             setTimeout(() => {
-                if (tempDiv.querySelector("canvas") || tempDiv.querySelector("img")) {
-                    qrContainer.innerHTML = "";
-                    qrContainer.appendChild(tempDiv.firstChild);
+                const canvas = tempDiv.querySelector("canvas");
+                const img = tempDiv.querySelector("img");
+                let elToInsert = null;
+
+                if (img && img.src && img.src.length > 50) {
+                    img.style.display = "block";
+                    img.style.width = "170px";
+                    img.style.height = "170px";
+                    img.style.objectFit = "contain";
+                    img.className = "img-fluid rounded";
+                    elToInsert = img;
+                } else if (canvas) {
+                    canvas.style.display = "block"; // BẮT BUỘC: Hủy bỏ display:none mặc định của QRCodeJS
+                    canvas.style.width = "170px";
+                    canvas.style.height = "170px";
+                    canvas.style.objectFit = "contain";
+                    canvas.className = "img-fluid rounded";
+                    elToInsert = canvas;
                 }
-            }, 50);
+
+                if (elToInsert) {
+                    const currentImg = document.getElementById("ticketQrImage");
+                    if (currentImg) {
+                        currentImg.replaceWith(elToInsert);
+                    } else {
+                        qrContainer.prepend(elToInsert);
+                    }
+                }
+            }, 80);
         } catch (e) {
-            console.warn("QRCodeJS fallback to API image:", e);
-            // Giữ nguyên qrImage fallback
+            console.warn("QRCodeJS fallback error:", e);
         }
+    }
+
+    // Nếu ảnh bên ngoài bị lỗi tải (offline hoặc mạng chậm), tự động render QRCode client ngay lập tức
+    if (qrImage && !hasValidServerQr) {
+        qrImage.addEventListener("error", function () {
+            if (typeof QRCode !== 'undefined' && !isTicketInactive) {
+                renderClientQr();
+            }
+        });
     }
 
     const btnDownload = document.getElementById("btnDownloadTicket");

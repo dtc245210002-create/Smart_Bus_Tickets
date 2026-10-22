@@ -106,13 +106,7 @@ namespace WebApplication1.Controllers.Api
                                 }
                                 else if (st == "HELD" || st == "PENDING")
                                 {
-                                    bool isExpired = bk.BookingTime.AddMinutes(10) < now;
-                                    if (isExpired)
-                                    {
-                                        tk.Status = "CANCELLED";
-                                        bk.Status = "Cancelled";
-                                    }
-                                    else if (!isMyBooking && cleanSeatNumbers.Contains(s))
+                                    if (!isMyBooking && cleanSeatNumbers.Contains(s))
                                     {
                                         bookedOrHeldByOther.Add(s);
                                     }
@@ -216,7 +210,7 @@ namespace WebApplication1.Controllers.Api
                         .OrderByDescending(b => b.BookingId)
                         .FirstOrDefaultAsync();
 
-                    if (existingBooking == null || existingBooking.BookingTime.AddMinutes(10) < now)
+                    if (existingBooking == null)
                     {
                         existingBooking = new Booking
                         {
@@ -278,13 +272,13 @@ namespace WebApplication1.Controllers.Api
                 HeldSeats = holdResult.SuccessfullyHeldSeats,
                 TotalPrice = totalPrice,
                 HeldAt = DateTime.Now,
-                ExpiresAt = holdResult.ExpiresAt ?? DateTime.Now.AddMinutes(holdDuration),
+                ExpiresAt = holdResult.ExpiresAt ?? DateTime.Now.AddHours(24),
                 RemainingSeconds = holdResult.RemainingSeconds
             };
 
             return Ok(ApiResponse<HoldSeatsResponse>.Ok(
                 responseData,
-                $"Đã giữ thành công {holdResult.SuccessfullyHeldSeats.Count} ghế và lưu vào CSDL. Ghế sẽ tự động hủy sau {holdDuration} phút nếu không thanh toán."));
+                $"Đã chọn thành công {holdResult.SuccessfullyHeldSeats.Count} ghế và lưu vào CSDL."));
         }
 
         /// <summary>
@@ -351,9 +345,7 @@ namespace WebApplication1.Controllers.Api
                 return BadRequest(new { success = false, message = "TripId không hợp lệ." });
             }
 
-            var now = DateTime.Now;
             var bookedSeats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var myHeldSeats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             try
             {
@@ -376,64 +368,6 @@ namespace WebApplication1.Controllers.Api
                         {
                             bookedSeats.Add(seat);
                         }
-                        else if (status == "HELD" || status == "PENDING")
-                        {
-                            bool isExpired = tk.Booking == null || tk.Booking.BookingTime.AddMinutes(10) < now;
-                            if (!isExpired)
-                            {
-                                bool isMine = false;
-                                if (userId.HasValue && tk.Booking != null)
-                                {
-                                    isMine = (tk.Booking.UserId == userId.Value);
-                                }
-                                else if (!string.IsNullOrEmpty(sessionId) && tk.Booking != null)
-                                {
-                                    isMine = (tk.Booking.UserId <= 0) && tk.Booking.BookingCode.Contains(sessionId);
-                                }
-
-                                if (isMine)
-                                {
-                                    myHeldSeats.Add(seat);
-                                }
-                                else
-                                {
-                                    bookedSeats.Add(seat);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch { }
-
-            // Bổ sung các ghế giữ trong SeatHoldService
-            try
-            {
-                var activeHolds = await _seatHoldService.GetActiveHoldsForTripAsync(tripId);
-                foreach (var hold in activeHolds.Values)
-                {
-                    var seat = hold.SeatNumber.Trim().ToUpper();
-                    bool isMine = false;
-                    if (userId.HasValue && hold.UserId.HasValue)
-                    {
-                        isMine = (hold.UserId.Value == userId.Value);
-                    }
-                    else if (!userId.HasValue && !hold.UserId.HasValue && !string.IsNullOrEmpty(sessionId))
-                    {
-                        isMine = string.Equals(hold.SessionId, sessionId, StringComparison.OrdinalIgnoreCase);
-                    }
-                    else if (userId.HasValue && !hold.UserId.HasValue && !string.IsNullOrEmpty(sessionId))
-                    {
-                        isMine = string.Equals(hold.SessionId, sessionId, StringComparison.OrdinalIgnoreCase);
-                    }
-
-                    if (isMine)
-                    {
-                        myHeldSeats.Add(seat);
-                    }
-                    else
-                    {
-                        bookedSeats.Add(seat);
                     }
                 }
             }
@@ -443,8 +377,7 @@ namespace WebApplication1.Controllers.Api
             {
                 success = true,
                 tripId = tripId,
-                bookedSeats = bookedSeats.ToList(),
-                myHeldSeats = myHeldSeats.ToList()
+                bookedSeats = bookedSeats.ToList()
             });
         }
 
@@ -558,6 +491,213 @@ namespace WebApplication1.Controllers.Api
             };
 
             return Ok(ApiResponse<VerifyPaymentResponse>.Ok(demoResp, "Xác nhận thanh toán thành công (Chế độ mô phỏng)."));
+        }
+
+        /// <summary>
+        /// API POST /api/bookings/create-booking
+        /// Xử lý nguyên tắc ai đặt vé trước thì truy vấn xuống CSDL:
+        /// - Nếu còn ghế: đặt thành công, lưu Booking & Ticket vào CSDL và trả về đường dẫn tới cổng thanh toán (/Ticket/Payment)
+        /// - Nếu đã bị người khác đặt: thông báo luôn cho người đặt sau ghế đã bị người khác đặt
+        /// </summary>
+        [HttpPost("create-booking")]
+        public async Task<IActionResult> CreateBooking([FromBody] CreateBookingRequest request)
+        {
+            if (request == null || request.TripId <= 0 || request.SeatNumbers == null || !request.SeatNumbers.Any())
+            {
+                return BadRequest(new CreateBookingResponse
+                {
+                    Success = false,
+                    Message = "Dữ liệu đặt vé không hợp lệ hoặc chưa chọn ghế."
+                });
+            }
+
+            var cleanSeats = request.SeatNumbers
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim().ToUpper())
+                .Distinct()
+                .ToList();
+
+            if (!cleanSeats.Any())
+            {
+                return BadRequest(new CreateBookingResponse
+                {
+                    Success = false,
+                    Message = "Vui lòng chọn ít nhất 1 vị trí ghế."
+                });
+            }
+
+            var effectiveSessionId = !string.IsNullOrWhiteSpace(request.SessionId)
+                ? request.SessionId.Trim()
+                : Guid.NewGuid().ToString("N");
+
+            // 1. TRUY VẤN XUỐNG CƠ SỞ DỮ LIỆU ĐỂ KIỂM TRA TỪNG GHẾ ĐÃ BỊ ĐẶT CHƯA
+            var conflictedSeats = new List<string>();
+
+            try
+            {
+                var trip = await _context.Trips
+                    .Include(t => t.Bookings)
+                        .ThenInclude(b => b.Tickets)
+                    .FirstOrDefaultAsync(t => t.TripId == request.TripId);
+
+                if (trip != null)
+                {
+                    foreach (var bk in trip.Bookings.Where(b => b.Status != "Cancelled" && b.Status != "CANCELLED"))
+                    {
+                        bool isMyBooking = false;
+                        if (request.UserId.HasValue && bk.UserId == request.UserId.Value)
+                        {
+                            isMyBooking = true;
+                        }
+                        else if (!string.IsNullOrEmpty(effectiveSessionId) && bk.BookingCode.Contains(effectiveSessionId))
+                        {
+                            isMyBooking = true;
+                        }
+
+                        foreach (var tk in bk.Tickets)
+                        {
+                            if (string.IsNullOrWhiteSpace(tk.SeatNumber)) continue;
+                            var tkStatus = (tk.Status ?? "").ToUpper();
+                            if (tkStatus == "CANCELLED") continue;
+
+                            var seatsInTicket = tk.SeatNumber.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var s in seatsInTicket)
+                            {
+                                var seatUpper = s.Trim().ToUpper();
+                                if (cleanSeats.Contains(seatUpper))
+                                {
+                                    // 1. Nếu ghế đã bán thành công
+                                    if (tkStatus == "CONFIRMED" || tkStatus == "PAID" || tkStatus == "ACTIVE" || tkStatus == "USED")
+                                    {
+                                        conflictedSeats.Add(seatUpper);
+                                    }
+                                    // 2. Hoặc nếu ghế đang trong đơn Pending/Held vừa tạo gần đây (15 phút) của người khác
+                                    else if ((tkStatus == "PENDING" || tkStatus == "HELD") && bk.BookingTime > DateTime.Now.AddMinutes(-15))
+                                    {
+                                        if (!isMyBooking)
+                                        {
+                                            conflictedSeats.Add(seatUpper);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Lỗi truy vấn CSDL kiểm tra ghế]: {ex.Message}");
+            }
+
+            // Nếu ghế đã bị người khác đặt trước -> Thông báo ngay cho người đặt sau
+            if (conflictedSeats.Any())
+            {
+                var uniqueConflicts = conflictedSeats.Distinct().ToList();
+                return Ok(new CreateBookingResponse
+                {
+                    Success = false,
+                    ConflictedSeats = uniqueConflicts,
+                    Message = uniqueConflicts.Count == 1
+                        ? $"Ghế {uniqueConflicts[0]} đã bị người khác đặt trước. Vui lòng chọn ghế khác!"
+                        : $"Các ghế {string.Join(", ", uniqueConflicts)} đã bị người khác đặt trước. Vui lòng chọn lại ghế trống!"
+                });
+            }
+
+            // 2. GHẾ CÒN TRỐNG -> ĐẶT THÀNH CÔNG VÀ LƯU VÀO CƠ SỞ DỮ LIỆU
+            string cleanBookingCode;
+            string primaryTicketCode;
+
+            try
+            {
+                var dbTrip = await _context.Trips.FirstOrDefaultAsync(t => t.TripId == request.TripId);
+                int effectiveUserId = request.UserId ?? 2;
+                if (!request.UserId.HasValue)
+                {
+                    var firstCustomer = await _context.Users.FirstOrDefaultAsync(u => u.Roles.Any(r => r.RoleId == 2))
+                                        ?? await _context.Users.FirstOrDefaultAsync();
+                    if (firstCustomer != null) effectiveUserId = firstCustomer.UserId;
+                }
+
+                var fromCode = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(request.From ?? "HN").FirstOrDefault() ?? "HN";
+                var toCode = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(request.To ?? "TN").FirstOrDefault() ?? "TN";
+
+                cleanBookingCode = $"BK-{fromCode}{toCode}-{DateTime.Now:MMddHHmm}{Random.Shared.Next(10, 99)}";
+                primaryTicketCode = $"SBG-{fromCode}-{toCode}-{DateTime.Now:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}";
+
+                var newBooking = new Booking
+                {
+                    UserId = effectiveUserId,
+                    TripId = request.TripId,
+                    BookingCode = cleanBookingCode,
+                    BookingTime = DateTime.Now,
+                    TotalAmount = request.TotalPrice > 0 ? request.TotalPrice : 150000m * cleanSeats.Count,
+                    Status = "Pending"
+                };
+
+                _context.Bookings.Add(newBooking);
+                await _context.SaveChangesAsync();
+
+                decimal pricePerSeat = cleanSeats.Count > 0 ? Math.Round(newBooking.TotalAmount / cleanSeats.Count, 0) : newBooking.TotalAmount;
+
+                for (int i = 0; i < cleanSeats.Count; i++)
+                {
+                    var seat = cleanSeats[i];
+                    var ticket = new Ticket
+                    {
+                        BookingId = newBooking.BookingId,
+                        TicketCode = cleanSeats.Count > 1 ? $"{primaryTicketCode}-{i + 1}" : primaryTicketCode,
+                        SeatNumber = seat,
+                        Price = pricePerSeat,
+                        Status = "PENDING"
+                    };
+                    _context.Tickets.Add(ticket);
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Lỗi khi lưu Booking vào CSDL]: {ex.Message}");
+                cleanBookingCode = $"BK-{Random.Shared.Next(100000, 999999)}";
+                primaryTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
+            }
+
+            // 3. TẠO URL CHUYỂN HƯỚNG HIỆN RA CỔNG THANH TOÁN (/Ticket/Payment)
+            var queryParams = new List<string>
+            {
+                $"tripId={request.TripId}",
+                $"seats={Uri.EscapeDataString(string.Join(",", cleanSeats))}",
+                $"total={request.TotalPrice}",
+                $"bookingCode={Uri.EscapeDataString(cleanBookingCode)}",
+                $"ticketCode={Uri.EscapeDataString(primaryTicketCode)}"
+            };
+            if (!string.IsNullOrEmpty(request.From)) queryParams.Add($"from={Uri.EscapeDataString(request.From)}");
+            if (!string.IsNullOrEmpty(request.To)) queryParams.Add($"to={Uri.EscapeDataString(request.To)}");
+            if (!string.IsNullOrEmpty(request.Date)) queryParams.Add($"date={Uri.EscapeDataString(request.Date)}");
+            if (!string.IsNullOrEmpty(request.Boarding)) queryParams.Add($"boarding={Uri.EscapeDataString(request.Boarding)}");
+            if (!string.IsNullOrEmpty(request.Dropoff)) queryParams.Add($"dropoff={Uri.EscapeDataString(request.Dropoff)}");
+            if (!string.IsNullOrEmpty(request.DepTime)) queryParams.Add($"depTime={Uri.EscapeDataString(request.DepTime)}");
+            if (!string.IsNullOrEmpty(request.ArrTime)) queryParams.Add($"arrTime={Uri.EscapeDataString(request.ArrTime)}");
+            if (!string.IsNullOrEmpty(request.BusType)) queryParams.Add($"busType={Uri.EscapeDataString(request.BusType)}");
+            if (!string.IsNullOrEmpty(request.LicensePlate)) queryParams.Add($"licensePlate={Uri.EscapeDataString(request.LicensePlate)}");
+            if (!string.IsNullOrEmpty(request.RouteName)) queryParams.Add($"routeName={Uri.EscapeDataString(request.RouteName)}");
+            if (!string.IsNullOrEmpty(request.RouteCode)) queryParams.Add($"routeCode={Uri.EscapeDataString(request.RouteCode)}");
+            if (!string.IsNullOrEmpty(request.DriverName)) queryParams.Add($"driverName={Uri.EscapeDataString(request.DriverName)}");
+            if (!string.IsNullOrEmpty(request.DriverPhone)) queryParams.Add($"driverPhone={Uri.EscapeDataString(request.DriverPhone)}");
+            if (!string.IsNullOrEmpty(request.EstMinutes)) queryParams.Add($"estMinutes={Uri.EscapeDataString(request.EstMinutes)}");
+            if (!string.IsNullOrEmpty(request.Distance)) queryParams.Add($"distance={Uri.EscapeDataString(request.Distance)}");
+
+            var redirectUrl = $"/Ticket/Payment?{string.Join("&", queryParams)}";
+
+            return Ok(new CreateBookingResponse
+            {
+                Success = true,
+                BookingCode = cleanBookingCode,
+                TicketCode = primaryTicketCode,
+                RedirectUrl = redirectUrl,
+                Message = "Đặt chỗ thành công! Đang chuyển đến cổng thanh toán..."
+            });
         }
     }
 }

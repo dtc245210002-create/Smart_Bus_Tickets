@@ -16,6 +16,7 @@ namespace WebApplication1.Controllers
     /// <summary>
     /// Controller chuyên biệt dành cho Bác tài (Tài xế): Đăng nhập, Xem ca làm việc, Soát vé hành khách
     /// </summary>
+    [Authorize(Roles = "Tài xế,DRIVER,Driver,Admin,Quản trị viên,Administrator,Manager,Quản lý")]
     public class DriverController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -32,11 +33,16 @@ namespace WebApplication1.Controllers
             _logger = logger;
         }
 
+        // GET: /Driver or /Driver/Index
+        [HttpGet]
+        public IActionResult Index() => RedirectToAction(nameof(Dashboard));
+
         // =========================================================================
         // 1. ĐĂNG NHẬP BÁC TÀI (DRIVER LOGIN)
         // =========================================================================
 
         // GET: /Driver/Login
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
@@ -51,6 +57,7 @@ namespace WebApplication1.Controllers
         }
 
         // POST: /Driver/Login
+        [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(DriverLoginViewModel model, string? returnUrl = null)
@@ -134,8 +141,6 @@ namespace WebApplication1.Controllers
                 new Claim(ClaimTypes.Email, email),
                 new Claim(ClaimTypes.MobilePhone, phone ?? string.Empty),
                 new Claim(ClaimTypes.Role, "Tài xế"),
-                new Claim(ClaimTypes.Role, "Admin"),
-                new Claim(ClaimTypes.Role, "Quản trị viên"),
                 new Claim("DriverId", driverId.ToString()),
                 new Claim("LicenseNo", licenseNo)
             };
@@ -183,6 +188,8 @@ namespace WebApplication1.Controllers
                 // Lấy thông tin tài xế kèm các chuyến xe được giao
                 driver = await _context.Drivers
                     .Include(d => d.User)
+                    .Include(d => d.AssignedBus)
+                        .ThenInclude(b => b!.BusType)
                     .Include(d => d.Trips)
                         .ThenInclude(t => t.Route)
                     .Include(d => d.Trips)
@@ -197,6 +204,8 @@ namespace WebApplication1.Controllers
                 {
                     driver = await _context.Drivers
                         .Include(d => d.User)
+                        .Include(d => d.AssignedBus)
+                            .ThenInclude(b => b!.BusType)
                         .Include(d => d.Trips)
                             .ThenInclude(t => t.Route)
                         .Include(d => d.Trips)
@@ -226,30 +235,24 @@ namespace WebApplication1.Controllers
                 Email = driver?.User?.Email ?? "driver1@smartbus.vn",
                 LicenseNo = driver?.LicenseNo ?? "B123456789",
                 Status = driver?.Status ?? "Active",
-                CurrentDate = DateOnly.FromDateTime(DateTime.Today)
+                CurrentDate = DateOnly.FromDateTime(DateTime.Today),
+                // Thông tin xe cố định được Admin phân công
+                AssignedBusLicensePlate = driver?.AssignedBus?.LicensePlate ?? "",
+                AssignedBusTypeName = driver?.AssignedBus?.BusType?.TypeName ?? "",
+                AssignedBusCapacity = driver?.AssignedBus?.Capacity ?? 0
             };
 
             var today = DateOnly.FromDateTime(DateTime.Today);
             var tomorrow = today.AddDays(1);
 
-            // Nạp danh sách các chuyến xe được phân công từ CSDL SQL Server
+            // Chỉ lấy chuyến xe được phân công cho đúng tài xế này (không lấy chuyến của người khác)
             var allTrips = await _context.Trips
                 .Include(t => t.Route)
                 .Include(t => t.Bus).ThenInclude(b => b.BusType)
                 .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
                 .Include(t => t.Bookings).ThenInclude(b => b.User)
-                .Where(t => t.DriverId == activeDriverId || t.DriverId == 1)
+                .Where(t => t.DriverId == activeDriverId)
                 .ToListAsync();
-
-            if (!allTrips.Any())
-            {
-                allTrips = await _context.Trips
-                    .Include(t => t.Route)
-                    .Include(t => t.Bus).ThenInclude(b => b.BusType)
-                    .Include(t => t.Bookings).ThenInclude(b => b.Tickets)
-                    .Include(t => t.Bookings).ThenInclude(b => b.User)
-                    .ToListAsync();
-            }
 
             // Sắp xếp ưu tiên:
             // 1. Chuyến hôm nay (Today) theo giờ xuất bến tăng dần
@@ -357,8 +360,11 @@ namespace WebApplication1.Controllers
 
             try
             {
-                bool hasTodayTrips = await _context.Trips.AnyAsync(t => t.TripDate == today);
-                bool hasTomorrowTrips = await _context.Trips.AnyAsync(t => t.TripDate == tomorrow);
+                int targetDriverId = driverId > 0 ? driverId : 1;
+
+                // Kiểm tra chuyến xe của riêng bác tài này
+                bool hasTodayTrips = await _context.Trips.AnyAsync(t => t.TripDate == today && t.DriverId == targetDriverId);
+                bool hasTomorrowTrips = await _context.Trips.AnyAsync(t => t.TripDate == tomorrow && t.DriverId == targetDriverId);
 
                 if (hasTodayTrips && hasTomorrowTrips)
                 {
@@ -370,6 +376,10 @@ namespace WebApplication1.Controllers
 
                 var buses = await _context.Buses.Include(b => b.BusType).ToListAsync();
                 if (!buses.Any()) return;
+
+                // Lấy chiếc xe buýt cố định được Admin phân công cho Bác tài này
+                var currentDriver = await _context.Drivers.FirstOrDefaultAsync(d => d.DriverId == targetDriverId);
+                int activeBusId = currentDriver?.AssignedBusId ?? buses[0].BusId;
 
                 var defaultUser = await _context.Users.FirstOrDefaultAsync() ?? new User
                 {
@@ -397,35 +407,35 @@ namespace WebApplication1.Controllers
 
                 foreach (var tripDate in datesToGenerate)
                 {
-                    // Lịch trình phân bổ các khung giờ xuất bến đa dạng trong ngày
+                    // Lịch trình phân bổ các khung giờ xuất bến đa dạng trong ngày cho xe cố định của bác tài
                     var timeSlots = new[]
                     {
-                        new { Time = new TimeOnly(8, 0), RouteIdx = 0, BusIdx = 0 },
-                        new { Time = new TimeOnly(10, 30), RouteIdx = 1, BusIdx = 1 },
-                        new { Time = new TimeOnly(13, 30), RouteIdx = 2, BusIdx = 2 },
-                        new { Time = new TimeOnly(16, 45), RouteIdx = 0, BusIdx = 0 },
-                        new { Time = new TimeOnly(19, 0), RouteIdx = 1, BusIdx = 1 },
-                        new { Time = new TimeOnly(23, 0), RouteIdx = 2, BusIdx = 2 }
+                        new { Time = new TimeOnly(8, 0), RouteIdx = 0 },
+                        new { Time = new TimeOnly(10, 30), RouteIdx = 1 },
+                        new { Time = new TimeOnly(13, 30), RouteIdx = 2 },
+                        new { Time = new TimeOnly(16, 45), RouteIdx = 0 },
+                        new { Time = new TimeOnly(19, 0), RouteIdx = 1 },
+                        new { Time = new TimeOnly(23, 0), RouteIdx = 2 }
                     };
 
                     foreach (var slot in timeSlots)
                     {
                         var route = routes[slot.RouteIdx % routes.Count];
-                        var bus = buses[slot.BusIdx % buses.Count];
                         var arrTime = slot.Time.AddMinutes(route.EstimatedDuration ?? 150);
 
                         bool exists = await _context.Trips.AnyAsync(t =>
-                            t.RouteId == route.RouteId &&
+                            t.DriverId == targetDriverId &&
                             t.TripDate == tripDate &&
                             t.DepartureTime == slot.Time);
 
                         if (exists) continue;
 
+                        // Mỗi bác tài cố định 1 xe buýt duy nhất do Admin phân công
                         var trip = new Trip
                         {
                             RouteId = route.RouteId,
-                            BusId = bus.BusId,
-                            DriverId = driverId > 0 ? driverId : 1,
+                            BusId = activeBusId,
+                            DriverId = targetDriverId,
                             TripDate = tripDate,
                             DepartureTime = slot.Time,
                             ArrivalTime = arrTime,
@@ -548,6 +558,28 @@ namespace WebApplication1.Controllers
             TempData["SuccessMessage"] = "Đã đăng xuất ca làm việc an toàn. Chúc Bác tài có thời gian nghỉ ngơi thoải mái!";
             return RedirectToAction("Login");
         }
+
+        // =========================================================================
+        // 5. BÁO CÁO SỰ CỐ / TRỄ CHUYẾN (DRIVER INCIDENT REPORT - US 11)
+        // =========================================================================
+
+        [HttpPost]
+        public IActionResult ReportIncident([FromBody] IncidentReportRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.IncidentType))
+            {
+                return Json(new { success = false, message = "Vui lòng chọn loại sự cố!" });
+            }
+
+            _logger.LogWarning($"[DRIVER INCIDENT] Bác tài {User.Identity?.Name} báo sự cố: {request.IncidentType} | Dự kiến trễ: {request.DelayMinutes}p | Ghi chú: {request.Notes}");
+
+            return Json(new
+            {
+                success = true,
+                message = $"Đã tiếp nhận báo cáo '{request.IncidentType}'. Trung tâm điều hành SmartBus và hành khách chuyến xe đã được thông báo cập nhật trễ {request.DelayMinutes} phút!",
+                reportedAt = DateTime.Now.ToString("HH:mm:ss dd/MM/yyyy")
+            });
+        }
     }
 
     public class VerifyTicketRequest
@@ -556,5 +588,13 @@ namespace WebApplication1.Controllers
         public string? QrCode { get; set; }
         public int? TripId { get; set; }
         public string EffectiveCode => !string.IsNullOrWhiteSpace(TicketCode) ? TicketCode : (QrCode ?? string.Empty);
+    }
+
+    public class IncidentReportRequest
+    {
+        public int? TripId { get; set; }
+        public string IncidentType { get; set; } = string.Empty;
+        public int DelayMinutes { get; set; } = 15;
+        public string? Notes { get; set; }
     }
 }

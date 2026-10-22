@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using System;
@@ -17,17 +17,23 @@ namespace WebApplication1.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ISeatHoldService _seatHoldService;
         private readonly IBusLayoutService _busLayoutService;
+        private readonly WebApplication1.Services.Payment.IVietQrService _vietQrService;
+        private readonly WebApplication1.Services.Voucher.IVoucherService _voucherService;
         private readonly ILogger<TicketController> _logger;
 
         public TicketController(
             ApplicationDbContext context,
             ISeatHoldService seatHoldService,
             IBusLayoutService busLayoutService,
+            WebApplication1.Services.Payment.IVietQrService vietQrService,
+            WebApplication1.Services.Voucher.IVoucherService voucherService,
             ILogger<TicketController> logger)
         {
             _context = context;
             _seatHoldService = seatHoldService;
             _busLayoutService = busLayoutService;
+            _vietQrService = vietQrService;
+            _voucherService = voucherService;
             _logger = logger;
         }
 
@@ -67,70 +73,11 @@ namespace WebApplication1.Controllers
             decimal? distance = null)
         {
             // 1. Thu thập dữ liệu chuyến xe: Ưu tiên tham số URL Query, sau đó đến Cookie lưu phiên đặt vé
-            var effectiveFrom = !string.IsNullOrWhiteSpace(from) ? from 
-                : (Request.Cookies["sbg_last_from"] ?? Request.Cookies["sbg_search_from"] ?? "Thái Nguyên");
-            var effectiveTo = !string.IsNullOrWhiteSpace(to) ? to 
-                : (Request.Cookies["sbg_last_to"] ?? Request.Cookies["sbg_search_to"] ?? "Cao Bằng");
-            var effectiveDate = !string.IsNullOrWhiteSpace(date) ? date 
-                : (Request.Cookies["sbg_last_date"] ?? Request.Cookies["sbg_search_date"]);
-            var effectiveSeats = !string.IsNullOrWhiteSpace(seats) ? seats 
-                : (Request.Cookies["sbg_last_seats"] ?? "A01");
-            var effectiveBoarding = !string.IsNullOrWhiteSpace(boarding) ? boarding 
-                : (Request.Cookies["sbg_last_boarding"] ?? $"Bến xe {effectiveFrom}");
-            var effectiveDropoff = !string.IsNullOrWhiteSpace(dropoff) ? dropoff 
-                : (Request.Cookies["sbg_last_dropoff"] ?? $"Bến xe {effectiveTo}");
-            var effectiveBusType = !string.IsNullOrWhiteSpace(busType) ? busType 
-                : (Request.Cookies["sbg_last_bustype"] ?? "Xe Limousine VIP");
-            var effectiveLicensePlate = !string.IsNullOrWhiteSpace(licensePlate) ? licensePlate 
-                : Request.Cookies["sbg_last_licenseplate"];
-            var effectiveRouteName = !string.IsNullOrWhiteSpace(routeName) ? routeName 
-                : (Request.Cookies["sbg_last_routename"] ?? $"{effectiveFrom} - {effectiveTo}");
-            var effectiveRouteCode = !string.IsNullOrWhiteSpace(routeCode) ? routeCode 
-                : Request.Cookies["sbg_last_routecode"];
-            var effectiveDriverName = !string.IsNullOrWhiteSpace(driverName) ? driverName 
-                : Request.Cookies["sbg_last_driver"];
-            var effectiveDriverPhone = !string.IsNullOrWhiteSpace(driverPhone) ? driverPhone 
-                : (Request.Cookies["sbg_last_driverphone"] ?? "0988 777 999");
-            var effectiveDepTime = !string.IsNullOrWhiteSpace(depTime) ? depTime 
-                : (Request.Cookies["sbg_last_deptime"] ?? "08:00");
-            var effectiveArrTime = !string.IsNullOrWhiteSpace(arrTime) ? arrTime 
-                : Request.Cookies["sbg_last_arrtime"];
-
-            decimal effectiveTotal = total ?? 0;
-            if (effectiveTotal <= 0 && decimal.TryParse(Request.Cookies["sbg_last_total"], out var cookieTotal))
-            {
-                effectiveTotal = cookieTotal;
-            }
-
-            int? effectiveTripId = tripId;
-            if (!effectiveTripId.HasValue && int.TryParse(Request.Cookies["sbg_last_tripid"], out var cTripId))
-            {
-                effectiveTripId = cTripId;
-            }
-
-            int? effectiveEstMinutes = estMinutes;
-            if (!effectiveEstMinutes.HasValue && int.TryParse(Request.Cookies["sbg_last_estminutes"], out var cEst))
-            {
-                effectiveEstMinutes = cEst;
-            }
-
-            decimal? effectiveDistance = distance;
-            if (!effectiveDistance.HasValue && decimal.TryParse(Request.Cookies["sbg_last_distance"], out var cDist))
-            {
-                effectiveDistance = cDist;
-            }
-
-            var fromCode = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(effectiveFrom).FirstOrDefault() ?? "TN";
-            var toCode = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(effectiveTo).FirstOrDefault() ?? "CB";
-
             var effectiveId = !string.IsNullOrEmpty(code) ? code : id;
-            var isLegacyDefault = string.IsNullOrEmpty(effectiveId) || 
-                                 effectiveId.Equals("SBG-HN-DN-20251024-008", StringComparison.OrdinalIgnoreCase) ||
-                                 effectiveId.StartsWith("SBG-84920", StringComparison.OrdinalIgnoreCase);
 
-            // Kiểm tra xem vé này đã tồn tại trong CSDL SQL Server chưa
+            // 1. Ưu tiên tìm vé thật trong CSDL SQL Server trước tiên
             Ticket? existingTicket = null;
-            if (!string.IsNullOrEmpty(effectiveId) && !isLegacyDefault)
+            if (!string.IsNullOrEmpty(effectiveId))
             {
                 try
                 {
@@ -139,311 +86,164 @@ namespace WebApplication1.Controllers
                         .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
                         .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
                         .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
+                        .Include(t => t.BoardingStop)
+                        .Include(t => t.DropOffStop)
                         .FirstOrDefaultAsync(t => t.TicketCode == effectiveId 
                                                || t.TicketCode.StartsWith(effectiveId + "-") 
                                                || (t.Booking != null && t.Booking.BookingCode == effectiveId) 
                                                || t.TicketId.ToString() == effectiveId);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể tải vé từ DB: {Msg}", ex.Message);
+                }
             }
 
-            // 2. Nếu có TripId trong CSDL SQL Server, đồng bộ các thông tin chính thức từ Trip thật
-            Trip? dbTrip = null;
-            if (existingTicket?.Booking?.Trip != null)
-            {
-                dbTrip = existingTicket.Booking.Trip;
-                effectiveTripId = dbTrip.TripId;
-            }
-            else if (effectiveTripId.HasValue && effectiveTripId.Value > 0)
+            // Nếu người dùng đã đăng nhập và không truyền mã vé, tự động lấy vé gần nhất của họ
+            if (existingTicket == null && string.IsNullOrEmpty(effectiveId) && User.Identity?.IsAuthenticated == true && int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var authUid))
             {
                 try
                 {
-                    dbTrip = await _context.Trips
-                        .Include(t => t.Route)
-                            .ThenInclude(r => r.RouteStops.OrderBy(rs => rs.StopOrder))
-                                .ThenInclude(rs => rs.Stop)
-                        .Include(t => t.Bus)
-                            .ThenInclude(b => b.BusType)
-                        .Include(t => t.Driver)
-                            .ThenInclude(d => d.User)
-                        .FirstOrDefaultAsync(t => t.TripId == effectiveTripId.Value);
+                    existingTicket = await _context.Tickets
+                        .Include(t => t.Booking).ThenInclude(b => b.User)
+                        .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Route)
+                        .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Bus).ThenInclude(bus => bus.BusType)
+                        .Include(t => t.Booking).ThenInclude(b => b.Trip).ThenInclude(tr => tr.Driver).ThenInclude(d => d.User)
+                        .Include(t => t.BoardingStop)
+                        .Include(t => t.DropOffStop)
+                        .Where(t => t.Booking != null && t.Booking.UserId == authUid)
+                        .OrderByDescending(t => t.TicketId)
+                        .FirstOrDefaultAsync();
                 }
                 catch { }
             }
 
-            // Xác định ngày khởi hành thực tế
-            DateTime parsedTripDate = DateTime.Today;
-            if (!string.IsNullOrWhiteSpace(effectiveDate))
-            {
-                var formats = new[] { "dd/MM/yyyy", "d/M/yyyy", "yyyy-MM-dd", "yyyy/MM/dd", "MM/dd/yyyy" };
-                if (DateTime.TryParseExact(effectiveDate.Trim(), formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var pExact))
-                {
-                    parsedTripDate = pExact;
-                }
-                else if (DateTime.TryParse(effectiveDate.Trim(), out var pDate))
-                {
-                    parsedTripDate = pDate;
-                }
-            }
-            var targetTripDateOnly = DateOnly.FromDateTime(parsedTripDate.Date);
-
-            // Nếu không tìm thấy Trip theo effectiveTripId (ví dụ do fake ID), tìm Trip thật từ Route và ngày chạy
-            if (dbTrip == null)
-            {
-                try
-                {
-                    // 1. Ưu tiên tìm chuyến đúng ngày khởi hành và đúng tuyến đường
-                    dbTrip = await _context.Trips
-                        .Include(t => t.Route)
-                        .Include(t => t.Bus).ThenInclude(b => b.BusType)
-                        .Include(t => t.Driver).ThenInclude(d => d.User)
-                        .FirstOrDefaultAsync(t => t.TripDate == targetTripDateOnly &&
-                                                  ((t.Route.StartPoint.Contains(effectiveFrom) || effectiveFrom.Contains(t.Route.StartPoint)) &&
-                                                   (t.Route.EndPoint.Contains(effectiveTo) || effectiveTo.Contains(t.Route.EndPoint))));
-
-                    // 2. Nếu chưa có chuyến cho ngày này, tự động tạo chuyến mới chuẩn xác và lưu vào DB
-                    if (dbTrip == null)
-                    {
-                        var matchRoute = await _context.Routes.FirstOrDefaultAsync(r => 
-                            (r.StartPoint.Contains(effectiveFrom) || effectiveFrom.Contains(r.StartPoint)) &&
-                            (r.EndPoint.Contains(effectiveTo) || effectiveTo.Contains(r.EndPoint)))
-                            ?? await _context.Routes.FirstOrDefaultAsync();
-
-                        var matchBus = await _context.Buses.Include(b => b.BusType).FirstOrDefaultAsync(b => b.Status == "Active" || b.Status == "ACTIVE")
-                            ?? await _context.Buses.Include(b => b.BusType).FirstOrDefaultAsync();
-
-                        var sampleDriver = await _context.Drivers.Include(d => d.User).FirstOrDefaultAsync();
-
-                        if (matchRoute != null && matchBus != null)
-                        {
-                            var newDepTime = TimeOnly.TryParse(effectiveDepTime, out var pt) ? pt : new TimeOnly(8, 0);
-                            var newArrTime = newDepTime.AddMinutes(matchRoute.EstimatedDuration ?? 150);
-
-                            dbTrip = new Trip
-                            {
-                                RouteId = matchRoute.RouteId,
-                                BusId = matchBus.BusId,
-                                DriverId = sampleDriver?.DriverId ?? 1,
-                                TripDate = targetTripDateOnly,
-                                DepartureTime = newDepTime,
-                                ArrivalTime = newArrTime,
-                                Status = "Scheduled"
-                            };
-                            _context.Trips.Add(dbTrip);
-                            await _context.SaveChangesAsync();
-
-                            dbTrip = await _context.Trips
-                                .Include(t => t.Route)
-                                .Include(t => t.Bus).ThenInclude(b => b.BusType)
-                                .Include(t => t.Driver).ThenInclude(d => d.User)
-                                .FirstOrDefaultAsync(t => t.TripId == dbTrip.TripId);
-                        }
-                    }
-
-                    if (dbTrip == null)
-                    {
-                        dbTrip = await _context.Trips
-                            .Include(t => t.Route)
-                            .Include(t => t.Bus).ThenInclude(b => b.BusType)
-                            .Include(t => t.Driver).ThenInclude(d => d.User)
-                            .FirstOrDefaultAsync();
-                    }
-
-                    if (dbTrip != null)
-                    {
-                        effectiveTripId = dbTrip.TripId;
-                    }
-                }
-                catch { }
-            }
-
-            if (dbTrip != null)
-            {
-                if (string.IsNullOrWhiteSpace(from)) effectiveFrom = dbTrip.Route?.StartPoint ?? effectiveFrom;
-                if (string.IsNullOrWhiteSpace(to)) effectiveTo = dbTrip.Route?.EndPoint ?? effectiveTo;
-                if (string.IsNullOrWhiteSpace(routeName)) effectiveRouteName = dbTrip.Route?.RouteName ?? $"{effectiveFrom} - {effectiveTo}";
-                if (string.IsNullOrWhiteSpace(routeCode)) effectiveRouteCode = dbTrip.Route?.RouteCode ?? $"{fromCode}-{toCode}-01";
-                if (string.IsNullOrWhiteSpace(licensePlate)) effectiveLicensePlate = dbTrip.Bus?.LicensePlate ?? effectiveLicensePlate;
-                if (string.IsNullOrWhiteSpace(busType)) effectiveBusType = dbTrip.Bus?.BusType?.TypeName ?? effectiveBusType;
-                if (string.IsNullOrWhiteSpace(driverName)) effectiveDriverName = dbTrip.Driver?.User?.FullName ?? effectiveDriverName;
-                if (string.IsNullOrWhiteSpace(driverPhone)) effectiveDriverPhone = dbTrip.Driver?.User?.Phone ?? effectiveDriverPhone;
-                if (string.IsNullOrWhiteSpace(depTime)) effectiveDepTime = dbTrip.DepartureTime.ToString(@"hh\:mm");
-                if (string.IsNullOrWhiteSpace(arrTime) && dbTrip.ArrivalTime.HasValue) effectiveArrTime = dbTrip.ArrivalTime.Value.ToString(@"hh\:mm");
-                effectiveEstMinutes ??= dbTrip.Route?.EstimatedDuration;
-                effectiveDistance ??= dbTrip.Route?.Distance;
-            }
-
-            // Đảm bảo biển số và tài xế luôn chuẩn xác theo chuyến và tỉnh thành
-            if (string.IsNullOrWhiteSpace(effectiveLicensePlate))
-            {
-                var plates = WebApplication1.Services.ProvinceLicenseHelper.GenerateDiverseLicensePlates(effectiveFrom, effectiveTo);
-                effectiveLicensePlate = plates.FirstOrDefault() ?? $"{fromCode}B-188.68";
-            }
-            if (string.IsNullOrWhiteSpace(effectiveDriverName))
-            {
-                effectiveDriverName = $"Nguyễn Văn Tuấn (Tài xế {effectiveFrom})";
-            }
-            if (string.IsNullOrWhiteSpace(effectiveRouteCode))
-            {
-                effectiveRouteCode = $"{fromCode}-{toCode}-01";
-            }
-
-            // Tính toán giờ khởi hành và giờ đến chính xác của chuyến xe
-            TimeSpan parsedDep = new TimeSpan(8, 0, 0);
-            if (!string.IsNullOrWhiteSpace(effectiveDepTime) && TimeSpan.TryParse(effectiveDepTime, out var pDep))
-            {
-                parsedDep = pDep;
-            }
-
-            int finalEstMinutes = effectiveEstMinutes ?? 180;
-            TimeSpan parsedArr = parsedDep.Add(TimeSpan.FromMinutes(finalEstMinutes));
-            if (!string.IsNullOrWhiteSpace(effectiveArrTime) && TimeSpan.TryParse(effectiveArrTime, out var pArr))
-            {
-                parsedArr = pArr;
-                var diff = (int)(parsedArr - parsedDep).TotalMinutes;
-                if (diff > 0) finalEstMinutes = diff;
-            }
-
-            // Nếu đọc từ vé đã lưu trong DB
-            if (existingTicket != null)
-            {
-                if (!string.IsNullOrEmpty(existingTicket.SeatNumber)) effectiveSeats = existingTicket.SeatNumber;
-                if (existingTicket.Price > 0) effectiveTotal = existingTicket.Price;
-                if (existingTicket.Booking != null && existingTicket.Booking.TotalAmount > 0) effectiveTotal = existingTicket.Booking.TotalAmount;
-            }
-
-            // Tính toán giá tiền theo số lượng ghế, khoảng cách và loại xe
-            var seatCount = effectiveSeats.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Length;
-            if (effectiveTotal <= 0)
-            {
-                var routeMetrics = WebApplication1.Services.RoutePricingService.GetRouteMetrics(effectiveFrom, effectiveTo);
-                var effectiveDist = effectiveDistance ?? routeMetrics.Distance;
-                var singlePrice = WebApplication1.Services.RoutePricingService.CalculateTripPrice(effectiveDist, effectiveBusType, 29, 0);
-                effectiveTotal = singlePrice * Math.Max(1, seatCount);
-            }
-
-            // Lấy địa chỉ đón/trả chính xác từ Database BusStop hoặc hệ thống địa danh
-            var boardingAddress = await GetAccurateStopAddressAsync(effectiveBoarding, effectiveFrom);
-            var dropOffAddress = await GetAccurateStopAddressAsync(effectiveDropoff, effectiveTo);
-
-            // =========================================================================
-            // SINH MÃ VÉ VÀ MÃ ĐẶT CHỖ TỰ ĐỘNG RANDOM & LƯU VÀO DATABASE
-            // =========================================================================
             string cleanTicketCode;
             string cleanBookingCode;
             string finalTicketStatus;
+            string effectiveFrom;
+            string effectiveTo;
+            string effectiveRouteName;
+            string effectiveRouteCode;
+            string effectiveBusType;
+            string effectiveLicensePlate;
+            string effectiveDriverName;
+            string effectiveDriverPhone;
+            string effectiveDepTime;
+            string? effectiveArrTime;
+            string effectiveDate;
+            string effectiveSeats;
+            decimal effectiveTotal;
+            string effectiveBoarding;
+            string effectiveDropoff;
+            decimal? effectiveDistance = distance;
+            int? effectiveTripId = tripId;
+            Trip? dbTrip = null;
+            DateTime parsedTripDate;
+            TimeSpan parsedDep;
+            TimeSpan parsedArr;
+            int finalEstMinutes;
 
             if (existingTicket != null)
             {
-                cleanTicketCode = existingTicket.TicketCode;
-                if (!string.IsNullOrEmpty(effectiveId) && existingTicket.TicketCode.StartsWith(effectiveId + "-"))
-                {
-                    cleanTicketCode = effectiveId;
-                }
-                cleanBookingCode = existingTicket.Booking?.BookingCode ?? $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
-                finalTicketStatus = !string.IsNullOrWhiteSpace(existingTicket.Status) ? existingTicket.Status.ToUpper() : "ACTIVE";
+                dbTrip = existingTicket.Booking?.Trip;
+                var r = dbTrip?.Route;
+                var b = dbTrip?.Bus;
+                var d = dbTrip?.Driver;
 
+                effectiveFrom = from ?? r?.StartPoint ?? "Hà Nội";
+                effectiveTo = to ?? r?.EndPoint ?? "Hải Phòng";
+                effectiveRouteName = routeName ?? r?.RouteName ?? $"{effectiveFrom} - {effectiveTo}";
+                effectiveRouteCode = routeCode ?? r?.RouteCode ?? "HN-HP-01";
+                effectiveBusType = busType ?? b?.BusType?.TypeName ?? "Xe Limousine VIP";
+                effectiveLicensePlate = licensePlate ?? b?.LicensePlate ?? "29B-888.68";
+                effectiveDriverName = driverName ?? d?.User?.FullName ?? "Nguyễn Văn Tuấn";
+                effectiveDriverPhone = driverPhone ?? d?.User?.Phone ?? "0988 777 999";
+                effectiveDepTime = depTime ?? (dbTrip != null ? dbTrip.DepartureTime.ToString(@"hh\:mm") : "08:00");
+                effectiveArrTime = arrTime ?? (dbTrip?.ArrivalTime.HasValue == true ? dbTrip.ArrivalTime.Value.ToString(@"hh\:mm") : null);
+                effectiveDate = date ?? (dbTrip != null ? dbTrip.TripDate.ToString("dd/MM/yyyy") : DateTime.Today.ToString("dd/MM/yyyy"));
+                effectiveBoarding = boarding ?? existingTicket.BoardingStop?.StopName ?? r?.StartPoint ?? $"Bến xe {effectiveFrom}";
+                effectiveDropoff = dropoff ?? existingTicket.DropOffStop?.StopName ?? r?.EndPoint ?? $"Bến xe {effectiveTo}";
+                effectiveTripId = dbTrip?.TripId ?? tripId;
+                effectiveDistance ??= r?.Distance;
+
+                // Lấy toàn bộ danh sách ghế trong đơn
                 if (existingTicket.BookingId > 0)
                 {
                     var allSeats = await _context.Tickets
                         .Where(t => t.BookingId == existingTicket.BookingId)
                         .Select(t => t.SeatNumber)
                         .ToListAsync();
-                    if (allSeats.Any())
-                    {
-                        effectiveSeats = string.Join(", ", allSeats);
-                    }
+                    effectiveSeats = allSeats.Any() ? string.Join(", ", allSeats) : (existingTicket.SeatNumber ?? "A01");
                 }
+                else
+                {
+                    effectiveSeats = existingTicket.SeatNumber ?? "A01";
+                }
+
+                effectiveTotal = total ?? (existingTicket.Booking?.TotalAmount > 0 ? existingTicket.Booking.TotalAmount : existingTicket.Price);
+                cleanTicketCode = existingTicket.TicketCode;
+                cleanBookingCode = existingTicket.Booking?.BookingCode ?? $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
+                finalTicketStatus = !string.IsNullOrWhiteSpace(status) ? status.ToUpper() : (!string.IsNullOrWhiteSpace(existingTicket.Status) ? existingTicket.Status.ToUpper() : "ACTIVE");
+
+                parsedTripDate = dbTrip != null ? dbTrip.TripDate.ToDateTime(TimeOnly.MinValue) : DateTime.Today;
+                parsedDep = dbTrip?.DepartureTime.ToTimeSpan() ?? (TimeSpan.TryParse(effectiveDepTime, out var td) ? td : new TimeSpan(8, 0, 0));
+                finalEstMinutes = r?.EstimatedDuration ?? 120;
+                parsedArr = dbTrip?.ArrivalTime?.ToTimeSpan() ?? parsedDep.Add(TimeSpan.FromMinutes(finalEstMinutes));
             }
             else
             {
-                // Sinh mã vé ngẫu nhiên duy nhất dạng SBG-XXXXXX (6 chữ số ngẫu nhiên)
-                cleanTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
-                try
-                {
-                    int retries = 5;
-                    while (retries-- > 0 && await _context.Tickets.AnyAsync(t => t.TicketCode == cleanTicketCode))
-                    {
-                        cleanTicketCode = $"SBG-{Random.Shared.Next(100000, 999999)}";
-                    }
-                }
-                catch
-                {
-                    // Cơ sở dữ liệu chưa sẵn sàng kết nối, giữ nguyên mã vé đã sinh
-                }
+                // Fallback khi xem vé demo / chưa có vé trong CSDL (KHÔNG tạo bản ghi rác vào CSDL)
+                effectiveFrom = !string.IsNullOrWhiteSpace(from) ? from 
+                    : (Request.Cookies["sbg_last_from"] ?? Request.Cookies["sbg_search_from"] ?? "Hà Nội");
+                effectiveTo = !string.IsNullOrWhiteSpace(to) ? to 
+                    : (Request.Cookies["sbg_last_to"] ?? Request.Cookies["sbg_search_to"] ?? "Hải Phòng");
+                effectiveDate = !string.IsNullOrWhiteSpace(date) ? date 
+                    : (Request.Cookies["sbg_last_date"] ?? DateTime.Today.AddDays(1).ToString("dd/MM/yyyy"));
+                effectiveSeats = !string.IsNullOrWhiteSpace(seats) ? seats 
+                    : (Request.Cookies["sbg_last_seats"] ?? "A01");
+                effectiveBoarding = !string.IsNullOrWhiteSpace(boarding) ? boarding 
+                    : (Request.Cookies["sbg_last_boarding"] ?? $"Bến xe {effectiveFrom}");
+                effectiveDropoff = !string.IsNullOrWhiteSpace(dropoff) ? dropoff 
+                    : (Request.Cookies["sbg_last_dropoff"] ?? $"Bến xe {effectiveTo}");
+                effectiveBusType = !string.IsNullOrWhiteSpace(busType) ? busType 
+                    : (Request.Cookies["sbg_last_bustype"] ?? "Xe Limousine VIP");
+                effectiveLicensePlate = !string.IsNullOrWhiteSpace(licensePlate) ? licensePlate 
+                    : (Request.Cookies["sbg_last_licenseplate"] ?? "29B-888.68");
+                effectiveRouteName = !string.IsNullOrWhiteSpace(routeName) ? routeName 
+                    : (Request.Cookies["sbg_last_routename"] ?? $"{effectiveFrom} - {effectiveTo}");
+                effectiveRouteCode = !string.IsNullOrWhiteSpace(routeCode) ? routeCode 
+                    : (Request.Cookies["sbg_last_routecode"] ?? "HN-HP-01");
+                effectiveDriverName = !string.IsNullOrWhiteSpace(driverName) ? driverName 
+                    : (Request.Cookies["sbg_last_driver"] ?? $"Nguyễn Văn Tuấn (Tài xế {effectiveFrom})");
+                effectiveDriverPhone = !string.IsNullOrWhiteSpace(driverPhone) ? driverPhone 
+                    : (Request.Cookies["sbg_last_driverphone"] ?? "0988 777 999");
+                effectiveDepTime = !string.IsNullOrWhiteSpace(depTime) ? depTime 
+                    : (Request.Cookies["sbg_last_deptime"] ?? "08:00");
+                effectiveArrTime = !string.IsNullOrWhiteSpace(arrTime) ? arrTime 
+                    : Request.Cookies["sbg_last_arrtime"];
 
-                cleanBookingCode = $"BK-{DateTime.Now:yyMMdd}-{Random.Shared.Next(1000, 9999)}";
+                effectiveTotal = total ?? (decimal.TryParse(Request.Cookies["sbg_last_total"], out var tot) ? tot : 180000m);
+
+                var fromCode = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(effectiveFrom).FirstOrDefault() ?? "HN";
+                var toCode = WebApplication1.Services.ProvinceLicenseHelper.GetAllCodes(effectiveTo).FirstOrDefault() ?? "HP";
+
+                cleanTicketCode = !string.IsNullOrEmpty(effectiveId) ? effectiveId : $"SBG-{fromCode}-{toCode}-{DateTime.Now:yyyyMMdd}";
+                cleanBookingCode = $"BK-{fromCode}{toCode}-{DateTime.Now:MMddHHmm}";
                 finalTicketStatus = !string.IsNullOrWhiteSpace(status) ? status.ToUpper() : "ACTIVE";
 
-                // Lưu ngay vé mới được sinh ngẫu nhiên vào Database SQL Server
-                try
-                {
-                    int? currentAuthUid = null;
-                    if (User.Identity?.IsAuthenticated == true && int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var pUid))
-                    {
-                        currentAuthUid = pUid;
-                    }
+                parsedTripDate = DateTime.Today.AddDays(1);
+                if (DateTime.TryParse(effectiveDate, out var dt)) parsedTripDate = dt;
 
-                    var validUser = (currentAuthUid.HasValue ? await _context.Users.FirstOrDefaultAsync(u => u.UserId == currentAuthUid.Value) : null)
-                        ?? await _context.Users.FirstOrDefaultAsync(u => u.Email == "khachhang@smartbus.vn")
-                        ?? await _context.Users.FirstOrDefaultAsync();
-
-                    if (validUser == null)
-                    {
-                        validUser = new User
-                        {
-                            FullName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Trần Văn Bình",
-                            Phone = "0912 345 678",
-                            Email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "khachhang@smartbus.vn",
-                            PasswordHash = "AQAAAAEAACcQAAAAE",
-                            Status = "Active",
-                            CreatedAt = DateTime.Now
-                        };
-                        _context.Users.Add(validUser);
-                        await _context.SaveChangesAsync();
-                    }
-
-                    if (dbTrip != null && validUser != null)
-                    {
-                        var newBooking = new Booking
-                        {
-                            UserId = validUser.UserId,
-                            TripId = dbTrip.TripId,
-                            BookingCode = cleanBookingCode.Length > 30 ? cleanBookingCode.Substring(0, 30) : cleanBookingCode,
-                            BookingTime = DateTime.Now,
-                            TotalAmount = effectiveTotal,
-                            Status = "Confirmed"
-                        };
-                        _context.Bookings.Add(newBooking);
-                        await _context.SaveChangesAsync();
-
-                        var seatList = (effectiveSeats ?? "A01").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        decimal pricePerSeat = seatList.Length > 0 ? Math.Round(effectiveTotal / seatList.Length, 0) : effectiveTotal;
-
-                        foreach (var singleSeat in seatList)
-                        {
-                            var newTicket = new Ticket
-                            {
-                                BookingId = newBooking.BookingId,
-                                TicketCode = seatList.Length > 1 ? $"{cleanTicketCode}-{singleSeat}" : cleanTicketCode,
-                                SeatNumber = singleSeat,
-                                Price = pricePerSeat,
-                                Status = finalTicketStatus
-                            };
-                            _context.Tickets.Add(newTicket);
-                        }
-                        await _context.SaveChangesAsync();
-
-                        _logger.LogInformation("Đã lưu vé vào Database thành công: Mã vé [{TicketCode}] - Ghế [{Seat}] - Booking [{BookingCode}]", cleanTicketCode, effectiveSeats, cleanBookingCode);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Lỗi khi lưu vé ngẫu nhiên vào CSDL: {Message}", ex.Message);
-                }
+                parsedDep = TimeSpan.TryParse(effectiveDepTime, out var ptd) ? ptd : new TimeSpan(8, 0, 0);
+                finalEstMinutes = estMinutes ?? 120;
+                parsedArr = !string.IsNullOrEmpty(effectiveArrTime) && TimeSpan.TryParse(effectiveArrTime, out var pta) ? pta : parsedDep.Add(TimeSpan.FromMinutes(finalEstMinutes));
             }
 
-            // Ghi nhớ mã vé mới vào Cookie để duy trì trạng thái phiên xem vé
+            var boardingAddress = await GetAccurateStopAddressAsync(effectiveBoarding, effectiveFrom);
+            var dropOffAddress = await GetAccurateStopAddressAsync(effectiveDropoff, effectiveTo);
+
+
             try
             {
                 Response.Cookies.Append("sbg_last_ticket_code", cleanTicketCode, new Microsoft.AspNetCore.Http.CookieOptions
@@ -500,7 +300,8 @@ namespace WebApplication1.Controllers
                 DriverPhone = effectiveDriverPhone,
 
                 // Payload mã QR định dạng chuẩn an toàn không dấu
-                QrDataPayload = $"SMARTBUS|TICKET:{cleanTicketCode}|BOOKING:{cleanBookingCode}|SEAT:{effectiveSeats}|DATE:{parsedTripDate:yyyy-MM-dd}|STATUS:{finalTicketStatus}"
+                QrDataPayload = $"SMARTBUS|TICKET:{cleanTicketCode}|BOOKING:{cleanBookingCode}|SEAT:{effectiveSeats}|DATE:{parsedTripDate:yyyy-MM-dd}|STATUS:{finalTicketStatus}",
+                QrCodeBase64 = WebApplication1.Services.QrCodeService.GeneratePngBase64(cleanTicketCode)
             };
 
             return View(model);
@@ -598,6 +399,31 @@ namespace WebApplication1.Controllers
                 }
             }
 
+            // =========================================================================
+            // CẤU HÌNH TÀI KHOẢN NGÂN HÀNG & SINH MÃ VIETQR (NAPAS 247) THẬT 100%
+            // =========================================================================
+            var bankSettings = _vietQrService.GetBankSettings();
+            var sanitizedMemo = _vietQrService.SanitizeTransferContent(ViewBag.TicketCode);
+            var vietQrUrl = _vietQrService.GenerateVietQrUrl((decimal)ViewBag.TotalAmount, sanitizedMemo);
+
+            ViewBag.BankId = bankSettings.BankId;
+            ViewBag.BankName = bankSettings.BankName;
+            ViewBag.Branch = bankSettings.Branch;
+            ViewBag.AccountNo = bankSettings.AccountNo;
+            ViewBag.AccountName = bankSettings.AccountName;
+            ViewBag.TransferMemo = sanitizedMemo;
+            ViewBag.VietQrUrl = vietQrUrl;
+            ViewBag.SupportedBanks = _vietQrService.GetSupportedBanks();
+
+            try
+            {
+                ViewBag.AvailableVouchers = await _voucherService.GetAllVouchersAsync();
+            }
+            catch
+            {
+                ViewBag.AvailableVouchers = new List<WebApplication1.Models.DTOs.VoucherDto>();
+            }
+
             return View();
         }
 
@@ -612,17 +438,40 @@ namespace WebApplication1.Controllers
             string? bookingCode,
             decimal? amount,
             string? paymentMethod = "VietQR",
-            string? transactionCode = null)
+            string? transactionCode = null,
+            string? voucherCode = null,
+            decimal? discountAmount = null)
         {
             var searchFrom = Request.Cookies["sbg_last_from"] ?? Request.Cookies["sbg_search_from"];
             var defaultCode = (searchFrom != null && searchFrom.Contains("Thái Nguyên")) ? "SBG-TN-CB-001" : "SBG-TN-CB-001";
             var effectiveTicketCode = ticketCode ?? defaultCode;
             var effectiveBookingCode = bookingCode ?? "BK-TNCB-001";
             var effectiveAmount = amount ?? (decimal.TryParse(Request.Cookies["sbg_last_total"], out var tot) ? tot : 180000m);
-            var effectiveMethod = string.IsNullOrEmpty(paymentMethod) ? "VietQR" : paymentMethod;
+            var effectiveMethod = "VietQR";
+            if (!string.IsNullOrWhiteSpace(paymentMethod))
+            {
+                var trimmed = paymentMethod.Trim();
+                if (trimmed.Length <= 30 && trimmed.All(c => c <= 127))
+                {
+                    effectiveMethod = trimmed;
+                }
+            }
             var effectiveTxn = string.IsNullOrEmpty(transactionCode)
                 ? $"TXN{DateTime.Now:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}"
                 : transactionCode;
+
+            // Nếu có áp dụng mã voucher, ghi nhận lượt sử dụng trên hệ thống
+            if (!string.IsNullOrWhiteSpace(voucherCode))
+            {
+                try
+                {
+                    await _voucherService.UseVoucherAsync(voucherCode);
+                }
+                catch (Exception exV)
+                {
+                    _logger.LogWarning("Không thể cập nhật lượt dùng cho voucher {Code}: {Msg}", voucherCode, exV.Message);
+                }
+            }
 
             try
             {
@@ -632,9 +481,24 @@ namespace WebApplication1.Controllers
                         .ThenInclude(b => b.Tickets)
                     .Include(t => t.Booking)
                         .ThenInclude(b => b.Payments)
-                    .FirstOrDefaultAsync(t => t.TicketCode == effectiveTicketCode ||
-                                              t.TicketId.ToString() == effectiveTicketCode ||
-                                              (!string.IsNullOrEmpty(bookingCode) && t.Booking.BookingCode == bookingCode));
+                    .FirstOrDefaultAsync(t => (!string.IsNullOrEmpty(ticketCode) && (t.TicketCode == ticketCode || t.TicketCode.StartsWith(ticketCode + "-"))) ||
+                                              (!string.IsNullOrEmpty(effectiveTicketCode) && (t.TicketCode == effectiveTicketCode || t.TicketCode.StartsWith(effectiveTicketCode + "-") || t.TicketId.ToString() == effectiveTicketCode)) ||
+                                              (!string.IsNullOrEmpty(bookingCode) && t.Booking.BookingCode == bookingCode) ||
+                                              (!string.IsNullOrEmpty(effectiveBookingCode) && t.Booking.BookingCode == effectiveBookingCode));
+
+                if (ticket == null && (!string.IsNullOrEmpty(bookingCode) || !string.IsNullOrEmpty(effectiveBookingCode)))
+                {
+                    var targetBkCode = !string.IsNullOrEmpty(bookingCode) ? bookingCode : effectiveBookingCode;
+                    var booking = await _context.Bookings
+                        .Include(b => b.Tickets)
+                        .Include(b => b.Payments)
+                        .FirstOrDefaultAsync(b => b.BookingCode == targetBkCode);
+
+                    if (booking != null && booking.Tickets.Any())
+                    {
+                        ticket = booking.Tickets.First();
+                    }
+                }
 
                 if (ticket != null)
                 {
@@ -642,37 +506,47 @@ namespace WebApplication1.Controllers
                     if (ticket.Booking != null)
                     {
                         ticket.Booking.Status = "Confirmed";
+                        ticket.Booking.TotalAmount = effectiveAmount; // Lưu số tiền đã giảm theo voucher
                         foreach (var t in ticket.Booking.Tickets)
                         {
                             t.Status = "CONFIRMED";
                         }
 
-                        // Ghi nhận bản ghi thanh toán thật vào bảng Payment
+                        // Ghi nhận bản ghi thanh toán thật vào bảng Payment (chỉ tối đa 30 ký tự ASCII)
                         var payment = new Payment
                         {
                             BookingId = ticket.Booking.BookingId,
-                            Amount = amount ?? ticket.Booking.TotalAmount,
+                            Amount = effectiveAmount,
                             PaymentMethod = effectiveMethod,
                             Status = "Paid",
                             PaymentTime = DateTime.Now,
-                            TransactionCode = effectiveTxn
+                            TransactionCode = effectiveTxn.Length > 50 ? effectiveTxn.Substring(0, 50) : effectiveTxn
                         };
                         _context.Payments.Add(payment);
 
-                        // Giải phóng giữ chỗ ghế tạm thời
-                        if (ticket.Booking.TripId > 0 && !string.IsNullOrEmpty(ticket.SeatNumber))
+                        // Giải phóng giữ chỗ ghế tạm thời cho toàn bộ ghế trong đơn
+                        var bookedSeats = ticket.Booking.Tickets.Select(t => t.SeatNumber).OfType<string>().Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+
+
+
+
+
+                        if (ticket.Booking.TripId > 0 && bookedSeats.Any())
                         {
                             await _seatHoldService.ReleaseSeatsAsync(
                                 ticket.Booking.TripId,
-                                new List<string> { ticket.SeatNumber },
+                                bookedSeats,
                                 "payment_completed",
                                 null);
                         }
                     }
 
                     await _context.SaveChangesAsync();
+                    _logger.LogInformation("Xác nhận thanh toán thành công cho vé [{TicketCode}] và đơn [{BookingCode}], đã lưu Payment #{Txn}",
+                        ticket.TicketCode, ticket.Booking?.BookingCode, effectiveTxn);
+
                     TempData["SuccessMessage"] = $"Xác nhận thanh toán thành công #{effectiveTxn} với số tiền {effectiveAmount:N0} đ qua {effectiveMethod}! Vé điện tử đã được kích hoạt.";
-                    return RedirectToAction("Detail", new { id = ticket.TicketCode, status = "CONFIRMED" });
+                    return RedirectToAction("PaymentResult", new { ticketCode = ticket.TicketCode, bookingCode = ticket.Booking?.BookingCode ?? effectiveBookingCode, status = "success", transactionNo = effectiveTxn, amount = effectiveAmount, paymentMethod = effectiveMethod, voucherCode = voucherCode, discount = discountAmount });
                 }
             }
             catch (Exception ex)
@@ -682,7 +556,7 @@ namespace WebApplication1.Controllers
 
             // Fallback khi chạy demo
             TempData["SuccessMessage"] = $"Xác nhận thanh toán thành công #{effectiveTxn} với số tiền {effectiveAmount:N0} đ qua {effectiveMethod}! Vé điện tử đã được kích hoạt.";
-            return RedirectToAction("Detail", new { id = effectiveTicketCode, status = "CONFIRMED" });
+            return RedirectToAction("PaymentResult", new { ticketCode = effectiveTicketCode, bookingCode = effectiveBookingCode, status = "success", transactionNo = effectiveTxn, amount = effectiveAmount, paymentMethod = effectiveMethod, voucherCode = voucherCode, discount = discountAmount });
         }
 
         // =========================================================================
@@ -699,7 +573,9 @@ namespace WebApplication1.Controllers
             string? orderId = null,
             string? transactionNo = null,
             decimal? amount = null,
-            string? paymentMethod = "VietQR")
+            string? paymentMethod = "VietQR",
+            string? voucherCode = null,
+            decimal? discount = null)
         {
             var effectiveTicketCode = !string.IsNullOrEmpty(ticketCode) ? ticketCode : "SBG-84920";
             var effectiveBookingCode = !string.IsNullOrEmpty(bookingCode) ? bookingCode : "BK-84920";
@@ -707,6 +583,9 @@ namespace WebApplication1.Controllers
             var effectiveTxn = !string.IsNullOrEmpty(transactionNo) 
                 ? transactionNo 
                 : (!string.IsNullOrEmpty(orderId) ? orderId : $"TXN{DateTime.Now:yyyyMMddHHmmss}");
+
+            ViewBag.VoucherCode = voucherCode;
+            ViewBag.DiscountAmount = discount ?? 0m;
 
             var isFailedParam = !string.IsNullOrEmpty(status) && 
                 (status.Equals("failed", StringComparison.OrdinalIgnoreCase) || 
@@ -845,6 +724,7 @@ namespace WebApplication1.Controllers
             }
 
             var cleanCode = searchCode.Trim().ToLowerInvariant();
+            var noDashCode = cleanCode.Replace("-", "");
 
             // Kiểm tra DB
             try
@@ -852,14 +732,16 @@ namespace WebApplication1.Controllers
                 var ticket = await _context.Tickets
                     .Include(t => t.Booking).ThenInclude(b => b.Payments)
                     .FirstOrDefaultAsync(t => t.TicketCode.ToLower() == cleanCode ||
-                                              t.TicketCode.ToLower().StartsWith(cleanCode + "-") ||
-                                              (t.Booking != null && t.Booking.BookingCode.ToLower() == cleanCode));
+                                              t.TicketCode.ToLower().Replace("-", "") == noDashCode ||
+                                              t.TicketCode.ToLower().StartsWith(cleanCode) ||
+                                              (!string.IsNullOrEmpty(bookingCode) && t.Booking != null && t.Booking.BookingCode.ToLower() == bookingCode.ToLower()) ||
+                                              (t.Booking != null && t.Booking.BookingCode.ToLower() == cleanCode) ||
+                                              (t.Booking != null && t.Booking.BookingCode.ToLower().Replace("-", "") == noDashCode));
 
                 if (ticket != null)
                 {
                     var isPaid = ticket.Status == "CONFIRMED" ||
                                  ticket.Status == "PAID" ||
-                                 ticket.Status == "ACTIVE" ||
                                  ticket.Booking?.Payments.Any(p => p.Status == "Paid") == true;
 
                     return Ok(new
@@ -870,7 +752,7 @@ namespace WebApplication1.Controllers
                         ticketCode = ticket.TicketCode,
                         bookingCode = ticket.Booking?.BookingCode,
                         amount = ticket.Booking?.TotalAmount ?? ticket.Price,
-                        paymentMethod = ticket.Booking?.Payments.LastOrDefault()?.PaymentMethod ?? "VietQR",
+                        paymentMethod = ticket.Booking?.Payments.LastOrDefault()?.PaymentMethod ?? "payOS (Sandbox)",
                         transactionNo = ticket.Booking?.Payments.LastOrDefault()?.TransactionCode ?? $"TXN{DateTime.Now:yyyyMMddHHmmss}",
                         paymentTime = ticket.Booking?.Payments.LastOrDefault()?.PaymentTime ?? DateTime.Now,
                         message = isPaid ? "Giao dịch thanh toán đã được đối soát thành công." : "Đang chờ đối soát từ cổng thanh toán..."
@@ -879,22 +761,37 @@ namespace WebApplication1.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Lỗi kiểm tra trạng thái thanh toán: {Message}", ex.Message);
+                _logger.LogWarning(ex, "Lỗi kiểm tra Database trong CheckPaymentStatus: {Message}", ex.Message);
             }
 
-            // Demo mock fallback
+            // Kiểm tra trong bộ nhớ DemoPaymentStore (Mô phỏng thanh toán Sandbox)
+            if (WebApplication1.Services.DemoPaymentStore.TryGet(searchCode, out var demoRec) ||
+                (!string.IsNullOrEmpty(bookingCode) && WebApplication1.Services.DemoPaymentStore.TryGet(bookingCode, out demoRec)) ||
+                (!string.IsNullOrEmpty(ticketCode) && WebApplication1.Services.DemoPaymentStore.TryGet(ticketCode, out demoRec)))
+            {
+                return Ok(new
+                {
+                    success = true,
+                    isPaid = true,
+                    status = "SUCCESS",
+                    ticketCode = demoRec?.TicketCode ?? searchCode,
+                    bookingCode = demoRec?.BookingCode ?? bookingCode,
+                    amount = demoRec?.Amount ?? 180000m,
+                    paymentMethod = demoRec?.PaymentMethod ?? "payOS (Sandbox)",
+                    transactionNo = demoRec?.TransactionCode ?? $"TXN{DateTime.Now:yyyyMMddHHmmss}",
+                    paymentTime = demoRec?.PaidAt ?? DateTime.Now,
+                    message = "Giao dịch thanh toán demo đã được xác nhận thành công."
+                });
+            }
+
+            // Mặc định: vẫn đang chờ khách quét mã và thanh toán
             return Ok(new
             {
                 success = true,
-                isPaid = true,
-                status = "SUCCESS",
+                isPaid = false,
+                status = "PENDING",
                 ticketCode = searchCode.ToUpperInvariant(),
-                bookingCode = "BK-84920",
-                amount = 530000m,
-                paymentMethod = "VietQR",
-                transactionNo = $"TXN{DateTime.Now:yyyyMMddHHmmss}",
-                paymentTime = DateTime.Now,
-                message = "Giao dịch thanh toán đã được đối soát thành công."
+                message = "Đang chờ khách hàng quét mã và thanh toán..."
             });
         }
 
@@ -1183,7 +1080,7 @@ namespace WebApplication1.Controllers
             }
             else
             {
-                model = GetMockOldTicket(ticketCode);
+                model = GetMockOldTicket(ticketCode ?? string.Empty);
             }
 
             return View(model);
@@ -1196,20 +1093,44 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmCancel(string ticketCode, string cancelReason, string refundMethod, string? cancelNote)
         {
-            decimal refundAmount = 450000m * 0.9m; // 90%
+            decimal refundAmount = 0m;
             try
             {
                 var dbTicket = await _context.Tickets
-                    .Include(t => t.Booking)
-                    .FirstOrDefaultAsync(t => t.TicketCode == ticketCode);
+                    .Include(t => t.Booking).ThenInclude(b => b.Tickets)
+                    .FirstOrDefaultAsync(t => t.TicketCode == ticketCode 
+                                           || t.TicketCode.StartsWith(ticketCode + "-")
+                                           || (t.Booking != null && t.Booking.BookingCode == ticketCode)
+                                           || t.TicketId.ToString() == ticketCode);
 
                 if (dbTicket != null)
                 {
-                    refundAmount = dbTicket.Price * 0.9m;
+                    var totalAmount = dbTicket.Booking?.TotalAmount ?? dbTicket.Price;
+                    refundAmount = Math.Round(totalAmount * 0.9m, 0);
                     dbTicket.Status = "CANCELLED";
                     if (dbTicket.Booking != null)
                     {
                         dbTicket.Booking.Status = "Cancelled";
+                        foreach (var tk in dbTicket.Booking.Tickets)
+                        {
+                            tk.Status = "CANCELLED";
+                        }
+
+                        // Giải phóng toàn bộ ghế trong đơn để người khác có thể đặt
+                        var seatsToRelease = dbTicket.Booking.Tickets.Select(t => t.SeatNumber).OfType<string>().Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+
+
+
+
+
+                        if (dbTicket.Booking.TripId > 0 && seatsToRelease.Any())
+                        {
+                            await _seatHoldService.ReleaseSeatsAsync(
+                                dbTicket.Booking.TripId,
+                                seatsToRelease,
+                                "ticket_cancelled",
+                                null);
+                        }
                     }
                     await _context.SaveChangesAsync();
                 }
@@ -1286,7 +1207,7 @@ namespace WebApplication1.Controllers
                             AvailableSeats = Math.Max(5, capacity - bookedSeats.Count),
                             TotalCapacity = capacity,
                             IsFlashSale = basePrice < oldTicket.Price,
-                            FlashSaleText = basePrice < oldTicket.Price ? "TIẾT KIỆM" : (basePrice > oldTicket.Price ? "VIP" : null),
+                            FlashSaleText = (basePrice < oldTicket.Price ? "TIẾT KIỆM" : (basePrice > oldTicket.Price ? "VIP" : null)) ?? string.Empty,
                             NoticeText = basePrice < oldTicket.Price
                                 ? $"Giá vé thấp hơn {oldTicket.Price - basePrice:N0}đ (Hệ thống sẽ hoàn lại chênh lệch)"
                                 : (basePrice > oldTicket.Price ? $"Hạng xe cao cấp hơn (+{basePrice - oldTicket.Price:N0}đ phụ thu)" : "Bằng giá với vé cũ (Đổi chuyến miễn phí 0đ)"),
@@ -1555,7 +1476,8 @@ namespace WebApplication1.Controllers
                 BusTypeName = fbBusType,
                 DriverName = fbDriver,
                 DriverPhone = fbDriverPhone,
-                QrDataPayload = $"SMARTBUS|TICKET:{ticketCode}|BOOKING:{genBooking}|ROUTE:{fallbackFrom}-{fallbackTo}|SEAT:{fbSeats}|DATE:{fbDate:yyyy-MM-dd}|STATUS:ACTIVE"
+                QrDataPayload = $"SMARTBUS|TICKET:{ticketCode}|BOOKING:{genBooking}|ROUTE:{fallbackFrom}-{fallbackTo}|SEAT:{fbSeats}|DATE:{fbDate:yyyy-MM-dd}|STATUS:ACTIVE",
+                QrCodeBase64 = WebApplication1.Services.QrCodeService.GeneratePngBase64(ticketCode)
             };
         }
     }

@@ -27,13 +27,24 @@ namespace WebApplication1
             // Đăng ký dịch vụ Gửi Email (SMTP) xác thực tài khoản & thông báo vé
             builder.Services.AddScoped<WebApplication1.Services.Email.IEmailService, WebApplication1.Services.Email.EmailService>();
 
+            // Đăng ký cấu hình & Dịch vụ tích hợp VietQR Pro Callback
+            builder.Services.Configure<WebApplication1.Models.DTOs.VietQr.VietQrSettings>(
+                builder.Configuration.GetSection(WebApplication1.Models.DTOs.VietQr.VietQrSettings.SectionName));
+            builder.Services.AddScoped<WebApplication1.Services.VietQr.IVietQrService, WebApplication1.Services.VietQr.VietQrService>();
+
+            // Đăng ký dịch vụ Cổng thanh toán mã VietQR (Napas 247) tự động
+            builder.Services.AddSingleton<WebApplication1.Services.Payment.IVietQrService, WebApplication1.Services.Payment.VietQrService>();
+
+            // Đăng ký dịch vụ Quản lý & Đồng bộ Voucher toàn hệ thống
+            builder.Services.AddSingleton<WebApplication1.Services.Voucher.IVoucherService, WebApplication1.Services.Voucher.VoucherService>();
+
             // Cấu hình Cookie Authentication cho Đăng nhập / Đăng ký
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>
                 {
                     options.LoginPath = "/Account/Login";
                     options.LogoutPath = "/Account/Logout";
-                    options.AccessDeniedPath = "/Account/Login";
+                    options.AccessDeniedPath = "/Account/AccessDenied";
                     options.ExpireTimeSpan = TimeSpan.FromDays(7);
                     options.SlidingExpiration = true;
                     options.Cookie.Name = "SmartBusGo_Auth";

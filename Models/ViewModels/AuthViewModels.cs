@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace WebApplication1.Models.ViewModels
 {
@@ -147,6 +147,7 @@ namespace WebApplication1.Models.ViewModels
 
         // Dữ liệu mã hóa QR (chứa token hoặc chuỗi xác thực)
         public string QrDataPayload { get; set; } = string.Empty;
+        public string? QrCodeBase64 { get; set; }
     }
 
     public class PaymentResultViewModel
@@ -174,5 +175,6 @@ namespace WebApplication1.Models.ViewModels
         public string LicensePlate { get; set; } = string.Empty;
         public DateTime DepartureTime { get; set; }
         public string QrDataPayload { get; set; } = string.Empty;
+        public string? QrCodeBase64 { get; set; }
     }
 }

@@ -533,7 +533,7 @@
                             <div class="col-12"><span class="text-muted">Tuyến đường:</span> <span class="fw-semibold text-dark">${data.routeName || 'N/A'}</span></div>
                         </div>
                         <div class="text-success fw-bold mt-2 pt-2 border-top d-flex align-items-center gap-1">
-                            <i class="bi bi-shield-fill-check fs-5"></i> ĐÚNG XE & ĐÚNG CHUYẾN! Đã đánh dấu trạng thái [ĐÃ LÊN XE] thành công.
+                            <i class="bi bi-shield-fill-check fs-5"></i> ĐÚNG XE & ĐÚNG CHUYẾN! Đã soát vé 1 lần thành công (Mã QR của vé này đã tự động vô hiệu hóa).
                         </div>
                     `;
                     input.value = '';
@@ -587,7 +587,7 @@
                     } else if (isAlreadyUsed) {
                         alertBox.className = 'alert alert-warning p-3 rounded-4 mb-0 shadow-sm border border-warning';
                         icon.className = 'bi bi-exclamation-triangle-fill text-warning fs-3';
-                        title.innerText = 'Cảnh Báo: Vé Đã Được Soát Trước Đó!';
+                        title.innerText = 'Cảnh Báo: Vé 1 Lần Này Đã Được Soát Trước Đó!';
                         title.className = 'fw-bold mb-0 text-warning-emphasis fs-6';
                     } else {
                         alertBox.className = 'alert alert-danger p-3 rounded-4 mb-0 shadow-sm border border-danger';
