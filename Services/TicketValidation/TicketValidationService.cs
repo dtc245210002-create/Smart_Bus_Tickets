@@ -229,7 +229,7 @@ namespace WebApplication1.Services.TicketValidation
                 {
                     Success = false,
                     Code = TicketValidationCodes.AlreadyUsed,
-                    Message = $"CẢNH BÁO: Vé [{cleanCode}] (Ghế: {allSeats}) này đã được quét lên xe trước đó! Vui lòng kiểm tra lại với hành khách.",
+                    Message = $"CẢNH BÁO: Vé 1 lần [{cleanCode}] (Ghế: {allSeats}) này đã được quét lên xe trước đó! Mỗi vé chỉ sử dụng được 1 lần duy nhất, mã QR hiện đã hết hiệu lực.",
                     Data = ticketData
                 };
             }
@@ -280,7 +280,7 @@ namespace WebApplication1.Services.TicketValidation
                 {
                     Success = true,
                     Code = TicketValidationCodes.Success,
-                    Message = $"Xác thực thành công! Mời hành khách {passenger?.FullName ?? ""} (Ghế: {allSeats}) lên xe.",
+                    Message = $"Xác thực vé 1 lần thành công! Mời hành khách {passenger?.FullName ?? ""} (Ghế: {allSeats}) lên xe. Mã QR đã tự động vô hiệu hóa sau 1 lần quét.",
                     Data = ticketData
                 };
             }

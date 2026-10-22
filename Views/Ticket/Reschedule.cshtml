@@ -5,8 +5,19 @@
     var startCity = old?.StartPoint ?? "Hà Nội";
     var endCity = old?.EndPoint ?? "Đà Nẵng";
     var currentTicketCode = old?.TicketCode ?? "SBG-84920";
-    var oldTicketPrice = (int)(old?.Price ?? 530000m);
-    var oldSeatsText = old?.SeatNumber ?? "VIP 05, VIP 06";
+    var oldTicketPrice = (int)(old?.TotalAmount ?? old?.Price ?? 530000m);
+    var oldSeatsText = old?.SeatNumber ?? "VIP 05";
+    var oldSeatsList = (old?.SeatNumber ?? "").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+    var requiredSeatCount = oldSeatsList.Count > 0 ? oldSeatsList.Count : 1;
+    var trips = Model?.AvailableTrips ?? new List<WebApplication1.Models.ViewModels.TripItemViewModel>();
+    var selectedTrip = Model?.SelectedTrip ?? trips.FirstOrDefault();
+    var firstTrip = selectedTrip ?? trips.FirstOrDefault();
+    var defaultTripPrice = (int)(firstTrip?.Price ?? 290000m);
+    var defaultTripId = firstTrip?.TripId ?? 202;
+    var defaultSeatsPool = new[] { "VIP 08", "VIP 09", "VIP 11", "VIP 12", "VIP 18", "VIP 19" };
+    var initialSeatsList = defaultSeatsPool.Take(requiredSeatCount).ToList();
+    var initialSeatsStr = string.Join(", ", initialSeatsList);
+    var initialNewPrice = defaultTripPrice * requiredSeatCount;
     var targetDateStr = Model?.NewDepartureDate.ToString("dd/MM/yyyy") ?? "25/10/2026";
     var newDateIso = Model?.NewDepartureDate.ToString("yyyy-MM-dd") ?? "2026-10-25";
 }
@@ -173,9 +184,22 @@
                                 <div>
                                     <label class="text-[11px] text-gray-600 block mb-0.5">Giờ khởi hành mới:</label>
                                     <select id="selectTripTime" class="w-full text-xs font-semibold px-2 py-1.5 bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-primary focus:outline-none" onchange="onTripTimeChanged(this)">
-                                        <option value="21:00" data-price="290000" data-tripid="202" selected>21:00 • Limousine VIP (290.000 đ/vé)</option>
-                                        <option value="08:30" data-price="270.000" data-tripid="203">08:30 • Xe Giường Nằm (270.000 đ/vé)</option>
-                                        <option value="14:00" data-price="280.000" data-tripid="204">14:00 • Limousine VIP (280.000 đ/vé)</option>
+@if (trips.Any())
+{
+    foreach (var t in trips)
+    {
+        var isSel = (selectedTrip != null && selectedTrip.TripId == t.TripId) || (selectedTrip == null && t == trips.First());
+        <option value="@t.DepartureTime.ToString(@"hh\:mm")" data-price="@((int)t.Price)" data-tripid="@t.TripId" selected="@(isSel ? "selected" : null)">@t.DepartureTime.ToString(@"hh\:mm") • @t.BusTypeName (@t.Price.ToString("N0") đ/vé)</option>
+    }
+}
+else
+{
+    <option value="21:00" data-price="290000" data-tripid="202" selected>21:00 • Limousine VIP (290.000 đ/vé)</option>
+    <option value="08:30" data-price="270000" data-tripid="203">08:30 • Xe Giường Nằm (270.000 đ/vé)</option>
+    <option value="14:00" data-price="280000" data-tripid="204">14:00 • Limousine VIP (280.000 đ/vé)</option>
+}
+
+
                                     </select>
                                 </div>
                             </div>
@@ -187,7 +211,7 @@
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-2">
                             <div>
                                 <h2 class="text-sm sm:text-base font-bold text-gray-900 font-heading">Chọn Ghế Ngồi Mới</h2>
-                                <p class="text-xs text-gray-500">Vui lòng chọn 2 ghế tương ứng với số vé của bạn</p>
+                                <p class="text-xs text-gray-500">Vui lòng chọn @requiredSeatCount ghế tương ứng với số vé của bạn</p>
                             </div>
 
                             <!-- Nút chọn Tầng 1 / Tầng 2 -->
@@ -257,12 +281,28 @@
                             <button type="button" class="seat-btn selected p-2.5 rounded-lg bg-primary text-white border border-primary flex items-center justify-between text-xs cursor-pointer shadow-sm ring-2 ring-primary/30" data-seat="VIP 08" onclick="toggleSeat(this, 'VIP 08')">
                                 <span class="font-bold">VIP 08</span>
                                 <span class="text-[11px]">Đã chọn</span>
+
                             </button>
-                            <button type="button" class="seat-btn selected p-2.5 rounded-lg bg-primary text-white border border-primary flex items-center justify-between text-xs cursor-pointer shadow-sm ring-2 ring-primary/30" data-seat="VIP 09" onclick="toggleSeat(this, 'VIP 09')">
-                                <span class="font-bold">VIP 09</span>
-                                <span class="text-[11px]">Đã chọn</span>
+                            @if (initialSeatsList.Contains("VIP 09"))
+                            {
+                                <button type="button" class="seat-btn selected p-2.5 rounded-lg bg-primary text-white border border-primary flex items-center justify-between text-xs cursor-pointer shadow-sm ring-2 ring-primary/30" data-seat="VIP 09" onclick="toggleSeat(this, 'VIP 09')">
+                                    <span class="font-bold">VIP 09</span>
+                                    <span class="text-[11px]">Đã chọn</span>
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="seat-btn p-2.5 rounded-lg bg-white border border-gray-300 hover:border-primary flex items-center justify-between text-xs cursor-pointer shadow-xs" data-seat="VIP 09" onclick="toggleSeat(this, 'VIP 09')">
+                                    <span class="font-bold text-gray-800">VIP 09</span>
+                                    <span class="text-[11px] text-gray-500">290k</span>
+                                </button>
+                            }
+@*
+
+
                             </button>
 
+*@
                             <!-- Hàng 5 -->
                             <button type="button" class="seat-btn p-2.5 rounded-lg bg-white border border-gray-300 hover:border-primary flex items-center justify-between text-xs cursor-pointer shadow-xs" data-seat="VIP 11" onclick="toggleSeat(this, 'VIP 11')">
                                 <span class="font-bold text-gray-800">VIP 11</span>
@@ -296,8 +336,8 @@
 
                         <!-- Dải thông báo ghế đang chọn (Không tràn lề) -->
                         <div class="w-full max-w-full overflow-hidden break-words p-2.5 rounded-lg bg-gray-50 border border-gray-200 text-xs flex items-center justify-between gap-2">
-                            <span class="truncate">Ghế đang chọn: <strong class="text-primary" id="selectedSeatsLabel">VIP 08, VIP 09</strong></span>
-                            <span class="text-gray-500 shrink-0">Số lượng: <strong class="text-gray-900" id="selectedCountLabel">2</strong>/2 ghế</span>
+                            <span class="truncate">Ghế đang chọn: <strong class="text-primary" id="selectedSeatsLabel">@initialSeatsStr</strong></span>
+                            <span class="text-gray-500 shrink-0">Số lượng: <strong class="text-gray-900" id="selectedCountLabel">@requiredSeatCount</strong>/@requiredSeatCount ghế</span>
                         </div>
                     </div>
                 </div>
@@ -314,7 +354,7 @@
                         <div class="flex flex-col gap-2 text-sm">
                             <div class="flex items-center justify-between">
                                 <span class="text-gray-600">Giá vé mới:</span>
-                                <span class="font-bold text-gray-900" id="billNewPrice">580.000 đ</span>
+                                <span class="font-bold text-gray-900" id="billNewPrice">@initialNewPrice.ToString("N0") đ</span>
                             </div>
 
                             <div class="flex items-center justify-between text-gray-600">
@@ -342,9 +382,9 @@
                             <input type="hidden" name="OldTicket.TicketCode" value="@currentTicketCode" />
                             <input type="hidden" name="OldTicket.TicketId" value="@(old?.TicketId ?? 1024)" />
                             <input type="hidden" name="NewDepartureDate" id="formNewDepartureDate" value="@newDateIso" />
-                            <input type="hidden" name="SelectedTripId" id="formTripId" value="202" />
-                            <input type="hidden" name="SelectedNewSeat" id="formSelectedSeat" value="VIP 08, VIP 09" />
-                            <input type="hidden" name="NewSeatPrice" id="formNewPrice" value="580000" />
+                            <input type="hidden" name="SelectedTripId" id="formTripId" value="@defaultTripId" />
+                            <input type="hidden" name="SelectedNewSeat" id="formSelectedSeat" value="@initialSeatsStr" />
+                            <input type="hidden" name="NewSeatPrice" id="formNewPrice" value="@initialNewPrice" />
                             <input type="hidden" name="SelectedBoardingPoint" value="@startCity" />
                             <input type="hidden" name="SelectedDropOffPoint" value="@endCity" />
 
@@ -377,9 +417,10 @@
 
     <!-- JAVASCRIPT XỬ LÝ CHỌN GHẾ & TÍNH TOÁN -->
     <script>
-        let selectedSeats = ['VIP 08', 'VIP 09'];
+        const requiredSeatCount = @requiredSeatCount;
+        let selectedSeats = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(initialSeatsList));
         const oldTicketPrice = @oldTicketPrice;
-        let seatUnitPrice = 290000;
+        let seatUnitPrice = @defaultTripPrice;
 
         function switchFloor(floor) {
             const tab1 = document.getElementById('tab-floor-1');
@@ -404,14 +445,14 @@
             const index = selectedSeats.indexOf(seatNumber);
 
             if (index > -1) {
-                if (selectedSeats.length === 1) {
-                    showToast('Bạn cần giữ ít nhất 1 ghế hoặc chọn đủ 2 ghế theo số vé cũ.', 'warning');
+                if (selectedSeats.length === 1 && requiredSeatCount === 1) {
+                    showToast('Bạn cần chọn đủ ' + requiredSeatCount + ' ghế theo số vé cũ.', 'warning');
                     return;
                 }
                 selectedSeats.splice(index, 1);
                 applySeatStyle(btn, false);
             } else {
-                if (selectedSeats.length >= 2) {
+                if (selectedSeats.length >= requiredSeatCount) {
                     const oldestSeat = selectedSeats.shift();
                     const oldestBtn = document.querySelector(`[data-seat="${oldestSeat}"]`);
                     if (oldestBtn) applySeatStyle(oldestBtn, false);
@@ -477,7 +518,10 @@
 
         function onDateChanged(newDate) {
             document.getElementById('formNewDepartureDate').value = newDate;
-            showToast(`Đã chọn ngày khởi hành mới: ${newDate}`, 'info');
+            showToast(`Đang tải chuyến xe ngày ${newDate}...`, 'info');
+            setTimeout(() => {
+                window.location.href = `/Ticket/Reschedule?ticketCode=@(currentTicketCode)&newDate=${encodeURIComponent(newDate)}`;
+            }, 350);
         }
 
         function onTripTimeChanged(selectEl) {

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
@@ -13,11 +13,16 @@ namespace WebApplication1.Controllers;
 public class AdminController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<AdminController> _logger;
 
-    public AdminController(ApplicationDbContext context)
+    public AdminController(ApplicationDbContext context, ILogger<AdminController> logger)
     {
         _context = context;
+        _logger = logger;
     }
+
+
+
 
     public IActionResult Index() => RedirectToAction(nameof(Dashboard));
     public IActionResult Dashboard() => Page("dashboard", "Tổng quan vận hành");
@@ -35,6 +40,98 @@ public class AdminController : Controller
         ViewData["AdminPage"] = page;
         ViewData["Title"] = title;
         return View("Index");
+    }
+
+    // =========================================================================
+    // =========================================================================
+    // DỮ LIỆU THẬT CỔNG QUẢN TRỊ ADMIN TỪ DATABASE SQL SERVER
+    // =========================================================================
+    [HttpGet("/api/admin/initial-data")]
+    [HttpGet("Admin/GetAdminData")]
+    public async Task<IActionResult> GetAdminData()
+    {
+        try
+        {
+            var routes = await _context.Routes
+                .Include(r => r.RouteStops).ThenInclude(rs => rs.Stop)
+                .OrderBy(r => r.RouteId)
+                .Select(r => new
+                {
+                    id = r.RouteCode ?? $"R-{r.RouteId}",
+                    name = r.RouteName ?? $"{r.StartPoint} → {r.EndPoint}",
+                    price = (int)(r.Trips.SelectMany(t => t.Bookings).SelectMany(b => b.Tickets).Select(tk => (decimal?)tk.Price).FirstOrDefault() ?? 120000m),
+                    status = "Hoạt động",
+                    stops = string.Join(" → ", r.RouteStops.OrderBy(rs => rs.StopOrder).Select(rs => rs.Stop.StopName))
+                })
+                .ToListAsync();
+
+            var stops = await _context.BusStops.Select(s => s.StopName).Distinct().ToListAsync();
+
+            var trips = await _context.Trips
+                .Include(t => t.Route)
+                .Include(t => t.Bus)
+                .Include(t => t.Driver).ThenInclude(d => d.User)
+                .OrderByDescending(t => t.TripDate).ThenBy(t => t.DepartureTime)
+                .Take(50)
+                .ToListAsync();
+
+            var schedules = trips.Select(t => new
+            {
+                id = $"TRIP-{t.TripId}",
+                route = t.Route?.RouteCode ?? "TN-HN",
+                date = t.TripDate.ToString("yyyy-MM-dd"),
+                start = t.DepartureTime.ToString(@"hh\:mm"),
+                end = t.ArrivalTime.HasValue ? t.ArrivalTime.Value.ToString(@"hh\:mm") : t.DepartureTime.AddMinutes(t.Route?.EstimatedDuration ?? 120).ToString(@"hh\:mm"),
+                days = new[] { "2", "3", "4", "5", "6", "7", "8" }
+            }).ToList();
+
+            var dispatch = trips.Select(t => new
+            {
+                id = $"TRIP-{t.TripId}",
+                vehicle = t.Bus?.LicensePlate ?? "Chưa gán xe",
+                driver = t.Driver?.User?.FullName ?? "Chưa gán tài xế",
+                assistant = "Đang sắp xếp"
+            }).ToList();
+
+            var accounts = await _context.Users
+                .Include(u => u.Roles)
+                .OrderBy(u => u.UserId)
+                .Take(50)
+                .Select(u => new
+                {
+                    id = $"USER-{u.UserId:D3}",
+                    name = u.FullName,
+                    email = u.Email,
+                    role = u.Roles.FirstOrDefault() != null ? u.Roles.FirstOrDefault()!.RoleName.ToUpper() : "CUSTOMER",
+                    status = u.Status ?? "Hoạt động"
+                })
+                .ToListAsync();
+
+            var totalRevenue = await _context.Payments.Where(p => p.Status == "Paid").SumAsync(p => (decimal?)p.Amount) ?? 0m;
+            var totalTickets = await _context.Tickets.CountAsync();
+            var confirmedTickets = await _context.Tickets.CountAsync(t => t.Status == "CONFIRMED" || t.Status == "USED" || t.Status == "PAID" || t.Status == "ACTIVE");
+
+            return Json(new
+            {
+                success = true,
+                routes = routes.Any() ? routes : null,
+                stops = stops.Any() ? stops : null,
+                schedules = schedules.Any() ? schedules : null,
+                dispatch = dispatch.Any() ? dispatch : null,
+                accounts = accounts.Any() ? accounts : null,
+                metrics = new
+                {
+                    totalRevenue,
+                    totalTickets,
+                    confirmedTickets
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lấy dữ liệu Admin Portal từ DB: {Msg}", ex.Message);
+            return Json(new { success = false, message = ex.Message });
+        }
     }
 
     // =========================================================================

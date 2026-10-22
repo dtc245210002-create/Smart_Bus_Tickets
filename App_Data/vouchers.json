@@ -1,0 +1,79 @@
+[
+  {
+    "id": "GIAM30K",
+    "type": "amount",
+    "value": 30000,
+    "start": "2026-09-21",
+    "end": "2027-10-21",
+    "minimum": 100000,
+    "limit": 150,
+    "used": 8,
+    "description": "Gi\u1EA3m ngay 30.000 \u0111 \u00E1p d\u1EE5ng cho tuy\u1EBFn H\u00E0 N\u1ED9i - Th\u00E1i Nguy\u00EAn - Cao B\u1EB1ng"
+  },
+  {
+    "id": "HE2026",
+    "type": "amount",
+    "value": 25000,
+    "start": "2026-09-21",
+    "end": "2027-10-21",
+    "minimum": 80000,
+    "limit": 200,
+    "used": 12,
+    "description": "Ch\u00E0o h\u00E8 r\u1EF1c r\u1EE1 c\u00F9ng SmartBus Go - Gi\u1EA3m 25.000 \u0111"
+  },
+  {
+    "id": "HSSV",
+    "type": "percent",
+    "value": 15,
+    "start": "2026-09-21",
+    "end": "2027-10-21",
+    "minimum": 50000,
+    "limit": 300,
+    "used": 25,
+    "description": "\u01AFu \u0111\u00E3i v\u00E9 th\u00E1ng v\u00E0 v\u00E9 chuy\u1EBFn d\u00E0nh cho H\u1ECDc sinh \u0026 Sinh vi\u00EAn"
+  },
+  {
+    "id": "SINHVIEN",
+    "type": "percent",
+    "value": 15,
+    "start": "2026-09-21",
+    "end": "2027-10-21",
+    "minimum": 50000,
+    "limit": 300,
+    "used": 42,
+    "description": "\u01AFu \u0111\u00E3i H\u1ECDc sinh - Sinh vi\u00EAn gi\u1EA3m 15% gi\u00E1 v\u00E9 li\u00EAn t\u1EC9nh"
+  },
+  {
+    "id": "SMARTBUS20K",
+    "type": "amount",
+    "value": 20000,
+    "start": "2026-09-21",
+    "end": "2027-10-21",
+    "minimum": 0,
+    "limit": 500,
+    "used": 15,
+    "description": "Gi\u1EA3m tr\u1EF1c ti\u1EBFp 20.000 \u0111 cho m\u1ECDi chuy\u1EBFn xe SmartBus Go"
+  },
+  {
+    "id": "SMARTBUSNEW",
+    "type": "amount",
+    "value": 20000,
+    "start": "2026-09-21",
+    "end": "2027-10-21",
+    "minimum": 100000,
+    "limit": 200,
+    "used": 18,
+    "description": "\u01AFu \u0111\u00E3i kh\u00E1ch h\u00E0ng m\u1EDBi: Gi\u1EA3m 20.000 \u0111 \u0111\u01A1n t\u1EEB 100.000 \u0111"
+  },
+  {
+    "id": "VIP50K",
+    "type": "amount",
+    "value": 50000,
+    "start": "2026-09-21",
+    "end": "2027-10-21",
+    "minimum": 150000,
+    "limit": 100,
+    "used": 14,
+    "description": "Gi\u1EA3m 50.000 \u0111 cho kh\u00E1ch h\u00E0ng \u0111\u1EB7t xe Limousine VIP t\u1EEB 150.000 \u0111"
+  }
+]

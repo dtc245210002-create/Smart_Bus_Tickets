@@ -2,11 +2,6 @@
 @{
     Layout = null;
     var isInitialFailed = Model.Status == "FAILED";
-    var isUserAuth = User.Identity?.IsAuthenticated == true;
-    var currentUserName = isUserAuth ? (User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? User.Identity?.Name ?? "Tài khoản") : "";
-    var currentUserEmail = isUserAuth ? (User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "") : "";
-    var isUserAdmin = isUserAuth && (User.IsInRole("Quản trị viên") || User.IsInRole("Admin") || currentUserEmail.Contains("admin", StringComparison.OrdinalIgnoreCase));
-    var isUserDriver = isUserAuth && ((User.IsInRole("Tài xế") || currentUserEmail.Contains("driver", StringComparison.OrdinalIgnoreCase)) && !isUserAdmin);
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -139,95 +134,10 @@
             </nav>
 
             <div class="flex items-center gap-3">
-                @if (isUserAuth)
-                {
-                    <!-- Dropdown tên tài khoản hiện tại -->
-                    <div class="relative group">
-                        <button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#094c3b] hover:bg-[#073c2e] text-white font-semibold text-[14px] shadow-sm transition-all cursor-pointer" type="button">
-                            <span class="material-symbols-outlined text-[19px]">account_circle</span>
-                            <span class="max-w-[150px] truncate">@currentUserName</span>
-                            <span class="material-symbols-outlined text-[16px] text-emerald-300">expand_more</span>
-                        </button>
-                        <div class="hidden group-hover:block absolute right-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 text-left">
-                            <div class="px-4 py-2 border-b border-gray-100">
-                                <span class="text-[11px] text-gray-400 block">Đang đăng nhập</span>
-                                <span class="font-bold text-gray-900 text-sm block truncate">@currentUserName</span>
-                                @if (isUserAdmin)
-                                {
-                                    <span class="inline-block mt-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Quản trị viên (Admin)</span>
-                                }
-                                else if (isUserDriver)
-                                {
-                                    <span class="inline-block mt-0.5 text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Đội ngũ Bác tài</span>
-                                }
-                                else
-                                {
-                                    <span class="inline-block mt-0.5 text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Khách hàng thành viên</span>
-                                }
-                            </div>
-                            @if (isUserAdmin)
-                            {
-                                <a href="/Admin/Dashboard" class="flex items-center gap-2 px-4 py-2 text-sm text-emerald-800 hover:bg-emerald-50 font-semibold transition-colors">
-                                    <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-                                    <span>Trang Quản trị Admin</span>
-                                </a>
-                            }
-                            @if (isUserDriver)
-                            {
-                                <a href="/Driver/Dashboard" class="flex items-center gap-2 px-4 py-2 text-sm text-amber-800 hover:bg-amber-50 font-semibold transition-colors">
-                                    <span class="material-symbols-outlined text-[18px]">badge</span>
-                                    <span>Bảng ca chạy Bác tài</span>
-                                </a>
-                            }
-                            <a href="/Ticket/Detail" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                                <span class="material-symbols-outlined text-[18px] text-gray-500">confirmation_number</span>
-                                <span>Vé xe của tôi</span>
-                            </a>
-                            <div class="border-t border-gray-100 my-1"></div>
-                            <form action="/Account/Logout" method="post" class="w-full m-0 p-0">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold transition-colors cursor-pointer">
-                                    <span class="material-symbols-outlined text-[18px]">logout</span>
-                                    <span>Đăng xuất</span>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <!-- Khi chưa đăng nhập: Nút Đăng nhập / Đăng ký -->
-                    <a href="/Account/Login" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#094c3b] hover:bg-[#073c2e] text-white font-semibold text-[14px] shadow-sm transition-all">
-                        <span class="material-symbols-outlined text-[19px]">login</span>
-                        <span>Đăng nhập / Đăng ký</span>
-                    </a>
-                }
-
-                <!-- Nút thứ 2: Tùy biến phù hợp theo từng loại tài khoản -->
-                @if (isUserAdmin)
-                {
-                    <!-- Tài khoản Admin: Bỏ nút Bác tài, thay bằng nút Trang Admin -->
-                    <a href="/Admin/Dashboard" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#008378] border border-emerald-300 font-semibold text-[13px] shadow-xs transition-colors" title="Bảng điều khiển Quản trị">
-                        <span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-                        <span>Trang Admin</span>
-                    </a>
-                }
-                else if (isUserDriver)
-                {
-                    <!-- Tài khoản Tài xế: Hiện nút Bác tài -->
-                    <a href="/Driver/Dashboard" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-[13px] transition-colors" title="Khu vực dành cho Bác tài">
-                        <span class="material-symbols-outlined text-[18px] text-amber-700">badge</span>
-                        <span>Bác tài</span>
-                    </a>
-                }
-                else if (isUserAuth)
-                {
-                    <!-- Tài khoản Khách hàng: Bỏ nút Bác tài, thay bằng nút Vé của tôi -->
-                    <a href="/Ticket/Detail" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-[13px] transition-colors" title="Xem danh sách vé đã đặt">
-                        <span class="material-symbols-outlined text-[18px] text-[#008378]">confirmation_number</span>
-                        <span>Vé của tôi</span>
-                    </a>
-                }
+                <a href="/Account/Login" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#094c3b] hover:bg-[#073c2e] text-white font-semibold text-[14px] shadow-sm transition-all">
+                    <span class="material-symbols-outlined text-[18px]">account_circle</span>
+                    <span>Tài khoản</span>
+                </a>
             </div>
         </div>
     </header>
@@ -351,11 +261,15 @@
                             </div>
                         </div>
 
-                        <div class="text-left sm:text-right">
+                        <div class="text-left sm:text-right flex flex-col items-start sm:items-end gap-1">
                             <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Trạng thái</span>
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs mt-1 border border-emerald-300">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs mt-0.5 border border-emerald-300">
                                 <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
                                 ĐÃ THANH TOÁN • VÉ HỢP LỆ
+                            </span>
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-300">
+                                <span class="material-symbols-outlined text-[13px] text-amber-600">qr_code_scanner</span>
+                                Vé 1 lần (Single-use) • Quét 1 lần duy nhất
                             </span>
                         </div>
                     </div>
@@ -399,8 +313,8 @@
                         <div class="flex items-center justify-between text-gray-600">
                             <span>Phương thức thanh toán:</span>
                             <span class="font-semibold text-gray-900 flex items-center gap-1.5" id="displayPaymentMethod">
-                                <span class="material-symbols-outlined text-emerald-600 text-[18px]">account_balance</span>
-                                @Model.PaymentMethod
+                                <span class="material-symbols-outlined text-emerald-600 text-[18px]">qr_code_scanner</span>
+                                @(Model.PaymentMethod == "VietQR" ? "Quét mã QR / Chuyển khoản trực tiếp" : Model.PaymentMethod)
                             </span>
                         </div>
                         <div class="flex items-center justify-between text-gray-600">
@@ -411,6 +325,16 @@
                             <span>Thời gian xác nhận:</span>
                             <span class="text-gray-800" id="displayPaymentTime">@Model.PaymentTime.ToString("HH:mm:ss dd/MM/yyyy")</span>
                         </div>
+                        @if (!string.IsNullOrEmpty(ViewBag.VoucherCode as string) || (ViewBag.DiscountAmount != null && (decimal)ViewBag.DiscountAmount > 0))
+                        {
+                            <div class="flex items-center justify-between text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                                <span class="flex items-center gap-1.5 font-semibold text-xs sm:text-sm">
+                                    <span class="material-symbols-outlined text-[16px] text-emerald-600">local_offer</span>
+                                    <span>Mã ưu đãi đã áp dụng (@(ViewBag.VoucherCode ?? "VOUCHER")):</span>
+                                </span>
+                                <span class="font-bold text-emerald-800 text-sm">-@(((decimal)(ViewBag.DiscountAmount ?? 0m)).ToString("N0")) đ</span>
+                            </div>
+                        }
                         <div class="border-t border-gray-200 pt-3 flex items-center justify-between">
                             <span class="font-bold text-gray-900 text-base">Tổng tiền đã thanh toán:</span>
                             <span class="font-extrabold text-2xl text-emerald-700" id="displayTotalAmount">@Model.Amount.ToString("N0") đ</span>
@@ -425,7 +349,7 @@
                         <!-- 1. NÚT XEM: Xem vé điện tử & QR Code (Primary Button) -->
                         <a id="btnViewTicketDetail" href="/Ticket/Detail?id=@Model.TicketCode" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#008378] hover:bg-[#00685f] text-white font-bold text-base shadow-lg shadow-emerald-900/10 hover:shadow-xl transition-all transform hover:-translate-y-0.5">
                             <span class="material-symbols-outlined text-[22px]">confirmation_number</span>
-                            <span>Xem vé điện tử (Mã QR)</span>
+                            <span>Xem vé điện tử (Mã QR 1 lần)</span>
                         </a>
 
                         <!-- 2. NÚT TIẾP TỤC / BẮT ĐẦU: Về trang chủ hoặc đặt chuyến khác -->

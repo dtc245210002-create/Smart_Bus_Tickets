@@ -1,3 +1,4 @@
+@model WebApplication1.Models.ViewModels.TicketDetailViewModel
 @{
     Layout = null;
     var isUserAuth = User.Identity?.IsAuthenticated == true;
@@ -5,13 +6,31 @@
     var currentUserEmail = isUserAuth ? (User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "") : "";
     var isUserAdmin = isUserAuth && (User.IsInRole("Quản trị viên") || User.IsInRole("Admin") || currentUserEmail.Contains("admin", StringComparison.OrdinalIgnoreCase));
     var isUserDriver = isUserAuth && ((User.IsInRole("Tài xế") || currentUserEmail.Contains("driver", StringComparison.OrdinalIgnoreCase)) && !isUserAdmin);
+
+    var effTicketCode = Model?.TicketCode ?? "SBG-84920";
+    var effRouteName = Model?.RouteName ?? $"{Model?.StartPoint ?? "Hà Nội"} → {Model?.EndPoint ?? "Đà Nẵng"}";
+    var effTotalAmount = Model?.TotalAmount ?? Model?.Price ?? 530000m;
+    var cancelFee = Math.Round(effTotalAmount * 0.1m, 0);
+    var refundAmount = Math.Max(0m, effTotalAmount - cancelFee);
+    var effSeats = Model?.SeatNumber ?? "VIP 05, VIP 06";
+    var effBusType = Model?.BusTypeName ?? "Limousine VIP";
+    var effPlate = Model?.LicensePlate ?? "29B-678.92";
+    var effDepTime = Model != null ? Model.DepartureTime.ToString(@"hh\:mm") : "20:30";
+    var effArrTime = Model?.ArrivalTime?.ToString(@"hh\:mm") ?? "11:00";
+    var effTripDate = Model != null && Model.TripDate != default ? Model.TripDate.ToString("dd/MM/yyyy") : "24/10/2026";
+    var effBoarding = Model?.BoardingStopName ?? (Model?.StartPoint + " (Bến xe xuất phát)");
+    var effDropOff = Model?.DropOffStopName ?? (Model?.EndPoint + " (Bến xe trả khách)");
+    var effPassenger = Model?.PassengerName ?? "Hành khách SmartBus";
+    var effPassengerPhone = Model?.PassengerPhone ?? "0988 123 456";
+    var effDriver = Model?.DriverName ?? "Bác tài SmartBus";
+    var effDriverPhone = Model?.DriverPhone ?? "0903 898 991";
 }
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Hủy Vé & Hoàn Tiền - SmartBus Go #SBG-84920</title>
+    <title>Hủy Vé & Hoàn Tiền - SmartBus Go #@effTicketCode</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
@@ -275,7 +294,7 @@
                         <span class="text-outline-variant">•</span>
                         <span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Chi tiết vé điện tử</span>
                         <span class="text-outline-variant">•</span>
-                        <span class="font-numeric-data text-body-sm text-primary font-bold">#SBG-84920</span>
+                        <span class="font-numeric-data text-body-sm text-primary font-bold">#@effTicketCode</span>
                     </div>
                     <div class="flex items-center gap-space-sm">
                         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-fixed-dim/30 text-tertiary font-label-md text-label-md font-semibold">
@@ -301,23 +320,23 @@
                                     <div>
                                         <div class="flex items-center gap-2">
                                             <span class="font-headline-sm text-headline-sm text-on-surface">Phương Trang FUTA Bus Lines</span>
-                                            <span class="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-md text-body-sm">Limousine 34 phòng VIP</span>
+                                            <span class="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-md text-body-sm">@effBusType</span>
                                         </div>
-                                        <p class="font-body-sm text-body-sm text-secondary mt-0.5">Biển số: 29B-678.92 • Tuyến Bắc Nam cao tốc</p>
+                                        <p class="font-body-sm text-body-sm text-secondary mt-0.5">Biển số: @effPlate • Tuyến @effRouteName</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
                                     <span class="font-label-md text-label-md text-secondary uppercase tracking-wider block">Mã đặt chỗ</span>
-                                    <span class="font-numeric-data text-headline-md text-primary font-bold tracking-tight">SBG-84920</span>
+                                    <span class="font-numeric-data text-headline-md text-primary font-bold tracking-tight">@effTicketCode</span>
                                 </div>
                             </div>
 
                             <!-- Lộ trình -->
                             <div class="py-space-xl grid grid-cols-1 sm:grid-cols-3 gap-space-lg items-center">
                                 <div>
-                                    <span class="font-numeric-data text-headline-lg text-on-surface block">20:30</span>
-                                    <span class="font-label-lg text-label-lg text-primary font-semibold block">Thứ Sáu, 24/10/2025</span>
-                                    <span class="font-body-md text-body-md text-on-surface-variant font-medium mt-1 block">Bến xe Nước Ngầm, Hà Nội</span>
+                                    <span class="font-numeric-data text-headline-lg text-on-surface block">@effDepTime</span>
+                                    <span class="font-label-lg text-label-lg text-primary font-semibold block">@effTripDate</span>
+                                    <span class="font-body-md text-body-md text-on-surface-variant font-medium mt-1 block">@effBoarding</span>
                                     <span class="font-body-sm text-body-sm text-secondary">Quầy vé số 14, Tầng 1</span>
                                 </div>
                                 <div class="flex flex-col items-center justify-center px-space-sm text-center">
@@ -334,9 +353,9 @@
                                     <span class="font-body-sm text-body-sm text-tertiary font-medium mt-1">Chạy thẳng cao tốc 1A</span>
                                 </div>
                                 <div class="text-left sm:text-right">
-                                    <span class="font-numeric-data text-headline-lg text-on-surface block">11:00</span>
-                                    <span class="font-label-lg text-label-lg text-primary font-semibold block">Thứ Bảy, 25/10/2025</span>
-                                    <span class="font-body-md text-body-md text-on-surface-variant font-medium mt-1 block">Bến xe Trung tâm Đà Nẵng</span>
+                                    <span class="font-numeric-data text-headline-lg text-on-surface block">@effArrTime</span>
+                                    <span class="font-label-lg text-label-lg text-primary font-semibold block">@effTripDate</span>
+                                    <span class="font-body-md text-body-md text-on-surface-variant font-medium mt-1 block">@effDropOff</span>
                                     <span class="font-body-sm text-body-sm text-secondary">Cổng trả khách số 02 Tôn Đức Thắng</span>
                                 </div>
                             </div>
@@ -345,12 +364,12 @@
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-space-md pt-space-lg border-t border-surface-container bg-surface-container-low -mx-margin sm:-mx-space-xl -mb-margin sm:-mb-space-xl p-margin sm:p-space-lg rounded-b-xl">
                                 <div>
                                     <span class="font-label-md text-body-sm text-secondary block">Hành khách</span>
-                                    <span class="font-title-md text-title-md text-on-surface font-semibold">Nguyễn Văn An</span>
-                                    <span class="font-body-sm text-body-sm text-secondary block">0988 123 456</span>
+                                    <span class="font-title-md text-title-md text-on-surface font-semibold">@effPassenger</span>
+                                    <span class="font-body-sm text-body-sm text-secondary block">@effPassengerPhone</span>
                                 </div>
                                 <div>
                                     <span class="font-label-md text-body-sm text-secondary block">Số lượng & Vị trí</span>
-                                    <span class="font-numeric-data text-title-md text-primary font-bold">2 Ghế: VIP 05, VIP 06</span>
+                                    <span class="font-numeric-data text-title-md text-primary font-bold">@effSeats</span>
                                     <span class="font-body-sm text-body-sm text-secondary block">Tầng 1 - Khoang êm</span>
                                 </div>
                                 <div>
@@ -360,7 +379,7 @@
                                 </div>
                                 <div>
                                     <span class="font-label-md text-body-sm text-secondary block">Tổng tiền thanh toán</span>
-                                    <span class="font-numeric-data text-headline-sm text-primary font-bold">530.000 đ</span>
+                                    <span class="font-numeric-data text-headline-sm text-primary font-bold">@effTotalAmount.ToString("N0") đ</span>
                                     <span class="font-body-sm text-body-sm text-tertiary block">Đã có VAT & Bảo hiểm</span>
                                 </div>
                             </div>
@@ -368,7 +387,7 @@
 
                         <!-- 2 Nút hành động chính -->
                         <div class="flex flex-wrap items-center justify-end gap-space-md">
-                            <a href="/Ticket/Reschedule" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-lg text-label-lg font-semibold transition-all">
+                            <a href="/Ticket/Reschedule?ticketCode=@effTicketCode" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-lg text-label-lg font-semibold transition-all">
                                 <span class="material-symbols-outlined text-[20px] text-secondary">sync_alt</span>
                                 <span>Đổi lịch trình / Đổi vé</span>
                             </a>
@@ -406,8 +425,8 @@
                             <div class="rounded-lg bg-surface-container-low p-space-sm mt-space-xs flex items-center gap-space-sm">
                                 <span class="material-symbols-outlined text-primary text-[24px]">support_agent</span>
                                 <div class="flex flex-col">
-                                    <span class="font-label-md text-label-md text-on-surface font-semibold">Bác tài đón: Bùi Minh Quân</span>
-                                    <span class="font-numeric-data text-body-sm text-secondary">0903 898 991</span>
+                                    <span class="font-label-md text-label-md text-on-surface font-semibold">Bác tài đón: @effDriver</span>
+                                    <span class="font-numeric-data text-body-sm text-secondary">@effDriverPhone</span>
                                 </div>
                             </div>
                         </div>
@@ -429,7 +448,7 @@
                             <div>
                                 <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Xác nhận yêu cầu Hủy vé & Hoàn tiền</h2>
                                 <p class="font-body-sm text-body-sm text-secondary">
-                                    Mã vé: <span class="font-numeric-data text-primary font-bold">#SBG-84920</span> • Tuyến Hà Nội → Đà Nẵng
+                                    Mã vé: <span class="font-numeric-data text-primary font-bold">#@effTicketCode</span> • Tuyến @effRouteName
                                 </p>
                             </div>
                         </div>
@@ -495,12 +514,12 @@
                             <!-- Bảng tính toán tiền hoàn -->
                             <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm space-y-space-sm">
                                 <div class="flex items-center justify-between text-body-md font-body-md text-secondary">
-                                    <span>Tổng giá trị vé đã thanh toán (2 vé VIP):</span>
-                                    <span class="font-numeric-data font-semibold text-on-surface">530.000 đ</span>
+                                    <span>Tổng giá trị vé đã thanh toán (@effSeats):</span>
+                                    <span class="font-numeric-data font-semibold text-on-surface">@effTotalAmount.ToString("N0") đ</span>
                                 </div>
                                 <div class="flex items-center justify-between text-body-md font-body-md text-secondary">
                                     <span>Phí hủy vé theo quy định (10%):</span>
-                                    <span class="font-numeric-data font-semibold text-error">- 53.000 đ</span>
+                                    <span class="font-numeric-data font-semibold text-error">- @cancelFee.ToString("N0") đ</span>
                                 </div>
                                 <div class="pt-space-sm border-t border-surface-container flex flex-wrap items-baseline justify-between gap-space-xs">
                                     <div>
@@ -508,7 +527,7 @@
                                         <span class="font-body-sm text-body-sm text-secondary">Dự kiến tiền về tài khoản trong 1-3 ngày làm việc</span>
                                     </div>
                                     <div class="text-right">
-                                        <span class="font-numeric-data text-headline-md text-primary font-bold">477.000 đ</span>
+                                        <span class="font-numeric-data text-headline-md text-primary font-bold">@refundAmount.ToString("N0") đ</span>
                                     </div>
                                 </div>
                             </div>
@@ -517,7 +536,7 @@
                         <!-- Form hủy vé -->
                         <form id="cancelTicketForm" method="post" action="/Ticket/ConfirmCancel" class="space-y-space-md">
                             @Html.AntiForgeryToken()
-                            <input type="hidden" name="ticketCode" value="SBG-84920" />
+                            <input type="hidden" name="ticketCode" value="@effTicketCode" />
 
                             <div>
                                 <label class="font-label-lg text-label-lg text-on-surface font-semibold block mb-1" for="cancelReason">

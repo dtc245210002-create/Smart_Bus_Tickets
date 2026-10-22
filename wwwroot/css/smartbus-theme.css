@@ -1,4 +1,4 @@
-/* SmartBus Go - Primary Theme Variables */
+﻿/* SmartBus Go - Primary Theme Variables */
 :root {
     --sbg-primary: #0A4D46;
     --sbg-primary-hover: #073a35;
@@ -303,10 +303,46 @@ body {
     border-radius: 16px;
     border: 2px solid #e2e8f0;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
+}
+
+.sbg-qr-box-active {
+    border: 2px solid #10b981 !important;
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.16) !important;
+    position: relative;
+}
+
+.sbg-qr-scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #10b981, transparent);
+    box-shadow: 0 0 8px #10b981;
+    animation: sbgScanBeam 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 4;
+}
+
+@keyframes sbgScanBeam {
+    0% { top: 6%; opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { top: 94%; opacity: 0; }
+}
+
+.sbg-qr-box-used {
+    border: 2px dashed #94a3b8 !important;
+    background-color: #f1f5f9 !important;
+}
+
+.shadow-2xs {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .sbg-ticket-status-badge {
@@ -533,11 +569,41 @@ body {
     transform: scale(1.05);
 }
 
-.sbg-seat-box.selected {
-    background: var(--sbg-accent);
-    color: #ffffff;
-    border-color: #059669;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+.sbg-seat-box.selected,
+.sbg-seat-box.vip-cabin.selected,
+.sbg-seat-box.sleeper.selected {
+    background: #008378 !important;
+    background-color: #008378 !important;
+    color: #ffffff !important;
+    border: 2px solid #005a52 !important;
+    border-color: #005a52 !important;
+    box-shadow: 0 4px 14px rgba(0, 131, 120, 0.45) !important;
+    transform: translateY(-2px) scale(1.05);
+    z-index: 2;
+}
+
+.sbg-seat-box.selected span,
+.sbg-seat-box.vip-cabin.selected span,
+.sbg-seat-box.sleeper.selected span {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.sbg-seat-box.selected i,
+.sbg-seat-box.vip-cabin.selected i,
+.sbg-seat-box.sleeper.selected i,
+.sbg-seat-box.selected .text-warning,
+.sbg-seat-box.vip-cabin.selected .text-warning {
+    color: #ffd166 !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.sbg-seat-box.selected:hover,
+.sbg-seat-box.vip-cabin.selected:hover,
+.sbg-seat-box.sleeper.selected:hover {
+    background: #006e64 !important;
+    border-color: #004d46 !important;
 }
 
 .sbg-seat-box.booked,
@@ -614,11 +680,15 @@ body {
     width: 72px;
     height: 62px;
     border-radius: 12px;
-    border-color: #f59e0b;
-    background: #fffbeb;
 }
 
-.sbg-seat-box.vip-cabin:hover:not(.booked) {
+.sbg-seat-box.vip-cabin:not(.selected) {
+    border-color: #f59e0b;
+    background: #fffbeb;
+    color: #334155;
+}
+
+.sbg-seat-box.vip-cabin:hover:not(.booked):not(.selected) {
     border-color: #d97706;
 }
 /* Reschedule UI Enhancements */

@@ -16,7 +16,7 @@ namespace WebApplication1.Controllers
     /// <summary>
     /// Controller chuyên biệt dành cho Bác tài (Tài xế): Đăng nhập, Xem ca làm việc, Soát vé hành khách
     /// </summary>
-    [Authorize(Roles = "Tài xế")]
+    [Authorize(Roles = "Tài xế,DRIVER,Driver,Admin,Quản trị viên,Administrator,Manager,Quản lý")]
     public class DriverController : Controller
     {
         private readonly ApplicationDbContext _context;

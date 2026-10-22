@@ -35,6 +35,9 @@ namespace WebApplication1
             // Đăng ký dịch vụ Cổng thanh toán mã VietQR (Napas 247) tự động
             builder.Services.AddSingleton<WebApplication1.Services.Payment.IVietQrService, WebApplication1.Services.Payment.VietQrService>();
 
+            // Đăng ký dịch vụ Quản lý & Đồng bộ Voucher toàn hệ thống
+            builder.Services.AddSingleton<WebApplication1.Services.Voucher.IVoucherService, WebApplication1.Services.Voucher.VoucherService>();
+
             // Cấu hình Cookie Authentication cho Đăng nhập / Đăng ký
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>

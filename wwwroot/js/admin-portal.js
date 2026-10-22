@@ -10,7 +10,15 @@
         stops: ['Thái Nguyên','Sóc Sơn','Mỹ Đình','Giáp Bát','Hải Dương','Hải Phòng'],
         schedules: [{id:'TN-HN-01',route:'TN-HN',date:'2026-10-01',start:'08:00',end:'10:00',days:['2','3','4','5','6','7','8']},{id:'TN-HN-02',route:'TN-HN',date:'2026-10-01',start:'10:00',end:'12:00',days:['2','3','4','5','6','7','8']},{id:'TN-HN-03',route:'TN-HN',date:'2026-10-01',start:'14:00',end:'16:00',days:['2','3','4','5','6']}],
         dispatch: [{id:'TN-HN-01',vehicle:'29B-888.68',driver:'Trần Đình Trọng',assistant:'Nguyễn Quốc Minh'},{id:'TN-HN-02',vehicle:'',driver:'',assistant:''}],
-        vouchers: [{id:'SMARTBUSNEW',type:'amount',value:20000,start:'2026-10-01',end:'2026-10-31',minimum:100000,limit:100,used:18},{id:'SINHVIEN',type:'percent',value:10,start:'2026-10-01',end:'2026-10-31',minimum:50000,limit:200,used:42}],
+        vouchers: [
+            {id:'SMARTBUS20K',type:'amount',value:20000,start:'2026-01-01',end:'2027-12-31',minimum:0,limit:500,used:15,description:'Giảm trực tiếp 20.000 đ cho mọi chuyến SmartBus Go'},
+            {id:'SMARTBUSNEW',type:'amount',value:20000,start:'2026-01-01',end:'2027-12-31',minimum:100000,limit:200,used:18,description:'Ưu đãi khách hàng mới: Giảm 20.000 đ đơn từ 100k'},
+            {id:'SINHVIEN',type:'percent',value:15,start:'2026-01-01',end:'2027-12-31',minimum:50000,limit:300,used:42,description:'Ưu đãi Học sinh - Sinh viên giảm 15%'},
+            {id:'HSSV',type:'percent',value:15,start:'2026-01-01',end:'2027-12-31',minimum:50000,limit:300,used:25,description:'Ưu đãi vé tuyến HSSV giảm 15%'},
+            {id:'VIP50K',type:'amount',value:50000,start:'2026-01-01',end:'2027-12-31',minimum:150000,limit:100,used:10,description:'Giảm 50.000 đ đơn từ 150k cho xe Limousine VIP'},
+            {id:'GIAM30K',type:'amount',value:30000,start:'2026-01-01',end:'2027-12-31',minimum:100000,limit:150,used:8,description:'Giảm 30.000 đ cho tuyến Thái Nguyên - Cao Bằng'},
+            {id:'HE2026',type:'amount',value:25000,start:'2026-01-01',end:'2027-12-31',minimum:80000,limit:200,used:12,description:'Chào hè rực rỡ - Giảm ngay 25.000 đ'}
+        ],
         approvals: [{id:'HS-001',name:'Nguyễn Văn An',category:'Sinh viên',school:'ICTU',date:'2026-09-30',status:'Chờ duyệt',note:''},{id:'HS-002',name:'Lê Thị Mai',category:'Người cao tuổi',school:'',date:'2026-09-30',status:'Cần bổ sung',note:'Cần bổ sung giấy tờ chứng minh đối tượng.'}],
         support: [{id:'PA-001',name:'Nguyễn Văn An',subject:'Chuyến trễ giờ',description:'Xe đến trễ so với giờ dự kiến, cần cập nhật thời gian đón.',status:'Đang xử lý',reply:''},{id:'PA-002',name:'Trần Văn Bình',subject:'Thắc mắc đổi vé',description:'Tôi muốn đổi chuyến sang ngày mai, cần thực hiện những bước nào?',status:'Mới tiếp nhận',reply:''}],
         accounts: [{id:'USER-001',name:'Nguyễn Văn An',email:'an@example.com',role:'CUSTOMER',status:'Hoạt động'},{id:'DRIVER-002',name:'Trần Đình Trọng',email:'trong@example.com',role:'DRIVER',status:'Hoạt động'},{id:'MANAGER-003',name:'Nguyễn Khánh Tùng',email:'tung@example.com',role:'MANAGER',status:'Hoạt động'}],
@@ -70,8 +78,48 @@
             return `${table(['Chuyến','Phương tiện','Tài xế','Phụ xe'],state.dispatch.map(d=>[rowButton('dispatch',d.id,label(d.id)),esc(d.vehicle||'Chưa phân công'),esc(d.driver||'Chưa phân công'),esc(d.assistant||'Chưa phân công')]))}<form class="ad-card" data-form="dispatch"><div class="ad-fields"><div class="ad-wide">${select('trip','Chuyến',state.schedules.map(s=>[s.id,label(s.id)]),item.id)}</div></div><div class="ad-fields three" style="margin-top:16px">${select('vehicle','Xe',['29B-888.68','20B-123.45','15B-456.78'],item.vehicle,'Chọn xe khả dụng')}${select('driver','Tài xế',['Trần Đình Trọng','Nguyễn Văn Tuấn','Lê Văn Hùng'],item.driver,'Chọn tài xế')}${select('assistant','Phụ xe',['Nguyễn Quốc Minh','Phạm Văn Hải','Trần Thị Hoa'],item.assistant,'Chọn phụ xe')}</div><div class="ad-note">Kiểm tra trùng lịch trước khi lưu phân công.</div><div class="ad-actions">${primary('Lưu phân công','type="submit"')}</div></form>`;
         },
         vouchers() {
-            const item=get('vouchers')||{id:'',type:'amount',value:20000,start:'2026-10-01',end:'2026-10-31',minimum:0,limit:100};
-            return `${table(['Mã','Giảm giá','Hiệu lực','Đã dùng'],state.vouchers.map(v=>[rowButton('vouchers',v.id,v.id),v.type==='amount'?money(v.value):v.value+'%',dateText(v.start)+'–'+dateText(v.end),v.used+' / '+v.limit]))}<form class="ad-card" data-form="vouchers"><div class="ad-fields">${input('id','Mã voucher',item.id,'text','required maxlength="30" pattern="[A-Za-z0-9_-]+"')}${select('type','Loại giảm giá',[['amount','Số tiền'],['percent','Phần trăm']],item.type)}${input('value','Giá trị giảm',item.value,'number','required min="1"')}${input('minimum','Đơn tối thiểu (đ)',item.minimum,'number','required min="0"')}${input('start','Ngày bắt đầu',item.start,'date','required')}${input('end','Ngày kết thúc',item.end,'date','required')}${input('limit','Giới hạn lượt sử dụng',item.limit,'number','required min="1" step="1"')}</div><div class="ad-actions">${primary('Lưu voucher','type="submit"')}<button class="ad-button" type="button" data-action="new-voucher">Tạo mã mới</button></div></form>`;
+            const today = new Date().toISOString().slice(0, 10);
+            const nextYear = new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+            const item = get('vouchers') || {id:'', type:'amount', value:20000, start:today, end:nextYear, minimum:0, limit:100, description:''};
+            const isEditing = Boolean(selected.vouchers && get('vouchers'));
+            return `<div class="ad-toolbar" style="margin-bottom:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <div style="font-size:12px;color:#00685f;font-weight:600">
+                    💡 Mã voucher tạo tại đây được đồng bộ tự động lên máy chủ để hành khách áp dụng trực tiếp tại Cổng thanh toán vé.
+                </div>
+                <div style="display:flex;gap:6px">
+                    <button class="ad-button primary" type="button" data-action="new-voucher" style="font-size:12px;padding:5px 12px">➕ Thêm voucher mới</button>
+                    <button class="ad-button" type="button" data-action="sync-vouchers" style="font-size:12px;padding:5px 12px">🔄 Làm mới từ Server</button>
+                </div>
+            </div>
+            ${table(['Mã','Mô tả ưu đãi','Giảm giá','Đơn tối thiểu','Hiệu lực','Đã dùng','Thao tác'], state.vouchers.map(v=>[
+                rowButton('vouchers',v.id,v.id),
+                esc(v.description || (v.type==='percent'?`Giảm ${v.value}%`:`Giảm ${money(v.value)}`)),
+                v.type==='amount'?`<strong>${money(v.value)}</strong>`:`<strong>${v.value}%</strong>`,
+                v.minimum > 0 ? money(v.minimum) : '<span style="color:#64748b">0 đ</span>',
+                dateText(v.start)+' – '+dateText(v.end),
+                `<span style="font-weight:600">${v.used}</span> / ${v.limit}`,
+                `<button type="button" data-action="delete-voucher" data-id="${esc(v.id)}" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">🗑️ Xóa</button>`
+            ]))}
+            <form class="ad-card" data-form="vouchers" style="margin-top:16px">
+                <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#0f172a">
+                    ${isEditing ? `📝 Chỉnh sửa thông tin mã: <span style="color:#00685f">${esc(item.id)}</span>` : '✨ Tạo mới mã ưu đãi / voucher'}
+                </div>
+                <div class="ad-fields">
+                    ${input('id','Mã voucher',item.id,'text',`required maxlength="30" pattern="[A-Za-z0-9_-]+" ${isEditing?'readonly style="background:#f1f5f9;font-weight:700"':''}`)}
+                    ${input('description','Mô tả ưu đãi',item.description||'','text','maxlength="150" placeholder="VD: Giảm 20.000 đ cho khách đặt vé sớm"')}
+                    ${select('type','Loại giảm giá',[['amount','Số tiền (VNĐ)'],['percent','Phần trăm (%)']],item.type)}
+                    ${input('value','Giá trị giảm',item.value,'number','required min="1"')}
+                    ${input('minimum','Đơn tối thiểu (đ)',item.minimum,'number','required min="0"')}
+                    ${input('start','Ngày bắt đầu',item.start||today,'date','required')}
+                    ${input('end','Ngày kết thúc',item.end||nextYear,'date','required')}
+                    ${input('limit','Giới hạn lượt sử dụng',item.limit,'number','required min="1" step="1"')}
+                </div>
+                <div class="ad-actions" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                    ${primary(isEditing ? 'Lưu thay đổi & Đồng bộ' : 'Tạo voucher & Đồng bộ hệ thống','type="submit"')}
+                    ${isEditing ? '<button class="ad-button" type="button" data-action="new-voucher">Tạo mã mới</button>' : ''}
+                    ${isEditing ? `<button class="ad-button danger" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5" type="button" data-action="delete-selected-voucher">Xóa voucher này</button>` : ''}
+                </div>
+            </form>`;
         },
         approvals() {
             const item=get('approvals')||state.approvals[0];
@@ -123,9 +171,39 @@
             case 'vouchers': {
                 if(d.end<d.start)return notify('Ngày kết thúc phải từ ngày bắt đầu trở đi.',true);
                 if(d.type==='percent'&&Number(d.value)>100)return notify('Giảm theo phần trăm không được vượt quá 100%.',true);
-                const old=get('vouchers'),id=d.id.toUpperCase();if(state.vouchers.some(v=>v.id===id&&v!==old))return notify('Mã voucher đã tồn tại.',true);
+                const old=get('vouchers'),id=d.id.toUpperCase();
+                if(!old&&state.vouchers.some(v=>v.id===id))return notify('Mã voucher đã tồn tại.',true);
                 if(old&&Number(d.limit)<old.used)return notify('Giới hạn không được nhỏ hơn số lượt đã dùng.',true);
-                const item={id,type:d.type,value:Number(d.value),minimum:Number(d.minimum),start:d.start,end:d.end,limit:Number(d.limit),used:old?.used||0};if(old)Object.assign(old,item);else state.vouchers.push(item);selected.vouchers=id;persist('Cập nhật voucher',id);break;
+                const item={
+                    id,
+                    type:d.type,
+                    value:Number(d.value),
+                    minimum:Number(d.minimum),
+                    start:d.start,
+                    end:d.end,
+                    limit:Number(d.limit),
+                    used:old?.used||0,
+                    description:d.description||''
+                };
+                if(old)Object.assign(old,item);else state.vouchers.push(item);
+                selected.vouchers=id;
+                persist('Cập nhật voucher',id);
+                fetch('/api/vouchers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(item)
+                }).then(r=>r.json()).then(res=>{
+                    if(res && res.success) {
+                        notify(`Đã lưu & đồng bộ mã '${id}' thành công! Hành khách có thể dùng ngay.`);
+                        syncVouchersFromServer(false);
+                    } else {
+                        notify(res?.message || 'Lỗi khi lưu voucher lên hệ thống.', true);
+                    }
+                }).catch(e=>{
+                    console.warn("Lỗi sync voucher API:", e);
+                    notify('Lỗi kết nối máy chủ voucher: ' + e.message, true);
+                });
+                break;
             }
             case 'approvals': {
                 const decision=event.submitter?.value||'Đã duyệt';if(decision!=='Đã duyệt'&&!d.note)return notify('Nhập lý do bổ sung hoặc từ chối hồ sơ.',true);
@@ -142,12 +220,63 @@
     document.addEventListener('submit',event=>{const form=event.target.closest('[data-form]');if(form){event.preventDefault();saveForm(form,event);}});
     root.addEventListener('change',event=>{const filter=event.target.dataset.filter;if(filter){if((filter==='from'&&event.target.value>filters.to)||(filter==='to'&&event.target.value<filters.from)){notify('Khoảng ngày không hợp lệ.',true);event.target.value=filters[filter];return;}filters[filter]=event.target.value;if(filter==='route'||filter==='date')selected.schedules=null;render();}});
     root.addEventListener('input',event=>{if(event.target.dataset.filter==='search'){const position=event.target.selectionStart;filters.search=event.target.value;render();const field=document.getElementById('routeSearch');field.focus();field.setSelectionRange(position,position);}});
+    function syncVouchersFromServer(showToast = false) {
+        fetch('/api/vouchers')
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+                    state.vouchers = res.data;
+                    try { localStorage.setItem(key, JSON.stringify(state)); } catch(e) {}
+                    if (page === 'vouchers') render();
+                    if (showToast) notify(`Đã đồng bộ ${res.data.length} mã voucher từ Server thành công!`);
+                } else if (showToast) {
+                    notify('Không có voucher nào trên máy chủ hoặc danh sách trống.');
+                }
+            })
+            .catch(err => {
+                console.warn('Lỗi khi tải voucher từ Server:', err);
+                if (showToast) notify('Không thể kết nối đến máy chủ để đồng bộ voucher.', true);
+            });
+    }
+
     root.addEventListener('click',event=>{
         const row=event.target.closest('[data-select]');if(row){selected[row.dataset.select]=row.dataset.id;render();return;}
-        const action=event.target.closest('[data-action]')?.dataset.action;
+        const actionEl = event.target.closest('[data-action]');
+        const action = actionEl?.dataset.action;
         if(action==='new-route'){selected.routes=null;render();document.getElementById('ad-id').focus();}
         if(action==='new-schedule'){selected.schedules=null;render();}
-        if(action==='new-voucher'){selected.vouchers=null;render();document.getElementById('ad-id').focus();}
+        if(action==='new-voucher'){selected.vouchers=null;render();const f=document.getElementById('ad-id');if(f)f.focus();}
+        if(action==='sync-vouchers'){syncVouchersFromServer(true);return;}
+        if(action==='delete-voucher'){
+            const delId = actionEl?.dataset.id;
+            if(delId && confirm(`Bạn có chắc chắn muốn xóa mã voucher '${delId}' khỏi toàn bộ hệ thống?`)){
+                fetch(`/api/vouchers/${encodeURIComponent(delId)}`, { method: 'DELETE' })
+                    .then(r=>r.json())
+                    .then(res=>{
+                        state.vouchers = state.vouchers.filter(v=>v.id!==delId);
+                        if(selected.vouchers===delId) selected.vouchers=state.vouchers[0]?.id||null;
+                        persist('Xóa voucher', delId);
+                        notify(`Đã xóa voucher '${delId}' thành công!`);
+                    })
+                    .catch(e=>notify('Lỗi xóa voucher: '+e.message, true));
+            }
+            return;
+        }
+        if(action==='delete-selected-voucher'){
+            const delId = selected.vouchers;
+            if(delId && confirm(`Bạn có chắc chắn muốn xóa mã voucher đang chọn '${delId}'?`)){
+                fetch(`/api/vouchers/${encodeURIComponent(delId)}`, { method: 'DELETE' })
+                    .then(r=>r.json())
+                    .then(res=>{
+                        state.vouchers = state.vouchers.filter(v=>v.id!==delId);
+                        selected.vouchers = state.vouchers[0]?.id||null;
+                        persist('Xóa voucher', delId);
+                        notify(`Đã xóa voucher '${delId}' thành công!`);
+                    })
+                    .catch(e=>notify('Lỗi xóa voucher: '+e.message, true));
+            }
+            return;
+        }
         if(action==='new-account'){selected.accounts=null;render();document.getElementById('ad-name').focus();}
         if(action==='new-stop')openDialog('Thêm trạm',`<form data-form="station">${input('name','Tên trạm','','text','required maxlength="100"','ad-station-name')}<div class="ad-actions">${primary('Lưu trạm mẫu','type="submit"')}</div></form>`);
         if(action==='attachment'){const item=get('approvals');openDialog('Tệp đính kèm · '+item.name,`<div class="ad-preview-sheet"><strong>HỒ SƠ MINH HỌA</strong>Họ tên: ${esc(item.name)}<br>Đối tượng: ${esc(item.category)}<br>${esc(item.school)}</div><p class="ad-details">Chưa có tài liệu cá nhân thật. Khi tích hợp backend, vị trí này sẽ hiển thị tệp do hành khách tải lên.</p>`);}
@@ -163,6 +292,26 @@
     document.querySelector('.ad-menu').addEventListener('click',event=>{const open=document.body.classList.toggle('ad-menu-open');event.currentTarget.setAttribute('aria-expanded',String(open));});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'){document.body.classList.remove('ad-menu-open');document.querySelector('.ad-menu').setAttribute('aria-expanded','false');}});
     render();
+    function syncLiveBackendData() {
+        fetch('/api/admin/initial-data')
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.success) {
+                    if (res.routes && res.routes.length) state.routes = res.routes;
+                    if (res.stops && res.stops.length) state.stops = res.stops;
+                    if (res.schedules && res.schedules.length) state.schedules = res.schedules;
+                    if (res.dispatch && res.dispatch.length) state.dispatch = res.dispatch;
+                    if (res.accounts && res.accounts.length) state.accounts = res.accounts;
+                    if (res.metrics) state.metrics = res.metrics;
+                    render();
+                }
+            })
+            .catch(err => console.warn('Admin initial data fetch failed:', err));
+    }
+    syncLiveBackendData();
+    if (page === 'vouchers') {
+        syncVouchersFromServer(false);
+    }
     if(!storageAvailable)notify('Không đọc được dữ liệu đã lưu. Đang dùng bộ dữ liệu minh họa.',true);
 })();
 

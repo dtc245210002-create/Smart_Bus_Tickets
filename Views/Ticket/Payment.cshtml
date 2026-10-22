@@ -126,46 +126,41 @@
 <span class="material-symbols-outlined text-[16px] text-emerald-600">lock</span> Bảo mật chuẩn PCI-DSS
             </span>
 </div>
-<!-- Method Tabs / Selector -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-<!-- VietQR (Active) -->
-<button class="relative flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-primary bg-primary/5 text-primary text-center transition-all shadow-sm" type="button">
-<div class="absolute -top-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                Ưu tiên 3s
-              </div>
-<span class="material-symbols-outlined text-[28px] mb-1 text-primary">qr_code_scanner</span>
-<span class="text-xs font-bold leading-tight">VietQR / Ngân hàng</span>
-<span class="text-[10px] text-emerald-700 font-semibold mt-0.5">Tự động duyệt 3s</span>
-</button>
-<!-- Card -->
-<button class="flex flex-col items-center justify-center p-3.5 rounded-xl border border-gray-200 hover:border-gray-300 bg-white text-gray-700 text-center transition-colors" type="button">
-<span class="material-symbols-outlined text-[28px] mb-1 text-gray-500">credit_card</span>
-<span class="text-xs font-semibold leading-tight">Thẻ Quốc Tế</span>
-<span class="text-[10px] text-gray-400 mt-0.5">Visa, Master, JCB</span>
-</button>
-<!-- E-wallet -->
-<button class="flex flex-col items-center justify-center p-3.5 rounded-xl border border-gray-200 hover:border-gray-300 bg-white text-gray-700 text-center transition-colors" type="button">
-<span class="material-symbols-outlined text-[28px] mb-1 text-gray-500">account_balance_wallet</span>
-<span class="text-xs font-semibold leading-tight">Ví MoMo / ZaloPay</span>
-<span class="text-[10px] text-gray-400 mt-0.5">Ví điện tử</span>
-</button>
-<!-- ATM Domestic -->
-<button class="flex flex-col items-center justify-center p-3.5 rounded-xl border border-gray-200 hover:border-gray-300 bg-white text-gray-700 text-center transition-colors" type="button">
-<span class="material-symbols-outlined text-[28px] mb-1 text-gray-500">account_balance</span>
-<span class="text-xs font-semibold leading-tight">Thẻ ATM Napas</span>
-<span class="text-[10px] text-gray-400 mt-0.5">Internet Banking</span>
-</button>
+<!-- Method Selector: Single Payment Method -->
+<div class="mb-6 p-4 sm:p-5 rounded-2xl border-2 border-primary bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+  <div class="flex items-center gap-3.5 w-full sm:w-auto">
+    <div class="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-600 to-[#008378] text-white flex items-center justify-center shadow-md shrink-0">
+      <span class="material-symbols-outlined text-[30px]">qr_code_scanner</span>
+    </div>
+    <div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-base sm:text-lg font-extrabold text-gray-900 font-headline-sm">Quét mã QR Code / Chuyển khoản trực tiếp</span>
+        <span class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+          Phương thức thanh toán duy nhất
+        </span>
+      </div>
+      <p class="text-xs text-gray-600 mt-1">
+        Hỗ trợ 100% tất cả app Ngân hàng (MB, VCB, BIDV, Techcombank, VPBank...) &amp; Ví điện tử (MoMo, ZaloPay, Viettel Money) qua VietQR Napas 24/7.
+      </p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
+    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-white border border-emerald-300 px-3.5 py-1.5 rounded-xl shadow-xs">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      Tự động duyệt vé trong 3s
+    </span>
+  </div>
 </div>
-<!-- Active Method Detailed Body: VietQR -->
+<!-- Active Method Detailed Body: VietQR / Chuyển khoản trực tiếp -->
 <div class="rounded-2xl bg-[#f8fafc] border border-slate-200/90 p-5 sm:p-7">
 <div class="text-center max-w-lg mx-auto mb-6">
 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-2">
 <span class="material-symbols-outlined text-[15px]">flash_on</span>
                 Giao dịch xử lý tự động 24/7
               </span>
-<h3 class="text-xl font-bold text-gray-900">Quét mã VietQR để thanh toán nhanh</h3>
+<h3 class="text-xl font-bold text-gray-900">Quét mã QR hoặc Chuyển khoản trực tiếp</h3>
 <p class="text-xs sm:text-sm text-gray-600 mt-1">
-                Mở ứng dụng ngân hàng bất kỳ (VCB, BIDV, Techcombank, MB, VPBank...) hoặc ví điện tử để quét mã thanh toán không cần nhập tay.
+                Mở ứng dụng ngân hàng bất kỳ để quét mã VietQR tự động điền tiền &amp; nội dung, hoặc chuyển khoản trực tiếp theo số tài khoản thụ hưởng bên dưới.
               </p>
 </div>
 <!-- Content Area: QR and Bank Details -->
@@ -184,15 +179,22 @@
 </button>
 </div>
 <!-- QR Image from VietQR Napas 247 Dynamic API -->
-<div class="relative group p-1 bg-white rounded-xl">
-<img id="vietQrImg" alt="Mã VietQR thanh toán Napas 247" class="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-xl border border-slate-200 shadow-sm object-contain" src="@(ViewBag.VietQrUrl ?? $"https://img.vietqr.io/image/MB-0978008922-compact2.png?amount={ViewBag.TotalAmount ?? 180000}&addInfo={ViewBag.TransferMemo ?? "SBG 84920"}&accountName=AU%20NGUYEN%20QUANG%20TUNG")" />
+<div id="qrImageWrap" class="relative group p-2 bg-white rounded-xl transition-all duration-300">
+  <img id="vietQrImg" alt="Mã VietQR thanh toán Napas 247" class="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-xl border border-slate-200 shadow-sm object-contain transition-all duration-300" src="@(ViewBag.VietQrUrl ?? $"https://img.vietqr.io/image/MB-0978008922-compact2.png?amount={ViewBag.TotalAmount ?? 180000}&addInfo={ViewBag.TransferMemo ?? "SBG 84920"}&accountName=AU%20NGUYEN%20QUANG%20TUNG")" />
 </div>
-<div class="mt-3 flex items-center justify-center gap-1.5 text-xs text-emerald-800 font-medium">
-<span class="material-symbols-outlined text-[16px] text-emerald-600">verified</span>
-<span>Mã QR chuẩn quốc gia Napas 24/7 (Quét chuyển tiền thật)</span>
+
+<!-- Badge hiển thị số tiền mã QR đang quét (đồng bộ thời gian thực theo Voucher) -->
+<div id="qrAmountBadge" class="mt-2.5 inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-900 border border-emerald-300 px-3 py-1 rounded-full text-xs font-bold shadow-xs transition-all">
+  <span class="material-symbols-outlined text-[15px] text-emerald-600">qr_code_2</span>
+  <span>Số tiền quét mã QR: <strong id="qrAmountText" class="text-[#008378] text-sm">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</strong></span>
+</div>
+
+<div class="mt-2 flex items-center justify-center gap-1.5 text-xs text-emerald-800 font-medium">
+  <span class="material-symbols-outlined text-[16px] text-emerald-600">verified</span>
+  <span>Mã QR chuẩn quốc gia Napas 24/7 (Quét tự động điền tiền thật)</span>
 </div>
 <div class="mt-1 text-[11px] text-gray-400">
-Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
+  Hỗ trợ 100% app Ngân hàng &amp; MoMo, ZaloPay, Viettel Money
 </div>
 </div>
 <!-- Bank Transfer Detailed Breakdown with Copy Actions -->
@@ -233,15 +235,21 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
 <span>Sao chép</span>
 </button>
 </div>
-<!-- Info Row 4: Amount (Copy) -->
-<div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs hover:border-primary/40 transition-colors">
+<!-- Info Row 4: Amount (Copy) - ĐỒNG BỘ THEO MÃ VOUCHER -->
+<div id="transferAmountCard" class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs hover:border-primary/40 transition-all duration-300">
 <div>
-<span class="text-[11px] text-gray-500 block">Số tiền chính xác</span>
-<span class="font-mono font-bold text-lg text-primary">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</span>
+  <div class="flex items-center gap-1.5">
+    <span class="text-[11px] text-gray-500 block">Số tiền chính xác cần chuyển</span>
+    <span id="transferDiscountBadge" class="hidden text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">Đã giảm theo voucher</span>
+  </div>
+  <div class="flex items-baseline gap-2 mt-0.5">
+    <span id="originalTransferAmount" class="hidden text-xs text-gray-400 line-through font-mono">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</span>
+    <span id="displayTransferAmount" class="font-mono font-extrabold text-lg sm:text-xl text-primary">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</span>
+  </div>
 </div>
-<button onclick="copyToClipboard('@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("F0"))', 'Số tiền');" class="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
+<button id="copyTransferAmountBtn" onclick="copyAmountToClipboard();" class="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors" type="button">
 <span class="material-symbols-outlined text-[15px]">content_copy</span>
-<span>Sao chép</span>
+<span id="copyAmountBtnText">Sao chép</span>
 </button>
 </div>
 <!-- Info Row 5: Transfer memo / code (CRITICAL) -->
@@ -275,20 +283,22 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
 </div>
 </div>
 <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 whitespace-nowrap">
-  ● Cổng VietQR Napas247 Active
+  ● Cổng VietQR Napas 24/7 • Chuyển khoản trực tiếp Active
 </span>
 </div>
 <!-- Big CTA Confirmation Button -->
 <div class="mt-5">
-<form asp-controller="Ticket" asp-action="ConfirmPayment" method="post" class="w-full">
+<form asp-controller="Ticket" asp-action="ConfirmPayment" method="post" class="w-full" id="confirmPaymentForm">
   @Html.AntiForgeryToken()
   <input type="hidden" name="ticketCode" value="@(ViewBag.TicketCode)" />
   <input type="hidden" name="bookingCode" value="@(ViewBag.BookingCode)" />
-  <input type="hidden" name="amount" value="@(ViewBag.TotalAmount)" />
+  <input type="hidden" id="confirmPaymentAmount" name="amount" value="@(ViewBag.TotalAmount ?? 180000m)" />
+  <input type="hidden" id="confirmVoucherCode" name="voucherCode" value="" />
+  <input type="hidden" id="confirmDiscountAmount" name="discountAmount" value="0" />
   <input type="hidden" name="paymentMethod" value="VietQR" />
   <button type="submit" class="w-full py-4 px-6 rounded-xl bg-[#008378] hover:bg-[#00685f] active:scale-[0.99] text-white font-bold text-base sm:text-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 tracking-wide font-headline-sm">
     <span class="material-symbols-outlined text-[24px]">verified</span>
-    <span>TÔI ĐÃ CHUYỂN KHOẢN XONG • XÁC NHẬN VÉ NGAY</span>
+    <span id="btnConfirmText">TÔI ĐÃ CHUYỂN KHOẢN XONG • XÁC NHẬN VÉ NGAY</span>
   </button>
 </form>
 </div>
@@ -406,7 +416,7 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
 <div class="pt-2 space-y-2 border-t border-gray-100 text-xs sm:text-sm">
 <div class="flex justify-between text-gray-600">
 <span>Giá vé:</span>
-<span class="font-medium text-gray-900">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</span>
+<span class="font-medium text-gray-900" id="displayTicketPrice">@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("N0")) đ</span>
 </div>
 <div class="flex justify-between text-emerald-700 font-medium">
 <span class="flex items-center gap-1">
@@ -422,20 +432,65 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
                 </span>
 <span class="text-emerald-700 font-semibold">Miễn phí</span>
 </div>
-<!-- Voucher Code Section (User Story 18) -->
-<div class="p-2.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl my-2">
-  <div class="flex items-center justify-between mb-1">
-    <span class="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
-      <span class="material-symbols-outlined text-[14px]">local_offer</span> Mã giảm giá / Voucher
-    </span>
-    <span class="text-[10px] text-emerald-700">Mã test: SMARTBUS20K</span>
-  </div>
-  <div class="flex gap-1.5">
-    <input type="text" id="voucherCodeInput" placeholder="Nhập mã voucher..." class="flex-1 uppercase text-xs font-bold border border-emerald-300 rounded-lg px-2.5 py-1.5 bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary" />
-    <button type="button" onclick="applyVoucherCode()" class="bg-[#008378] hover:bg-[#00685f] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors shadow-xs">Áp dụng</button>
-  </div>
-  <div id="voucherAlertMsg" class="text-[11px] mt-1 font-semibold hidden"></div>
+
+<!-- Dòng hiển thị giảm giá Voucher khi áp dụng thành công -->
+<div id="voucherBreakdownRow" class="hidden flex justify-between items-center text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 transition-all">
+  <span class="flex items-center gap-1 text-xs">
+    <span class="material-symbols-outlined text-[15px] text-emerald-600">sell</span>
+    <span>Voucher (<strong id="voucherBreakdownCode" class="font-mono"></strong>):</span>
+  </span>
+  <span id="voucherBreakdownAmount" class="text-emerald-700 font-extrabold text-sm">-0 đ</span>
 </div>
+
+<!-- Voucher Code Section (User Story 18) -->
+<div class="p-3 bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-white border border-emerald-200/90 rounded-xl my-2 shadow-xs">
+  <div class="flex items-center justify-between mb-1.5">
+    <span class="text-xs font-bold text-emerald-950 flex items-center gap-1">
+      <span class="material-symbols-outlined text-[15px] text-primary">local_offer</span> Mã giảm giá / Voucher
+    </span>
+    <button type="button" onclick="loadAvailableVouchers(true)" class="text-[11px] text-primary hover:text-emerald-800 font-semibold flex items-center gap-0.5 transition-colors" title="Cập nhật danh sách voucher mới nhất từ Server">
+      <span class="material-symbols-outlined text-[13px]">sync</span>
+      <span>Đồng bộ mã</span>
+    </button>
+  </div>
+  
+  <div class="flex gap-1.5">
+    <input type="text" id="voucherCodeInput" placeholder="Nhập mã voucher (VD: SMARTBUS20K)..." class="flex-1 uppercase text-xs font-bold border border-emerald-300 rounded-lg px-2.5 py-2 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary shadow-xs" />
+    <button type="button" id="applyVoucherBtn" onclick="applyVoucherCode()" class="bg-[#008378] hover:bg-[#00685f] active:scale-[0.98] text-white text-xs font-bold px-3.5 py-2 rounded-lg transition-all shadow-xs flex items-center gap-1 shrink-0">
+      <span id="applyVoucherBtnText">Áp dụng</span>
+    </button>
+    <button type="button" id="cancelVoucherBtn" onclick="removeVoucherCode()" class="hidden bg-gray-200 hover:bg-red-50 hover:text-red-600 text-gray-600 text-xs font-bold px-2.5 py-2 rounded-lg transition-colors shrink-0" title="Hủy mã voucher">
+      <span class="material-symbols-outlined text-[15px]">close</span>
+    </button>
+  </div>
+
+  <!-- Thông báo trạng thái áp mã voucher -->
+  <div id="voucherAlertMsg" class="text-xs mt-2 font-medium hidden p-2.5 rounded-lg transition-all"></div>
+
+  <!-- Danh sách mã ưu đãi gợi ý / khả dụng trên hệ thống -->
+  <div class="mt-2.5 pt-2 border-t border-emerald-100">
+    <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+      <span>Mã ưu đãi khả dụng:</span>
+      <span id="voucherCountBadge" class="text-primary font-bold text-[10px]"></span>
+    </div>
+    <div id="availableVouchersContainer" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+      <!-- Render danh sách chip voucher -->
+      @if (ViewBag.AvailableVouchers != null)
+      {
+        foreach (var v in (IEnumerable<WebApplication1.Models.DTOs.VoucherDto>)ViewBag.AvailableVouchers)
+        {
+          var discountDesc = v.Type == "percent" ? $"{v.Value}%" : $"{v.Value:N0} đ";
+          <button type="button" onclick="selectVoucherChip('@v.Id')" class="voucher-chip inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold bg-white border border-emerald-200 hover:border-primary hover:bg-emerald-50 text-emerald-900 transition-all shadow-2xs">
+            <span class="material-symbols-outlined text-[12px] text-emerald-600">sell</span>
+            <span class="font-mono font-bold">@v.Id</span>
+            <span class="text-emerald-700 text-[10px]">(-@discountDesc)</span>
+          </button>
+        }
+      }
+    </div>
+  </div>
+</div>
+
 <!-- Grand Total -->
 <div class="pt-3 border-t border-dashed border-gray-200 flex items-baseline justify-between">
 <div>
@@ -540,8 +595,19 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
   <span id="paymentToastMsg">Thông báo</span>
 </div>
 
-</main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.02)] mt-margin-lg"><div class="max-w-7xl mx-auto px-margin lg:px-margin-lg py-margin-lg"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter-lg pb-margin"><div class="lg:col-span-2 flex flex-col gap-space-sm"><div class="flex items-center gap-space-sm"><img alt="SmartBus Go Logo" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRgxUnj_KIPxzYuoxFYCNt7vDx8OgviaFRHD4UhoWmPn5L5yBmR2VfAbX_diVyepOmbCXBhldRrtHlA9U_sU5T_SD9dkw0xhTWQgvxap37YIcu0Jm81CBYMkFsMOEp_xulu57AIYAbPJMkqITDJ14_jbFdV2co8fuZ2xdvdKOKGqx8ZTQzkgHcYrVgLEwc3Jx0gRM7U8oKx1YsD0M7hwHc2Ef8FYrSHYpgxCzcYXm3ayNuXVrYyG3B8w"/><span class="font-headline-sm text-headline-sm text-primary font-bold">SmartBus Go</span></div><p class="font-body-md text-body-md text-on-surface-variant max-w-sm mt-space-xs">Hệ thống kết nối tuyến xe liên tỉnh và xe buýt thông minh hàng đầu Việt Nam. Tối ưu hành trình di chuyển, đặt chỗ nhanh chóng, an toàn và tin cậy.</p><div class="flex items-center gap-space-sm mt-space-sm"><span class="font-label-md text-label-md text-secondary">Tổng đài hỗ trợ 24/7:</span><span class="font-numeric-data text-numeric-data text-primary">1900 6868</span></div><p class="font-body-sm text-body-sm text-secondary">Email: support@smartbusgo.vn</p></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Nhà xe đối tác</span><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Phương Trang FUTA</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Thành Bưởi Limousine</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Hoa Mai Express</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Kumho Samco</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Đăng ký hợp tác nhà xe</a></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Chính sách &amp; Hỗ trợ</span><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Điều khoản sử dụng</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Chính sách bảo mật</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Quy định hoàn tiền &amp; đổi vé</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Hướng dẫn đặt chỗ online</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Câu hỏi thường gặp (FAQ)</a></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Tải ứng dụng</span><p class="font-body-sm text-body-sm text-on-surface-variant mb-space-xs">Trải nghiệm đặt vé và theo dõi lộ trình xe buýt thời gian thực trên di động.</p><div class="flex flex-col gap-space-xs"><div class="flex items-center gap-space-xs p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer"><span class="material-symbols-outlined text-primary text-[24px]">shop</span><div class="flex flex-col"><span class="font-label-md text-[10px] text-secondary leading-none">Tải về trên</span><span class="font-label-lg text-label-lg font-semibold text-on-surface leading-tight">Google Play</span></div></div><div class="flex items-center gap-space-xs p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer"><span class="material-symbols-outlined text-primary text-[24px]">phone_iphone</span><div class="flex flex-col"><span class="font-label-md text-[10px] text-secondary leading-none">Tải về trên</span><span class="font-label-lg text-label-lg font-semibold text-on-surface leading-tight">App Store</span></div></div></div></div></div><div class="pt-margin flex flex-col md:flex-row items-center justify-between gap-space-sm bg-surface-container-lowest"><span class="font-body-sm text-body-sm text-secondary">© 2025 SmartBus Go Vietnam Corp. Giấy phép kinh doanh dịch vụ sàn vận tải số 0318992144.</span><div class="flex items-center gap-space-md"><span class="font-label-md text-label-md text-secondary">Kết nối an toàn qua cổng</span><span class="font-numeric-data text-numeric-data text-on-surface-variant">NAPAS • VISA • VNPAY</span></div></div></div></footer>
+</main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.02)] mt-margin-lg"><div class="max-w-7xl mx-auto px-margin lg:px-margin-lg py-margin-lg"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-gutter-lg pb-margin"><div class="lg:col-span-2 flex flex-col gap-space-sm"><div class="flex items-center gap-space-sm"><img alt="SmartBus Go Logo" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRgxUnj_KIPxzYuoxFYCNt7vDx8OgviaFRHD4UhoWmPn5L5yBmR2VfAbX_diVyepOmbCXBhldRrtHlA9U_sU5T_SD9dkw0xhTWQgvxap37YIcu0Jm81CBYMkFsMOEp_xulu57AIYAbPJMkqITDJ14_jbFdV2co8fuZ2xdvdKOKGqx8ZTQzkgHcYrVgLEwc3Jx0gRM7U8oKx1YsD0M7hwHc2Ef8FYrSHYpgxCzcYXm3ayNuXVrYyG3B8w"/><span class="font-headline-sm text-headline-sm text-primary font-bold">SmartBus Go</span></div><p class="font-body-md text-body-md text-on-surface-variant max-w-sm mt-space-xs">Hệ thống kết nối tuyến xe liên tỉnh và xe buýt thông minh hàng đầu Việt Nam. Tối ưu hành trình di chuyển, đặt chỗ nhanh chóng, an toàn và tin cậy.</p><div class="flex items-center gap-space-sm mt-space-sm"><span class="font-label-md text-label-md text-secondary">Tổng đài hỗ trợ 24/7:</span><span class="font-numeric-data text-numeric-data text-primary">1900 6868</span></div><p class="font-body-sm text-body-sm text-secondary">Email: support@smartbusgo.vn</p></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Nhà xe đối tác</span><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Phương Trang FUTA</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Thành Bưởi Limousine</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Hoa Mai Express</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Kumho Samco</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Đăng ký hợp tác nhà xe</a></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Chính sách &amp; Hỗ trợ</span><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Điều khoản sử dụng</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Chính sách bảo mật</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Quy định hoàn tiền &amp; đổi vé</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Hướng dẫn đặt chỗ online</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors py-1" href="#">Câu hỏi thường gặp (FAQ)</a></div><div class="flex flex-col gap-space-xs"><span class="font-title-md text-title-md text-on-surface mb-space-xs">Tải ứng dụng</span><p class="font-body-sm text-body-sm text-on-surface-variant mb-space-xs">Trải nghiệm đặt vé và theo dõi lộ trình xe buýt thời gian thực trên di động.</p><div class="flex flex-col gap-space-xs"><div class="flex items-center gap-space-xs p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer"><span class="material-symbols-outlined text-primary text-[24px]">shop</span><div class="flex flex-col"><span class="font-label-md text-[10px] text-secondary leading-none">Tải về trên</span><span class="font-label-lg text-label-lg font-semibold text-on-surface leading-tight">Google Play</span></div></div><div class="flex items-center gap-space-xs p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer"><span class="material-symbols-outlined text-primary text-[24px]">phone_iphone</span><div class="flex flex-col"><span class="font-label-md text-[10px] text-secondary leading-none">Tải về trên</span><span class="font-label-lg text-label-lg font-semibold text-on-surface leading-tight">App Store</span></div></div></div></div></div><div class="pt-margin flex flex-col md:flex-row items-center justify-between gap-space-sm bg-surface-container-lowest"><span class="font-body-sm text-body-sm text-secondary">© 2025 SmartBus Go Vietnam Corp. Giấy phép kinh doanh dịch vụ sàn vận tải số 0318992144.</span><div class="flex items-center gap-space-md"><span class="font-label-md text-label-md text-secondary">Cổng thanh toán tự động</span><span class="font-numeric-data text-numeric-data text-on-surface-variant font-bold text-emerald-700">VIETQR • NAPAS 24/7</span></div></div></div></footer>
 <script>
+        // Format tiền tệ VNĐ
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN').format(Math.round(amount));
+        }
+
+        // Biến toàn cục quản lý số tiền và mã voucher
+        const originalTotal = Number("@(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("F0"))") || 180000;
+        let appliedAmount = originalTotal;
+        let appliedVoucherCode = "";
+        let appliedDiscountAmount = 0;
+
         // Hàm sao chép thông tin
         function copyToClipboard(text, label) {
             navigator.clipboard.writeText(text).then(() => {
@@ -557,6 +623,18 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
             });
         }
 
+        // Sao chép số tiền chuyển khoản chính xác (luôn cập nhật theo mã voucher)
+        function copyAmountToClipboard() {
+            const amountStr = String(Math.round(appliedAmount));
+            const btnText = document.getElementById("copyAmountBtnText");
+            copyToClipboard(amountStr, "Số tiền thanh toán");
+            if (btnText) {
+                const originalText = btnText.textContent;
+                btnText.textContent = "Đã chép!";
+                setTimeout(() => { btnText.textContent = originalText; }, 1800);
+            }
+        }
+
         function showToast(message) {
             const toast = document.getElementById("paymentToast");
             const msg = document.getElementById("paymentToastMsg");
@@ -566,7 +644,7 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
                 clearTimeout(window.toastTimer);
                 window.toastTimer = setTimeout(() => {
                     toast.classList.add("translate-y-16", "opacity-0", "pointer-events-none");
-                }, 3000);
+                }, 3200);
             }
         }
 
@@ -620,52 +698,233 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
             }
         }
 
-        // Xử lý áp dụng mã Voucher giảm giá (User Story 18)
-        let currentTotal = @(((decimal)(ViewBag.TotalAmount ?? 180000m)).ToString("F0"));
-        function applyVoucherCode() {
-            const code = (document.getElementById("voucherCodeInput").value || "").trim().toUpperCase();
+        // Bấm chọn nhanh voucher từ danh sách gợi ý
+        function selectVoucherChip(code) {
+            const input = document.getElementById("voucherCodeInput");
+            if (input) {
+                input.value = code;
+                applyVoucherCode();
+            }
+        }
+
+        // Tải danh sách voucher mới nhất từ Server để hiển thị cho hành khách
+        async function loadAvailableVouchers(notifyUser = false) {
+            const container = document.getElementById("availableVouchersContainer");
+            const badge = document.getElementById("voucherCountBadge");
+            if (!container) return;
+
+            try {
+                const res = await fetch("/api/vouchers");
+                const json = await res.json();
+                if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+                    const vouchers = json.data;
+                    if (badge) badge.textContent = `${vouchers.length} mã khả dụng`;
+                    container.innerHTML = vouchers.map(v => {
+                        const discountDesc = v.type === "percent" ? `${v.value}%` : `${formatMoney(v.value)} đ`;
+                        const isExpired = v.limit > 0 && v.used >= v.limit;
+                        if (isExpired) return '';
+                        return `
+                          <button type="button" onclick="selectVoucherChip('${v.id}')" title="${v.description || ''}" class="voucher-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white border border-emerald-300 hover:border-primary hover:bg-emerald-50 text-emerald-950 transition-all shadow-2xs">
+                            <span class="material-symbols-outlined text-[12px] text-emerald-600">sell</span>
+                            <span class="font-mono font-bold">${v.id}</span>
+                            <span class="text-emerald-700 text-[10px]">(-${discountDesc})</span>
+                          </button>
+                        `;
+                    }).filter(Boolean).join('');
+
+                    if (notifyUser) showToast(`Đã đồng bộ ${vouchers.length} mã voucher từ Server!`);
+                }
+            } catch (e) {
+                console.warn("Không thể tải danh sách voucher:", e);
+                if (notifyUser) showToast("Không thể kết nối tới máy chủ đồng bộ voucher.");
+            }
+        }
+
+        // ÁP DỤNG MÃ VOUCHER QUA API BACKEND ĐỒNG BỘ
+        async function applyVoucherCode() {
+            const codeInput = document.getElementById("voucherCodeInput");
+            const code = (codeInput?.value || "").trim().toUpperCase();
             const msgEl = document.getElementById("voucherAlertMsg");
-            msgEl.classList.remove("hidden", "text-red-600", "text-emerald-700");
+            const btn = document.getElementById("applyVoucherBtn");
+            const btnText = document.getElementById("applyVoucherBtnText");
+            const cancelBtn = document.getElementById("cancelVoucherBtn");
 
             if (!code) {
-                msgEl.textContent = "Vui lòng nhập mã giảm giá!";
-                msgEl.classList.add("text-red-600");
+                msgEl.innerHTML = `<span class="flex items-center gap-1.5 text-red-600"><span class="material-symbols-outlined text-[15px]">error</span> <span>Vui lòng nhập mã giảm giá!</span></span>`;
+                msgEl.className = "text-xs mt-2 font-medium p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 block";
                 return;
             }
 
-            let discount = 0;
-            if (code === "SMARTBUS20K" || code === "SMARTBUSNEW") {
-                discount = 20000;
-            } else if (code === "SINHVIEN" || code === "HSSV") {
-                discount = Math.round(currentTotal * 0.15); // Giảm 15%
-            } else if (code === "VIP50K") {
-                discount = 50000;
-            } else {
-                msgEl.textContent = `Mã '${code}' không hợp lệ hoặc đã hết hạn sử dụng.`;
-                msgEl.classList.add("text-red-600");
-                return;
+            // Hiển thị trạng thái đang xử lý
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.innerHTML = `<span class="material-symbols-outlined text-[14px] animate-spin">refresh</span> Đang kiểm tra...`;
+
+            try {
+                // Gọi API backend kiểm tra tính hợp lệ và giá trị giảm của voucher
+                const response = await fetch("/api/vouchers/validate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        code: code,
+                        amount: originalTotal
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data && data.success) {
+                    appliedVoucherCode = data.code || code;
+                    appliedDiscountAmount = Number(data.discountAmount) || 0;
+                    appliedAmount = Number(data.newTotal) || Math.max(0, originalTotal - appliedDiscountAmount);
+
+                    // 1. Cập nhật thông báo thành công
+                    msgEl.innerHTML = `<span class="flex items-center gap-1.5 text-emerald-900"><span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span> <strong>${data.message || `Đã áp dụng mã '${code}', giảm -${formatMoney(appliedDiscountAmount)} đ!`}</strong></span>`;
+                    msgEl.className = "text-xs mt-2 font-medium p-2.5 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-900 block";
+                    if (cancelBtn) cancelBtn.classList.remove("hidden");
+
+                    // 2. Cập nhật tổng tiền thanh toán ở cột bên phải
+                    const grandTotalEl = document.getElementById("displayGrandTotal");
+                    if (grandTotalEl) grandTotalEl.textContent = `${formatMoney(appliedAmount)} đ`;
+
+                    // 3. Hiển thị dòng giảm giá voucher trong bảng kê chi tiết giá
+                    const voucherBreakdownRow = document.getElementById("voucherBreakdownRow");
+                    const voucherBreakdownCode = document.getElementById("voucherBreakdownCode");
+                    const voucherBreakdownAmount = document.getElementById("voucherBreakdownAmount");
+                    if (voucherBreakdownRow) {
+                        voucherBreakdownRow.classList.remove("hidden");
+                        if (voucherBreakdownCode) voucherBreakdownCode.textContent = appliedVoucherCode;
+                        if (voucherBreakdownAmount) voucherBreakdownAmount.textContent = `-${formatMoney(appliedDiscountAmount)} đ`;
+                    }
+
+                    // 4. CẬP NHẬT SỐ TIỀN CHÍNH XÁC TRONG KHUNG CHUYỂN KHOẢN (BÊN TRÁI)
+                    const displayTransferAmount = document.getElementById("displayTransferAmount");
+                    const originalTransferAmount = document.getElementById("originalTransferAmount");
+                    const transferDiscountBadge = document.getElementById("transferDiscountBadge");
+                    if (displayTransferAmount) displayTransferAmount.textContent = `${formatMoney(appliedAmount)} đ`;
+                    if (originalTransferAmount) {
+                        originalTransferAmount.textContent = `${formatMoney(originalTotal)} đ`;
+                        originalTransferAmount.classList.remove("hidden");
+                    }
+                    if (transferDiscountBadge) transferDiscountBadge.classList.remove("hidden");
+
+                    // 5. CẬP NHẬT MÃ VIETQR (QUÉT MÃ TRỰC TIẾP TỰ ĐỘNG LẤY GIÁ MỚI ĐÃ GIẢM)
+                    const qrImg = document.getElementById("vietQrImg");
+                    if (qrImg && qrImg.src) {
+                        try {
+                            const u = new URL(qrImg.src);
+                            u.searchParams.set("amount", Math.round(appliedAmount));
+                            u.searchParams.set("t", Date.now()); // Tránh trình duyệt lưu đệm ảnh cũ
+                            qrImg.src = u.toString();
+                        } catch (e) {
+                            console.error("Lỗi cập nhật ảnh VietQR:", e);
+                        }
+                    }
+
+                    // 6. Cập nhật nhãn số tiền quét mã bên dưới ảnh QR
+                    const qrAmountText = document.getElementById("qrAmountText");
+                    if (qrAmountText) {
+                        qrAmountText.innerHTML = `${formatMoney(appliedAmount)} đ <span class="text-emerald-700 text-[11px] font-semibold">(Đã giảm -${formatMoney(appliedDiscountAmount)} đ)</span>`;
+                    }
+
+                    // 7. Hiệu ứng visual highlight viền xanh báo hiệu số tiền và mã QR đã được làm mới
+                    const qrWrap = document.getElementById("qrImageWrap");
+                    if (qrWrap) {
+                        qrWrap.classList.add("ring-4", "ring-emerald-400", "scale-[1.02]");
+                        setTimeout(() => qrWrap.classList.remove("ring-4", "ring-emerald-400", "scale-[1.02]"), 1200);
+                    }
+                    const transferCard = document.getElementById("transferAmountCard");
+                    if (transferCard) {
+                        transferCard.classList.add("ring-2", "ring-emerald-400", "bg-emerald-50/50");
+                        setTimeout(() => transferCard.classList.remove("ring-2", "ring-emerald-400", "bg-emerald-50/50"), 1200);
+                    }
+
+                    // 8. Cập nhật các trường ẩn trong form xác nhận vé để gửi sang server
+                    const confirmAmountInput = document.getElementById("confirmPaymentAmount");
+                    const confirmVoucherInput = document.getElementById("confirmVoucherCode");
+                    const confirmDiscountInput = document.getElementById("confirmDiscountAmount");
+                    if (confirmAmountInput) confirmAmountInput.value = appliedAmount;
+                    if (confirmVoucherInput) confirmVoucherInput.value = appliedVoucherCode;
+                    if (confirmDiscountInput) confirmDiscountInput.value = appliedDiscountAmount;
+
+                    showToast(`Đã áp dụng voucher '${appliedVoucherCode}'! Số tiền chuyển khoản còn ${formatMoney(appliedAmount)} đ`);
+                } else {
+                    // Lỗi: mã không tồn tại, hết hạn, hoặc chưa đạt đơn tối thiểu
+                    msgEl.innerHTML = `<span class="flex items-center gap-1.5 text-red-600"><span class="material-symbols-outlined text-[16px]">error</span> <span>${data?.message || `Mã '${code}' không hợp lệ hoặc đã hết hạn.`}</span></span>`;
+                    msgEl.className = "text-xs mt-2 font-medium p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 block";
+                    showToast(data?.message || "Mã giảm giá không hợp lệ");
+                }
+            } catch (err) {
+                console.error("Lỗi khi validate voucher:", err);
+                msgEl.innerHTML = `<span class="flex items-center gap-1.5 text-red-600"><span class="material-symbols-outlined text-[16px]">error</span> <span>Không thể kết nối đến máy chủ xác thực voucher.</span></span>`;
+                msgEl.className = "text-xs mt-2 font-medium p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 block";
+            } finally {
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.textContent = "Áp dụng";
+            }
+        }
+
+        // HỦY BỎ MÃ VOUCHER ĐANG ÁP DỤNG, TRỞ VỀ GIÁ GỐC
+        function removeVoucherCode() {
+            appliedVoucherCode = "";
+            appliedDiscountAmount = 0;
+            appliedAmount = originalTotal;
+
+            const codeInput = document.getElementById("voucherCodeInput");
+            if (codeInput) codeInput.value = "";
+
+            const msgEl = document.getElementById("voucherAlertMsg");
+            if (msgEl) {
+                msgEl.classList.add("hidden");
+                msgEl.innerHTML = "";
             }
 
-            const newTotal = Math.max(10000, currentTotal - discount);
-            msgEl.textContent = `Áp dụng thành công! Đã giảm -${new Intl.NumberFormat('vi-VN').format(discount)} đ vào đơn hàng.`;
-            msgEl.classList.add("text-emerald-700");
+            const cancelBtn = document.getElementById("cancelVoucherBtn");
+            if (cancelBtn) cancelBtn.classList.add("hidden");
 
-            document.getElementById("displayGrandTotal").textContent = new Intl.NumberFormat('vi-VN').format(newTotal) + " đ";
-            
-            // Cập nhật lại ảnh VietQR với số tiền mới đã giảm
+            // Khôi phục giá gốc ở cột bên phải
+            const grandTotalEl = document.getElementById("displayGrandTotal");
+            if (grandTotalEl) grandTotalEl.textContent = `${formatMoney(originalTotal)} đ`;
+
+            // Ẩn dòng voucher trong breakdown
+            const voucherBreakdownRow = document.getElementById("voucherBreakdownRow");
+            if (voucherBreakdownRow) voucherBreakdownRow.classList.add("hidden");
+
+            // Khôi phục giá gốc ở khung chuyển khoản
+            const displayTransferAmount = document.getElementById("displayTransferAmount");
+            const originalTransferAmount = document.getElementById("originalTransferAmount");
+            const transferDiscountBadge = document.getElementById("transferDiscountBadge");
+            if (displayTransferAmount) displayTransferAmount.textContent = `${formatMoney(originalTotal)} đ`;
+            if (originalTransferAmount) originalTransferAmount.classList.add("hidden");
+            if (transferDiscountBadge) transferDiscountBadge.classList.add("hidden");
+
+            // Khôi phục mã VietQR về giá gốc
             const qrImg = document.getElementById("vietQrImg");
             if (qrImg && qrImg.src) {
                 try {
                     const u = new URL(qrImg.src);
-                    u.searchParams.set("amount", newTotal);
+                    u.searchParams.set("amount", Math.round(originalTotal));
+                    u.searchParams.set("t", Date.now());
                     qrImg.src = u.toString();
-                } catch(e) {}
+                } catch (e) {}
             }
-            showToast(`Đã áp dụng mã giảm giá! Tổng mới: ${new Intl.NumberFormat('vi-VN').format(newTotal)} đ`);
+
+            const qrAmountText = document.getElementById("qrAmountText");
+            if (qrAmountText) qrAmountText.textContent = `${formatMoney(originalTotal)} đ`;
+
+            // Khôi phục form submit
+            const confirmAmountInput = document.getElementById("confirmPaymentAmount");
+            const confirmVoucherInput = document.getElementById("confirmVoucherCode");
+            const confirmDiscountInput = document.getElementById("confirmDiscountAmount");
+            if (confirmAmountInput) confirmAmountInput.value = originalTotal;
+            if (confirmVoucherInput) confirmVoucherInput.value = "";
+            if (confirmDiscountInput) confirmDiscountInput.value = 0;
+
+            showToast("Đã hủy áp dụng mã voucher. Số tiền đã quay về mức ban đầu.");
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            let checkPaymentInterval = null;
+            // Tải danh sách voucher thời gian thực từ server
+            loadAvailableVouchers(false);
 
             // ==========================================
             // 2. TỰ ĐỘNG CHECK TRẠNG THÁI THANH TOÁN (POLLING)
@@ -675,7 +934,7 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
             const currentBookingCode = "@(ViewBag.BookingCode ?? "BK-TNCB-001")";
             const checkIntervalMs = 3000;  // Kiểm tra mỗi 3 giây
             
-            checkPaymentInterval = setInterval(async function () {
+            const checkPaymentInterval = setInterval(async function () {
                 try {
                     // Gọi API kiểm tra trạng thái thanh toán từ backend
                     const response = await fetch(`/api/payment/check-status?orderCode=${encodeURIComponent(orderCode)}&ticketCode=${encodeURIComponent(currentTicketCode)}`, {
@@ -693,9 +952,9 @@ Hỗ trợ 100% app Ngân hàng & MoMo, ZaloPay, Viettel Money
                             clearInterval(checkPaymentInterval);
                             showToast("Ngân hàng đã nhận tiền thành công! Đang xuất vé điện tử...");
 
-                            // Chuyển hướng sang trang chi tiết vé điện tử
+                            // Chuyển hướng sang trang chi tiết vé điện tử kèm theo thông tin voucher và số tiền thật
                             setTimeout(() => {
-                                window.location.href = `/payment-result?ticketCode=${encodeURIComponent(currentTicketCode)}&bookingCode=${encodeURIComponent(currentBookingCode)}&status=success`;
+                                window.location.href = `/payment-result?ticketCode=${encodeURIComponent(currentTicketCode)}&bookingCode=${encodeURIComponent(currentBookingCode)}&status=success&amount=${appliedAmount}&voucherCode=${encodeURIComponent(appliedVoucherCode)}&discount=${appliedDiscountAmount}`;
                             }, 500);
                         }
                     }
